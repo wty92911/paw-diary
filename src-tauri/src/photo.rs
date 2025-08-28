@@ -17,7 +17,7 @@ impl PhotoService {
         // Create storage directory if it doesn't exist
         if !storage_dir.exists() {
             fs::create_dir_all(&storage_dir).map_err(|e| {
-                PetError::file_system(format!("Failed to create storage directory: {}", e))
+                PetError::file_system(format!("Failed to create storage directory: {e}"))
             })?;
         }
         
@@ -51,9 +51,9 @@ impl PhotoService {
         
         // Load and validate image
         let img = ImageReader::open(source_path)
-            .map_err(|e| PetError::photo_processing(format!("Failed to open image: {}", e)))?
+            .map_err(|e| PetError::photo_processing(format!("Failed to open image: {e}")))?
             .decode()
-            .map_err(|e| PetError::photo_processing(format!("Failed to decode image: {}", e)))?;
+            .map_err(|e| PetError::photo_processing(format!("Failed to decode image: {e}")))?;
         
         // Resize to 512x512 while maintaining aspect ratio
         let resized_img = self.resize_image_with_aspect_ratio(img, 512, 512);
@@ -64,7 +64,7 @@ impl PhotoService {
         // Save processed image
         resized_img
             .save_with_format(&target_path, format)
-            .map_err(|e| PetError::photo_processing(format!("Failed to save processed image: {}", e)))?;
+            .map_err(|e| PetError::photo_processing(format!("Failed to save processed image: {e}")))?;
         
         // Verify file was created successfully
         if !target_path.exists() {
@@ -92,7 +92,7 @@ impl PhotoService {
         
         // Write bytes to temporary file
         fs::write(&temp_path, image_data).map_err(|e| {
-            PetError::file_system(format!("Failed to write temporary image file: {}", e))
+            PetError::file_system(format!("Failed to write temporary image file: {e}"))
         })?;
         
         // Process the temporary file
@@ -119,11 +119,11 @@ impl PhotoService {
         
         if photo_path.exists() {
             fs::remove_file(&photo_path).map_err(|e| {
-                PetError::file_system(format!("Failed to delete photo file: {}", e))
+                PetError::file_system(format!("Failed to delete photo file: {e}"))
             })?;
-            log::info!("Deleted photo: {}", photo_filename);
+            log::info!("Deleted photo: {photo_filename}");
         } else {
-            log::warn!("Photo file not found for deletion: {}", photo_filename);
+            log::warn!("Photo file not found for deletion: {photo_filename}");
         }
         
         Ok(())
@@ -153,7 +153,7 @@ impl PhotoService {
     pub fn get_photo_info(&self, photo_filename: &str) -> Result<PhotoInfo, PetError> {
         let photo_path = self.get_photo_path(photo_filename)?;
         let metadata = fs::metadata(&photo_path).map_err(|e| {
-            PetError::file_system(format!("Failed to read photo metadata: {}", e))
+            PetError::file_system(format!("Failed to read photo metadata: {e}"))
         })?;
         
         // Try to get image dimensions
@@ -179,16 +179,16 @@ impl PhotoService {
         let mut photos = Vec::new();
         
         let dir_entries = fs::read_dir(&self.storage_dir).map_err(|e| {
-            PetError::file_system(format!("Failed to read storage directory: {}", e))
+            PetError::file_system(format!("Failed to read storage directory: {e}"))
         })?;
         
         for entry in dir_entries {
             let entry = entry.map_err(|e| {
-                PetError::file_system(format!("Failed to read directory entry: {}", e))
+                PetError::file_system(format!("Failed to read directory entry: {e}"))
             })?;
             
             if entry.file_type().map_err(|e| {
-                PetError::file_system(format!("Failed to get file type: {}", e))
+                PetError::file_system(format!("Failed to get file type: {e}"))
             })?.is_file() {
                 if let Some(filename) = entry.file_name().to_str() {
                     // Only include image files
@@ -209,16 +209,16 @@ impl PhotoService {
         let mut photo_count = 0usize;
         
         let dir_entries = fs::read_dir(&self.storage_dir).map_err(|e| {
-            PetError::file_system(format!("Failed to read storage directory: {}", e))
+            PetError::file_system(format!("Failed to read storage directory: {e}"))
         })?;
         
         for entry in dir_entries {
             let entry = entry.map_err(|e| {
-                PetError::file_system(format!("Failed to read directory entry: {}", e))
+                PetError::file_system(format!("Failed to read directory entry: {e}"))
             })?;
             
             if entry.file_type().map_err(|e| {
-                PetError::file_system(format!("Failed to get file type: {}", e))
+                PetError::file_system(format!("Failed to get file type: {e}"))
             })?.is_file() {
                 if let Some(filename) = entry.file_name().to_str() {
                     if self.is_image_file(filename) {
@@ -285,7 +285,7 @@ impl PhotoService {
             "tiff" | "tif" => Ok(ImageFormat::Tiff),
             _ => {
                 // Default to JPEG for unknown formats
-                log::warn!("Unknown image format '{}', defaulting to JPEG", extension);
+                log::warn!("Unknown image format '{extension}', defaulting to JPEG");
                 Ok(ImageFormat::Jpeg)
             }
         }

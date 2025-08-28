@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Pet, PetCreateRequest, PetUpdateRequest, PetError } from '@/lib/types'
 
@@ -18,21 +18,35 @@ export interface UsePetsActions {
 
 export function usePets(includeArchived = false): UsePetsState & UsePetsActions {
   const [pets, setPets] = useState<Pet[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)  // Start as false, don't auto-load
   const [error, setError] = useState<string | null>(null)
 
   const refetch = async () => {
+    console.log('=== REFETCH PETS START ===')
+    console.log('includeArchived:', includeArchived)
+    
     try {
+      console.log('Setting isLoading to true')
       setIsLoading(true)
       setError(null)
-      const fetchedPets = await invoke<Pet[]>('get_pets', { includeArchived })
+      
+      console.log('Calling get_pets command...')
+      const fetchedPets = await invoke<Pet[]>('get_pets', { include_archived: includeArchived })
+      console.log('get_pets result:', fetchedPets)
+      console.log('Number of pets received:', fetchedPets?.length || 0)
+      
       setPets(fetchedPets)
+      console.log('Pets state updated successfully')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch pets'
+      console.error('Failed to fetch pets - Error details:', err)
+      console.error('Error type:', typeof err)
+      console.error('Error message:', errorMessage)
       setError(errorMessage)
-      console.error('Failed to fetch pets:', err)
     } finally {
+      console.log('Setting isLoading to false')
       setIsLoading(false)
+      console.log('=== REFETCH PETS END ===')
     }
   }
 
@@ -93,9 +107,10 @@ export function usePets(includeArchived = false): UsePetsState & UsePetsActions 
     }
   }
 
-  useEffect(() => {
-    refetch()
-  }, [includeArchived])
+  // Don't auto-fetch - let the app initialize first
+  // useEffect(() => {
+  //   refetch()
+  // }, [includeArchived])
 
   return {
     pets,

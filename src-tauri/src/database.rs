@@ -1,8 +1,11 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{sqlite::SqlitePool, Row};
-use std::path::Path;
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqliteSynchronous},
+    Row,
+};
+use std::{path::Path, str::FromStr};
 
 /// Pet data structure matching the database schema
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,13 +125,68 @@ pub struct PetDatabase {
 impl PetDatabase {
     /// Initialize the database with SQLite
     pub async fn new<P: AsRef<Path>>(db_path: P) -> Result<Self> {
-        let database_url = format!("sqlite:{}", db_path.as_ref().display());
-        let pool = SqlitePool::connect(&database_url).await?;
+        let db_path = db_path.as_ref();
 
-        // Run migrations
-        sqlx::migrate!("./migrations").run(&pool).await?;
+        // Ensure the parent directory exists
+        if let Some(parent) = db_path.parent() {
+            if !parent.exists() {
+                std::fs::create_dir_all(parent)?;
+                log::info!("Created database directory: {}", parent.display());
+            }
+        }
 
-        log::info!("Database initialized and migrations applied successfully");
+        let database_url = format!("sqlite:{}", db_path.display());
+        log::info!("Connecting to database at: {database_url}");
+
+        let opts = SqliteConnectOptions::from_str(&database_url)?
+            .create_if_missing(true)
+            .journal_mode(SqliteJournalMode::Wal) // 推荐 WAL
+            .synchronous(SqliteSynchronous::Normal)
+            .foreign_keys(true);
+        let pool = SqlitePool::connect_with(opts).await.map_err(|e| {
+            log::error!("Failed to connect to database: {e}");
+            e
+        })?;
+
+        // Create tables manually for now (skip migrations)
+        log::info!("Creating database tables...");
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS pets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name VARCHAR(100) NOT NULL,
+                birth_date DATE NOT NULL,
+                species VARCHAR(20) NOT NULL CHECK (species IN ('cat', 'dog')),
+                gender VARCHAR(10) NOT NULL CHECK (gender IN ('male', 'female', 'unknown')),
+                breed VARCHAR(100),
+                color VARCHAR(50),
+                weight_kg REAL,
+                photo_path VARCHAR(255),
+                notes TEXT,
+                display_order INTEGER DEFAULT 0,
+                is_archived BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to create pets table: {e}");
+            e
+        })?;
+
+        // Create indexes
+        sqlx::query("CREATE INDEX IF NOT EXISTS idx_pets_display_order ON pets(display_order);")
+            .execute(&pool)
+            .await?;
+
+        sqlx::query("CREATE INDEX IF NOT EXISTS idx_pets_is_archived ON pets(is_archived);")
+            .execute(&pool)
+            .await?;
+
+        log::info!("Database initialized and tables created successfully");
         Ok(PetDatabase { pool })
     }
 

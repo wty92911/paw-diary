@@ -27,6 +27,7 @@ function App() {
   const [activePetId, setActivePetId] = useState<number>()
   const [selectedPet, setSelectedPet] = useState<Pet>()
   const [isInitialized, setIsInitialized] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(false)
   const [initError, setInitError] = useState<string>()
 
   // Dialog states
@@ -41,19 +42,39 @@ function App() {
 
   // Initialize the app
   useEffect(() => {
+    // Prevent multiple initialization attempts
+    if (isInitializing || isInitialized) {
+      return
+    }
+
     const initializeApp = async () => {
+      console.log('=== FRONTEND INITIALIZATION START ===')
+      
       try {
+        console.log('Setting isInitializing to true')
+        setIsInitializing(true)
         setInitError(undefined)
-        await invoke('initialize_app')
+        
+        console.log('Calling initialize_app command...')
+        const result = await invoke('initialize_app')
+        console.log('initialize_app result:', result)
+        
         setIsInitialized(true)
+        console.log('Initialization successful, fetching pets...')
+        // Fetch pets after initialization
+        await refetch()
+        console.log('Pets fetched successfully')
       } catch (error) {
         console.error('Failed to initialize app:', error)
         setInitError(error instanceof Error ? error.message : 'Failed to initialize application')
+      } finally {
+        console.log('Setting isInitializing to false')
+        setIsInitializing(false)
       }
     }
 
     initializeApp()
-  }, [])
+  }, []) // Empty dependency array to run only once
 
   // Auto-select first pet if none selected
   useEffect(() => {
@@ -159,7 +180,9 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-600" />
-          <p className="text-orange-700">Initializing Paw Diary...</p>
+          <p className="text-orange-700">
+            {isInitializing ? 'Initializing Paw Diary...' : 'Starting up...'}
+          </p>
           {initError && (
             <p className="text-red-600 text-sm mt-2">{initError}</p>
           )}
@@ -290,7 +313,7 @@ function App() {
         onReorder={reorderPets}
         onArchive={handleArchivePet}
         onRestore={handleRestorePet}
-        onDelete={(pet) => setPendingDeletePet(pet)}
+        onDelete={async (pet) => setPendingDeletePet(pet)}
         onView={handlePetClick}
       />
 

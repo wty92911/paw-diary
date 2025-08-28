@@ -13,7 +13,7 @@ pub struct AppState {
 
 impl AppState {
     pub async fn new(db_path: PathBuf, photo_dir: PathBuf) -> Result<Self, PetError> {
-        let database = Arc::new(PetDatabase::new(db_path).await?);
+        let database: Arc<PetDatabase> = Arc::new(PetDatabase::new(db_path).await?);
         let photo_service = Arc::new(PhotoService::new(photo_dir)?);
 
         Ok(AppState {
@@ -47,7 +47,7 @@ pub async fn get_pets(
     state: State<'_, AppState>,
     include_archived: bool,
 ) -> Result<Vec<Pet>, PetError> {
-    log::debug!("Fetching pets (include_archived: {})", include_archived);
+    log::debug!("Fetching pets (include_archived: {include_archived})");
 
     let pets = state.database.get_pets(include_archived).await?;
 
@@ -58,7 +58,7 @@ pub async fn get_pets(
 /// Get a specific pet by ID
 #[tauri::command]
 pub async fn get_pet_by_id(state: State<'_, AppState>, id: i64) -> Result<Pet, PetError> {
-    log::debug!("Fetching pet with ID: {}", id);
+    log::debug!("Fetching pet with ID: {id}");
 
     if id <= 0 {
         return Err(PetError::invalid_input("Pet ID must be positive"));
@@ -77,7 +77,7 @@ pub async fn update_pet(
     id: i64,
     pet_data: PetUpdateRequest,
 ) -> Result<Pet, PetError> {
-    log::info!("Updating pet with ID: {}", id);
+    log::info!("Updating pet with ID: {id}");
 
     if id <= 0 {
         return Err(PetError::invalid_input("Pet ID must be positive"));
@@ -95,7 +95,7 @@ pub async fn update_pet(
 /// Delete a pet (soft delete by archiving)
 #[tauri::command]
 pub async fn delete_pet(state: State<'_, AppState>, id: i64) -> Result<(), PetError> {
-    log::info!("Deleting (archiving) pet with ID: {}", id);
+    log::info!("Deleting (archiving) pet with ID: {id}");
 
     if id <= 0 {
         return Err(PetError::invalid_input("Pet ID must be positive"));
@@ -103,7 +103,7 @@ pub async fn delete_pet(state: State<'_, AppState>, id: i64) -> Result<(), PetEr
 
     state.database.delete_pet(id).await?;
 
-    log::info!("Successfully deleted pet with ID: {}", id);
+    log::info!("Successfully deleted pet with ID: {id}");
     Ok(())
 }
 
@@ -150,8 +150,7 @@ pub async fn upload_pet_photo(
     if let Some(ref ext) = extension {
         if !valid_extensions.contains(&ext.as_str()) {
             return Err(PetError::invalid_input(format!(
-                "Unsupported image format: {}",
-                ext
+                "Unsupported image format: {ext}"
             )));
         }
     }
@@ -160,7 +159,7 @@ pub async fn upload_pet_photo(
         .photo_service
         .store_photo_from_bytes(&image_data, extension.as_deref())?;
 
-    log::info!("Successfully uploaded pet photo: {}", filename);
+    log::info!("Successfully uploaded pet photo: {filename}");
     Ok(filename)
 }
 
@@ -170,7 +169,7 @@ pub async fn upload_pet_photo_from_path(
     state: State<'_, AppState>,
     file_path: String,
 ) -> Result<String, PetError> {
-    log::info!("Uploading pet photo from path: {}", file_path);
+    log::info!("Uploading pet photo from path: {file_path}");
 
     if file_path.trim().is_empty() {
         return Err(PetError::invalid_input("File path cannot be empty"));
@@ -183,7 +182,7 @@ pub async fn upload_pet_photo_from_path(
 
     let filename = state.photo_service.store_photo(&path)?;
 
-    log::info!("Successfully uploaded pet photo from path: {}", filename);
+    log::info!("Successfully uploaded pet photo from path: {filename}");
     Ok(filename)
 }
 
@@ -193,7 +192,7 @@ pub async fn delete_pet_photo(
     state: State<'_, AppState>,
     photo_filename: String,
 ) -> Result<(), PetError> {
-    log::info!("Deleting pet photo: {}", photo_filename);
+    log::info!("Deleting pet photo: {photo_filename}");
 
     if photo_filename.trim().is_empty() {
         return Err(PetError::invalid_input("Photo filename cannot be empty"));
@@ -201,7 +200,7 @@ pub async fn delete_pet_photo(
 
     state.photo_service.delete_photo(&photo_filename)?;
 
-    log::info!("Successfully deleted pet photo: {}", photo_filename);
+    log::info!("Successfully deleted pet photo: {photo_filename}");
     Ok(())
 }
 
@@ -211,7 +210,7 @@ pub async fn get_pet_photo_info(
     state: State<'_, AppState>,
     photo_filename: String,
 ) -> Result<PhotoInfo, PetError> {
-    log::debug!("Getting photo info for: {}", photo_filename);
+    log::debug!("Getting photo info for: {photo_filename}");
 
     if photo_filename.trim().is_empty() {
         return Err(PetError::invalid_input("Photo filename cannot be empty"));
@@ -219,7 +218,7 @@ pub async fn get_pet_photo_info(
 
     let info = state.photo_service.get_photo_info(&photo_filename)?;
 
-    log::debug!("Retrieved photo info for: {}", photo_filename);
+    log::debug!("Retrieved photo info for: {photo_filename}");
     Ok(info)
 }
 
@@ -229,7 +228,7 @@ pub async fn get_pet_photo_path(
     state: State<'_, AppState>,
     photo_filename: String,
 ) -> Result<String, PetError> {
-    log::debug!("Getting photo path for: {}", photo_filename);
+    log::debug!("Getting photo path for: {photo_filename}");
 
     if photo_filename.trim().is_empty() {
         return Err(PetError::invalid_input("Photo filename cannot be empty"));
@@ -238,7 +237,7 @@ pub async fn get_pet_photo_path(
     let path = state.photo_service.get_photo_path(&photo_filename)?;
 
     let path_str = path.to_string_lossy().to_string();
-    log::debug!("Retrieved photo path: {}", path_str);
+    log::debug!("Retrieved photo path: {path_str}");
     Ok(path_str)
 }
 
@@ -271,32 +270,49 @@ pub async fn get_photo_storage_stats(state: State<'_, AppState>) -> Result<Stora
 /// Initialize the application database and directories
 #[tauri::command]
 pub async fn initialize_app(app_handle: AppHandle) -> Result<String, PetError> {
-    log::info!("Initializing application");
+    log::info!("=== STARTING APPLICATION INITIALIZATION ===");
 
     let app_data_dir = app_handle
         .path()
         .app_data_dir()
-        .map_err(|e| PetError::file_system(format!("Failed to get app data directory: {}", e)))?;
+        .map_err(|e| {
+            log::error!("Failed to get app data directory: {e}");
+            PetError::file_system(format!("Failed to get app data directory: {e}"))
+        })?;
+
+    log::info!("App data directory: {}", app_data_dir.display());
 
     // Create app data directory if it doesn't exist
     if !app_data_dir.exists() {
+        log::info!("Creating app data directory...");
         std::fs::create_dir_all(&app_data_dir).map_err(|e| {
-            PetError::file_system(format!("Failed to create app data directory: {}", e))
+            log::error!("Failed to create app data directory: {e}");
+            PetError::file_system(format!("Failed to create app data directory: {e}"))
         })?;
+        log::info!("App data directory created successfully");
+    } else {
+        log::info!("App data directory already exists");
     }
 
     let db_path = app_data_dir.join("pets.db");
     let photo_dir = app_data_dir.join("photos");
 
+    log::info!("Database path: {}", db_path.display());
+    log::info!("Photo directory: {}", photo_dir.display());
+
     // Initialize app state
-    let app_state = AppState::new(db_path.clone(), photo_dir).await?;
+    log::info!("Creating AppState...");
+    let app_state = AppState::new(db_path.clone(), photo_dir).await.map_err(|e| {
+        log::error!("Failed to create AppState: {e}");
+        e
+    })?;
+    
+    log::info!("Managing AppState with Tauri...");
     app_handle.manage(app_state);
 
     let db_path_str = db_path.to_string_lossy().to_string();
-    log::info!(
-        "Application initialized successfully with database at: {}",
-        db_path_str
-    );
+    log::info!("=== APPLICATION INITIALIZATION COMPLETE ===");
+    log::info!("Database location: {db_path_str}");
 
     Ok(db_path_str)
 }
