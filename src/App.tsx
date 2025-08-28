@@ -1,51 +1,322 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import React, { useState, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/core'
+import { Pet, PetCreateRequest, PetUpdateRequest, ViewType } from '@/lib/types'
+import { usePets } from '@/hooks/usePets'
+import { PetCardList, EmptyPetList } from '@/components/pets/PetCardList'
+import { PetForm } from '@/components/pets/PetForm'
+import { PetDetailView } from '@/components/pets/PetDetailView'
+import { PetManagement } from '@/components/pets/PetManagement'
+import { Button } from '@/components/ui/button'
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '@/components/ui/alert-dialog'
+import { Settings, Heart, Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import './App.css'
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  // App state
+  const [currentView, setCurrentView] = useState<ViewType>(ViewType.PetList)
+  const [activePetId, setActivePetId] = useState<number>()
+  const [selectedPet, setSelectedPet] = useState<Pet>()
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [initError, setInitError] = useState<string>()
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  // Dialog states
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [isManagementOpen, setIsManagementOpen] = useState(false)
+  const [editingPet, setEditingPet] = useState<Pet>()
+  const [pendingDeletePet, setPendingDeletePet] = useState<Pet>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Hooks
+  const { pets, isLoading, error, refetch, createPet, updatePet, deletePet, reorderPets } = usePets()
+
+  // Initialize the app
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        setInitError(undefined)
+        await invoke('initialize_app')
+        setIsInitialized(true)
+      } catch (error) {
+        console.error('Failed to initialize app:', error)
+        setInitError(error instanceof Error ? error.message : 'Failed to initialize application')
+      }
+    }
+
+    initializeApp()
+  }, [])
+
+  // Auto-select first pet if none selected
+  useEffect(() => {
+    if (!activePetId && pets.length > 0 && !pets[0].is_archived) {
+      setActivePetId(pets[0].id)
+    }
+  }, [pets, activePetId])
+
+  // Navigation handlers
+  const handlePetClick = (pet: Pet) => {
+    setSelectedPet(pet)
+    setActivePetId(pet.id)
+    setCurrentView(ViewType.PetDetail)
+  }
+
+  const handleBackToPetList = () => {
+    setCurrentView(ViewType.PetList)
+    setSelectedPet(undefined)
+  }
+
+  // Form handlers
+  const handleAddPet = () => {
+    setEditingPet(undefined)
+    setIsFormOpen(true)
+  }
+
+  const handleEditPet = (pet: Pet) => {
+    setEditingPet(pet)
+    setIsFormOpen(true)
+  }
+
+  const handleFormSubmit = async (data: PetCreateRequest | PetUpdateRequest) => {
+    try {
+      setIsSubmitting(true)
+      
+      if (editingPet) {
+        // Update existing pet
+        const updatedPet = await updatePet(editingPet.id, data as PetUpdateRequest)
+        if (selectedPet?.id === editingPet.id) {
+          setSelectedPet(updatedPet)
+        }
+      } else {
+        // Create new pet
+        const newPet = await createPet(data as PetCreateRequest)
+        setActivePetId(newPet.id)
+      }
+
+      setIsFormOpen(false)
+      setEditingPet(undefined)
+    } catch (error) {
+      console.error('Failed to save pet:', error)
+      // Error handling is done by the form component
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Management handlers
+  const handleArchivePet = async (pet: Pet) => {
+    try {
+      await updatePet(pet.id, { is_archived: true })
+      if (activePetId === pet.id) {
+        // Switch to another pet if the current one was archived
+        const activePets = pets.filter(p => !p.is_archived && p.id !== pet.id)
+        setActivePetId(activePets.length > 0 ? activePets[0].id : undefined)
+      }
+    } catch (error) {
+      console.error('Failed to archive pet:', error)
+    }
+  }
+
+  const handleRestorePet = async (pet: Pet) => {
+    try {
+      await updatePet(pet.id, { is_archived: false })
+    } catch (error) {
+      console.error('Failed to restore pet:', error)
+    }
+  }
+
+  const handleDeletePet = async (pet: Pet) => {
+    try {
+      await deletePet(pet.id)
+      if (activePetId === pet.id) {
+        // Switch to another pet if the current one was deleted
+        const activePets = pets.filter(p => !p.is_archived && p.id !== pet.id)
+        setActivePetId(activePets.length > 0 ? activePets[0].id : undefined)
+      }
+      setPendingDeletePet(undefined)
+    } catch (error) {
+      console.error('Failed to delete pet:', error)
+    }
+  }
+
+  const handleDeleteConfirm = () => {
+    if (pendingDeletePet) {
+      handleDeletePet(pendingDeletePet)
+    }
+  }
+
+  // Loading and error states
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-600" />
+          <p className="text-orange-700">Initializing Paw Diary...</p>
+          {initError && (
+            <p className="text-red-600 text-sm mt-2">{initError}</p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading && pets.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-600" />
+          <p className="text-orange-700">Loading your pets...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-sm border-b border-orange-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo and title */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                <Heart className="w-5 h-5 text-white fill-current" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-orange-900">
+                  Paw Diary
+                </h1>
+                <p className="text-xs text-orange-600 -mt-1">
+                  刨刨日记
+                </p>
+              </div>
+            </div>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
+            {/* Header actions */}
+            <div className="flex items-center gap-2">
+              {pets.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsManagementOpen(true)}
+                  className="text-orange-700 hover:text-orange-800 hover:bg-orange-100"
+                >
+                  <Settings className="w-4 h-4 mr-1" />
+                  Manage Pets
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
-  );
+      {/* Main content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{error}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="mt-2 text-red-600 border-red-300 hover:bg-red-50"
+            >
+              Try Again
+            </Button>
+          </div>
+        )}
+
+        {/* View rendering */}
+        {currentView === ViewType.PetList && (
+          <>
+            {pets.filter(p => !p.is_archived).length === 0 ? (
+              <EmptyPetList onAddPet={handleAddPet} />
+            ) : (
+              <div className="space-y-8">
+                {/* Welcome message */}
+                <div className="text-center">
+                  <h2 className="text-2xl font-semibold text-orange-900 mb-2">
+                    Welcome back! 🐾
+                  </h2>
+                  <p className="text-orange-600">
+                    Select a pet to view their profile or add a new furry friend to your family.
+                  </p>
+                </div>
+
+                {/* Pet cards */}
+                <PetCardList
+                  pets={pets}
+                  activePetId={activePetId}
+                  onPetClick={handlePetClick}
+                  onAddPet={handleAddPet}
+                  onEditPet={handleEditPet}
+                  onDeletePet={(pet) => setPendingDeletePet(pet)}
+                />
+              </div>
+            )}
+          </>
+        )}
+
+        {currentView === ViewType.PetDetail && selectedPet && (
+          <PetDetailView
+            pet={selectedPet}
+            onBack={handleBackToPetList}
+            onEdit={handleEditPet}
+          />
+        )}
+      </main>
+
+      {/* Dialogs and modals */}
+      <PetForm
+        pet={editingPet}
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        onSubmit={handleFormSubmit}
+        isSubmitting={isSubmitting}
+      />
+
+      <PetManagement
+        pets={pets}
+        isOpen={isManagementOpen}
+        onClose={() => setIsManagementOpen(false)}
+        onReorder={reorderPets}
+        onArchive={handleArchivePet}
+        onRestore={handleRestorePet}
+        onDelete={(pet) => setPendingDeletePet(pet)}
+        onView={handlePetClick}
+      />
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!pendingDeletePet} onOpenChange={(open) => !open && setPendingDeletePet(undefined)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {pendingDeletePet?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete{' '}
+              {pendingDeletePet?.name}'s profile and all associated data from your device.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Forever
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
 }
 
-export default App;
+export default App
