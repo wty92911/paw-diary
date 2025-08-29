@@ -1,12 +1,14 @@
 // Pet Management System modules
+pub mod app_state;
 pub mod commands;
 pub mod database;
 pub mod errors;
+pub mod logger;
 pub mod photo;
+pub mod protocol;
 
 use commands::*;
-use log::Record;
-use tauri_plugin_log::{Target, TargetKind};
+use tauri::http::Response;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -15,31 +17,8 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let log_plugin = tauri_plugin_log::Builder::new()
-        .targets([
-            Target::new(TargetKind::LogDir {
-                file_name: Some("paw-diary.stdout".to_string()),
-            }),
-            Target::new(TargetKind::Stdout),
-            Target::new(TargetKind::Webview), // Logs to the browser console (if enabled)
-        ])
-        .format(
-            |out: tauri_plugin_log::fern::FormatCallback, args, record: &Record| {
-                let file = record.file().unwrap_or("unknown");
-                let line = record.line().unwrap_or(0);
-                out.finish(format_args!(
-                    "[{} {} {}:{}] {}",
-                    chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-                    record.level(),
-                    file,
-                    line,
-                    args.to_string()
-                ));
-            },
-        )
-        .build();
     tauri::Builder::default()
-        .plugin(log_plugin)
+        .plugin(logger::get_log_plugin())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             // Original demo command
@@ -59,11 +38,22 @@ pub fn run() {
             upload_pet_photo_from_path,
             delete_pet_photo,
             get_pet_photo_info,
-            get_pet_photo_path,
             list_pet_photos,
             get_photo_storage_stats
         ])
-        .setup(|app| {
+        .register_asynchronous_uri_scheme_protocol("photos", move |app, request, responder| {
+            let app_handle = app.app_handle().clone();
+            tauri::async_runtime::spawn(async move {
+                match protocol::handle_photos_protocol_request(&app_handle, request).await {
+                    Ok(response) => responder.respond(response),
+                    Err(e) => {
+                        log::error!("Photos protocol error: {e}");
+                        responder.respond(Response::builder().status(404).body(Vec::new()).unwrap())
+                    }
+                }
+            });
+        })
+        .setup(|_app| {
             log::info!("Tauri application setup started");
             // Don't initialize AppState here - let initialize_app command handle it
             log::info!("Tauri application setup complete");

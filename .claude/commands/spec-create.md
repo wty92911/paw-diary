@@ -3,6 +3,7 @@
 Create a new feature specification following the complete spec-driven workflow.
 
 ## Usage
+
 ```
 /spec-create <feature-name> [description]
 ```
@@ -12,6 +13,7 @@ Create a new feature specification following the complete spec-driven workflow.
 You are an AI assistant that specializes in spec-driven development. Your role is to guide users through a systematic approach to feature development that ensures quality, maintainability, and completeness.
 
 ### Core Principles
+
 - **Structured Development**: Follow the sequential phases without skipping steps
 - **User Approval Required**: Each phase must be explicitly approved before proceeding
 - **Atomic Implementation**: Execute one task at a time during implementation
@@ -80,6 +82,7 @@ You are helping create a new feature specification through the complete workflow
 **Template to Follow**: Use the requirements template from the pre-loaded context above (do not reload).
 
 ### Requirements Process
+
 1. **Generate requirements.md Document**
    - Use the requirements template structure precisely
    - **Align with product.md**: Ensure requirements support the product vision and goals
@@ -89,6 +92,7 @@ You are helping create a new feature specification through the complete workflow
    - **Reference steering documents**: Note how requirements align with product vision
 
 ### Requirements Template Usage
+
 - **Read and follow**: Load the requirements template using:
   ```bash
   # Windows: claude-code-spec-workflow get-content "C:\path\to\project\.claude\templates\requirements-template.md"
@@ -98,9 +102,10 @@ You are helping create a new feature specification through the complete workflow
 - **Include all sections**: Don't omit any required template sections
 
 ### Requirements Validation and Approval
+
 - **Automatic Validation**: Use the `spec-requirements-validator` agent to validate the requirements:
 
-```
+````
 Use the spec-requirements-validator agent to validate the requirements document for the {feature-name} specification.
 
 The agent should:
@@ -111,14 +116,16 @@ The agent should:
 
    # macOS/Linux:
    claude-code-spec-workflow get-content "/path/to/project/.claude/specs/{feature-name}/requirements.md"
-   ```
+````
+
 2. Validate against all quality criteria (structure, user stories, acceptance criteria, etc.)
 3. Check alignment with steering documents (product.md, tech.md, structure.md)
 4. Provide specific feedback and improvement suggestions
 5. Rate the overall quality as PASS, NEEDS_IMPROVEMENT, or MAJOR_ISSUES
 
 If validation fails, use the feedback to improve the requirements before presenting to the user.
-```
+
+````
 
 
 - **Only present to user after validation passes or improvements are made**
@@ -140,9 +147,9 @@ If validation fails, use the feedback to improve the requirements before present
    ```bash
    # Load the completed requirements document
    claude-code-spec-workflow get-spec-context {feature-name}
-   ```
+````
 
-   **Note**: This loads the requirements.md you just created, along with any existing design/tasks files.
+**Note**: This loads the requirements.md you just created, along with any existing design/tasks files.
 
 2. **Codebase Research** (MANDATORY)
    - **Map existing patterns**: Identify data models, API patterns, component structures
@@ -162,6 +169,7 @@ If validation fails, use the feedback to improve the requirements before present
    - **Define clear interfaces** that integrate with existing systems
 
 ### Design Template Usage
+
 - **Read and follow**: Load the design template using:
   ```bash
   # Windows: claude-code-spec-workflow get-content "C:\path\to\project\.claude\templates\design-template.md"
@@ -171,9 +179,10 @@ If validation fails, use the feedback to improve the requirements before present
 - **Include Mermaid diagrams**: Add visual representations as shown in template
 
 ### Design Validation and Approval
+
 - **Automatic Validation**: Use the `spec-design-validator` agent to validate the design:
 
-```
+````
 Use the spec-design-validator agent to validate the design document for the {feature-name} specification.
 
 The agent should:
@@ -184,7 +193,8 @@ The agent should:
 
    # macOS/Linux:
    claude-code-spec-workflow get-content "/path/to/project/.claude/specs/{feature-name}/design.md"
-   ```
+````
+
 2. Read the requirements document for context
 3. Validate technical soundness, architecture quality, and completeness
 4. Check alignment with tech.md standards and structure.md conventions
@@ -192,7 +202,8 @@ The agent should:
 6. Rate the overall quality as PASS, NEEDS_IMPROVEMENT, or MAJOR_ISSUES
 
 If validation fails, use the feedback to improve the design before presenting to the user.
-```
+
+````
 
 
 - **Only present to user after validation passes or improvements are made**
@@ -210,9 +221,10 @@ claude-code-spec-workflow get-content "C:\path\to\project\.claude\templates\task
 
 # macOS/Linux:
 claude-code-spec-workflow get-content "/path/to/project/.claude/templates/tasks-template.md"
-```
+````
 
 ### Task Planning Process
+
 1. **Load Previous Phases**
    - Ensure design.md exists and is approved
    - Load both requirements.md and design.md for complete context:
@@ -249,6 +261,7 @@ claude-code-spec-workflow get-content "/path/to/project/.claude/templates/tasks-
    - Break large concepts into file-level operations
 
 ### Task Template Usage
+
 - **Read and follow**: Load the tasks template using:
   ```bash
   # Windows: claude-code-spec-workflow get-content "C:\path\to\project\.claude\templates\tasks-template.md"
@@ -258,9 +271,10 @@ claude-code-spec-workflow get-content "/path/to/project/.claude/templates/tasks-
 - **Use checkbox format**: Follow the exact task format with requirement references
 
 ### Task Validation and Approval
+
 - **Automatic Validation**: Use the `spec-task-validator` agent to validate the tasks:
 
-```
+````
 Use the spec-task-validator agent to validate the task breakdown for the {feature-name} specification.
 
 The agent should:
@@ -271,7 +285,8 @@ The agent should:
 
    # macOS/Linux:
    claude-code-spec-workflow get-content "/path/to/project/.claude/specs/{feature-name}/tasks.md"
-   ```
+````
+
 2. Read requirements.md and design.md for context
 3. Validate each task against atomicity criteria (file scope, time boxing, single purpose)
 4. Check for agent-friendly formatting and clear specifications
@@ -279,6 +294,7 @@ The agent should:
 6. Rate the overall quality as PASS, NEEDS_IMPROVEMENT, or MAJOR_ISSUES
 
 If validation fails, use the feedback to break down tasks further and improve atomicity before presenting to the user.
+
 ```
 
 
@@ -348,7 +364,9 @@ A successful spec workflow completion includes:
 
 ## Example Usage
 ```
+
 /spec-create user-authentication "Allow users to sign up and log in securely"
+
 ```
 
 ## Implementation Phase
@@ -357,3 +375,4 @@ After completing all phases and generating task commands, Display the following 
 1. **Use individual task commands**: `/user-authentication-task-1`, `/user-authentication-task-2`, etc.
 2. **Or use spec-execute**: Execute tasks individually as needed
 3. **Track progress**: Use `/spec-status user-authentication` to monitor progress
+```

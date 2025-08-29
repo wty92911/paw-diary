@@ -3,11 +3,13 @@
 Show current status of all bug fixes or a specific bug fix.
 
 ## Usage
+
 ```
 /bug-status [bug-name]
 ```
 
 ## Instructions
+
 Display the current status of bug fix workflows.
 
 1. **If no bug-name provided:**
@@ -37,6 +39,7 @@ Display the current status of bug fix workflows.
    ```
 
 ## Bug Fix Phases
+
 - **Report**: Bug description and impact assessment
 - **Analysis**: Root cause investigation and solution planning
 - **Fix**: Implementation of the planned solution

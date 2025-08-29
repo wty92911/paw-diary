@@ -3,11 +3,13 @@
 Implement the fix for the analyzed bug.
 
 ## Usage
+
 ```
 /bug-fix [bug-name]
 ```
 
 ## Phase Overview
+
 **Your Role**: Implement the solution based on the approved analysis
 
 This is Phase 3 of the bug fix workflow. Your goal is to implement the fix while following project conventions.
@@ -20,6 +22,7 @@ You are working on the fix implementation phase of the bug fix workflow.
    - Ensure analysis.md exists and is approved
 
    **Load ALL Context Once (Hierarchical Context Loading):**
+
    ```bash
    # Load steering documents (if available)
    claude-code-spec-workflow get-steering-context
@@ -69,18 +72,21 @@ You are working on the fix implementation phase of the bug fix workflow.
 ## Implementation Rules
 
 ### Code Quality
+
 - Follow project coding standards
 - Use existing utilities and patterns
 - Add proper error handling
 - Include meaningful comments for complex logic
 
 ### Testing Strategy
+
 - Test the original bug reproduction steps
 - Verify fix doesn't break related functionality
 - Add tests to prevent regression
 - Run full test suite if available
 
 ### Change Management
+
 - Make atomic, focused changes
 - Document the fix approach
 - Preserve existing API contracts
@@ -111,10 +117,12 @@ You are working on the fix implementation phase of the bug fix workflow.
    - **CRITICAL**: Wait for user approval before proceeding
 
 ## Critical Rules
+
 - **ONLY** implement the fix outlined in the approved analysis
 - **ALWAYS** test the fix thoroughly
 - **NEVER** make changes beyond the planned fix scope
 - **MUST** wait for user approval before proceeding to verification
 
 ## Next Phase
+
 After approval, proceed to `/bug-verify`.

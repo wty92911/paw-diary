@@ -1,78 +1,77 @@
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent } from '../ui/card'
-import { Button } from '../ui/button'
-import { Pet } from '../../lib/types'
-import { cn, calculateAge, getDefaultPetPhoto } from '../../lib/utils'
-import { Heart, Edit, Trash2 } from 'lucide-react'
-import { usePhotos } from '../../hooks/usePhotos'
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '../ui/card';
+import { Button } from '../ui/button';
+import { Pet } from '../../lib/types';
+import { cn, calculateAge, getDefaultPetPhoto } from '../../lib/utils';
+import { Heart, Edit, Trash2 } from 'lucide-react';
 
 interface PetCardProps {
-  pet: Pet
-  isActive: boolean
-  onClick: () => void
-  onEdit?: () => void
-  onDelete?: () => void
-  showActions?: boolean
+  pet: Pet;
+  isActive: boolean;
+  onClick: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  showActions?: boolean;
 }
 
-export function PetCard({ 
-  pet, 
-  isActive, 
-  onClick, 
-  onEdit, 
-  onDelete, 
-  showActions = true 
+export function PetCard({
+  pet,
+  isActive,
+  onClick,
+  onEdit,
+  onDelete,
+  showActions = true,
 }: PetCardProps) {
-  const [photoUrl, setPhotoUrl] = useState<string>(getDefaultPetPhoto())
-  const [imageError, setImageError] = useState(false)
-  const { getPhotoPath } = usePhotos()
+  const [photoUrl, setPhotoUrl] = useState<string>(getDefaultPetPhoto());
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     const loadPhoto = async () => {
       if (pet.photo_path && !imageError) {
         try {
-          const fullPath = await getPhotoPath(pet.photo_path)
-          setPhotoUrl(`asset://localhost/${fullPath}`)
+          // Use custom photos:// protocol instead of asset://
+          // This works on iOS where asset:// is restricted to bundled resources
+          setPhotoUrl(`photos://${pet.photo_path}`);
         } catch (error) {
-          console.error('Failed to load pet photo:', error)
-          setImageError(true)
-          setPhotoUrl(getDefaultPetPhoto())
+          console.error('Failed to load pet photo:', error);
+          setImageError(true);
+          setPhotoUrl(getDefaultPetPhoto());
         }
       } else {
-        setPhotoUrl(getDefaultPetPhoto())
+        setPhotoUrl(getDefaultPetPhoto());
       }
-    }
+    };
 
-    loadPhoto()
-  }, [pet.photo_path, getPhotoPath, imageError])
+    loadPhoto();
+  }, [pet.photo_path, imageError]);
 
   const handleImageError = () => {
-    setImageError(true)
-    setPhotoUrl(getDefaultPetPhoto())
-  }
+    setImageError(true);
+    setPhotoUrl(getDefaultPetPhoto());
+  };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    onClick()
-  }
+    e.preventDefault();
+    onClick();
+  };
 
   const handleEditClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onEdit?.()
-  }
+    e.stopPropagation();
+    onEdit?.();
+  };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onDelete?.()
-  }
+    e.stopPropagation();
+    onDelete?.();
+  };
 
   return (
     <Card
       className={cn(
-        "relative w-64 h-80 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg group",
-        "bg-gradient-to-br from-orange-50 to-yellow-50 border-orange-200",
-        isActive && "ring-2 ring-orange-400 shadow-lg scale-105",
-        pet.is_archived && "opacity-60 grayscale"
+        'relative w-64 h-80 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg group',
+        'bg-gradient-to-br from-orange-50 to-yellow-50 border-orange-200',
+        isActive && 'ring-2 ring-orange-400 shadow-lg scale-105',
+        pet.is_archived && 'opacity-60 grayscale',
       )}
       onClick={handleCardClick}
     >
@@ -85,14 +84,14 @@ export function PetCard({
             className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
             onError={handleImageError}
           />
-          
+
           {/* Status indicator */}
           {pet.is_archived && (
             <div className="absolute top-2 left-2 bg-gray-800 text-white text-xs px-2 py-1 rounded">
               Archived
             </div>
           )}
-          
+
           {/* Action buttons */}
           {showActions && !pet.is_archived && (
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
@@ -127,9 +126,7 @@ export function PetCard({
           <div>
             {/* Name and species */}
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-lg text-orange-900 truncate">
-                {pet.name}
-              </h3>
+              <h3 className="font-semibold text-lg text-orange-900 truncate">{pet.name}</h3>
               <div className="flex items-center text-orange-600">
                 <Heart className="h-4 w-4 fill-current" />
                 <span className="ml-1 text-sm capitalize">{pet.species.toLowerCase()}</span>
@@ -137,9 +134,7 @@ export function PetCard({
             </div>
 
             {/* Age */}
-            <p className="text-sm text-orange-700 mb-2">
-              {calculateAge(pet.birth_date)}
-            </p>
+            <p className="text-sm text-orange-700 mb-2">{calculateAge(pet.birth_date)}</p>
 
             {/* Breed and gender */}
             <div className="text-xs text-orange-600 space-y-1">
@@ -158,32 +153,28 @@ export function PetCard({
           {/* Quick stats */}
           <div className="mt-3 pt-3 border-t border-orange-200">
             <div className="flex justify-between text-xs text-orange-600">
-              <span>
-                Weight: {pet.weight_kg ? `${pet.weight_kg} kg` : 'Unknown'}
-              </span>
-              <span className="text-orange-400">
-                #{pet.id}
-              </span>
+              <span>Weight: {pet.weight_kg ? `${pet.weight_kg} kg` : 'Unknown'}</span>
+              <span className="text-orange-400">#{pet.id}</span>
             </div>
           </div>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // Add Pet Card for the "+" button
 interface AddPetCardProps {
-  onClick: () => void
+  onClick: () => void;
 }
 
 export function AddPetCard({ onClick }: AddPetCardProps) {
   return (
     <Card
       className={cn(
-        "w-64 h-80 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg",
-        "bg-gradient-to-br from-orange-100 to-yellow-100 border-2 border-dashed border-orange-300",
-        "flex items-center justify-center group"
+        'w-64 h-80 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg',
+        'bg-gradient-to-br from-orange-100 to-yellow-100 border-2 border-dashed border-orange-300',
+        'flex items-center justify-center group',
       )}
       onClick={onClick}
     >
@@ -191,13 +182,9 @@ export function AddPetCard({ onClick }: AddPetCardProps) {
         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-200 flex items-center justify-center group-hover:bg-orange-300 transition-colors">
           <span className="text-2xl font-bold text-orange-600">+</span>
         </div>
-        <h3 className="font-semibold text-lg text-orange-900 mb-2">
-          Add New Pet
-        </h3>
-        <p className="text-sm text-orange-600">
-          Click to create a new pet profile
-        </p>
+        <h3 className="font-semibold text-lg text-orange-900 mb-2">Add New Pet</h3>
+        <p className="text-sm text-orange-600">Click to create a new pet profile</p>
       </CardContent>
     </Card>
-  )
+  );
 }

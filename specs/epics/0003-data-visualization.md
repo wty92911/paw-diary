@@ -1,17 +1,20 @@
 # Epic 0003: Data Visualization & Analytics (数据可视化与分析)
 
 ## Overview
-**Epic Title**: Data Visualization & Analytics  
-**Chinese Name**: 数据可视化与分析  
-**Milestone**: M2 (Data Visualization)  
-**Priority**: P1 (High)  
-**Estimated Effort**: 10-12 story points  
+
+**Epic Title**: Data Visualization & Analytics
+**Chinese Name**: 数据可视化与分析
+**Milestone**: M2 (Data Visualization)
+**Priority**: P1 (High)
+**Estimated Effort**: 10-12 story points
 **Dependencies**: Epic 0002 (Activity Recording System)
 
 ## Epic Description
+
 The Data Visualization & Analytics system transforms recorded pet activities into meaningful insights through interactive charts, trend analysis, and statistical summaries. This epic provides pet owners with visual understanding of their pet's health, growth, dietary patterns, and expenses over time.
 
 ## Success Criteria
+
 - Interactive charts render within <1s for datasets up to 1 year of data
 - Comprehensive dashboards for all activity categories with drill-down capabilities
 - Trend analysis identifies patterns and anomalies in pet behavior and health
@@ -22,11 +25,13 @@ The Data Visualization & Analytics system transforms recorded pet activities int
 ## User Stories
 
 ### Story 3.1: Weight and Growth Trend Visualization
-**As a** pet owner  
-**I want to** see my pet's weight and growth patterns over time  
+
+**As a** pet owner
+**I want to** see my pet's weight and growth patterns over time
 **So that** I can monitor their health and development trajectory
 
 **Acceptance Criteria:**
+
 - ✅ Interactive line chart showing weight progression over selectable time periods
 - ✅ Growth percentile tracking compared to breed standards (when available)
 - ✅ Weight change rate calculation (gain/loss per week/month)
@@ -36,23 +41,27 @@ The Data Visualization & Analytics system transforms recorded pet activities int
 - ✅ Export capability for veterinary consultations
 
 **Technical Notes:**
+
 - Use Recharts or Chart.js for interactive visualizations
 - Implement smoothing algorithms for trend lines
 - Store breed-specific growth standards in local database
 - Photo timeline requires efficient thumbnail generation
 
 **UI/UX Considerations:**
+
 - Clean, medical-style chart design with clear axis labels
 - Touch-friendly zoom and pan functionality for mobile
 - Color-coded zones for healthy, overweight, and underweight ranges
 - Hover tooltips showing specific measurements and dates
 
 ### Story 3.2: Diet Analysis and Nutrition Dashboard
-**As a** pet owner  
-**I want to** analyze my pet's dietary patterns and nutritional intake  
+
+**As a** pet owner
+**I want to** analyze my pet's dietary patterns and nutritional intake
 **So that** I can optimize their diet and identify food preferences
 
 **Acceptance Criteria:**
+
 - ✅ Pie chart breakdown of food brands and types consumed
 - ✅ Daily/weekly caloric intake trends with recommended ranges
 - ✅ Food preference rating visualization with like/dislike patterns
@@ -62,23 +71,27 @@ The Data Visualization & Analytics system transforms recorded pet activities int
 - ✅ Allergic reaction correlation with food types
 
 **Technical Notes:**
+
 - Nutritional calculation engine with food database integration
 - Statistical analysis for preference scoring and correlation
 - Time-series analysis for seasonal pattern detection
 - Integration with expense tracking for cost-per-meal calculations
 
 **UI/UX Considerations:**
+
 - Food-themed visual design with appetite-appealing colors
 - Interactive legend for filtering specific food types
 - Comparison view for before/after diet changes
 - Quick insights cards highlighting key dietary patterns
 
 ### Story 3.3: Health Records and Medical Timeline
-**As a** pet owner  
-**I want to** view my pet's comprehensive medical history  
+
+**As a** pet owner
+**I want to** view my pet's comprehensive medical history
 **So that** I can track health patterns and prepare for veterinary visits
 
 **Acceptance Criteria:**
+
 - ✅ Medical timeline with vaccination schedules and upcoming requirements
 - ✅ Health incident frequency analysis by category and severity
 - ✅ Symptom correlation matrix identifying recurring health issues
@@ -88,23 +101,27 @@ The Data Visualization & Analytics system transforms recorded pet activities int
 - ✅ Printable medical summary report for veterinary visits
 
 **Technical Notes:**
+
 - Complex timeline visualization with multiple data layers
 - Statistical correlation analysis for symptom patterns
 - Health scoring algorithm based on activity frequency and medical events
 - PDF generation for medical reports using Tauri's file system APIs
 
 **UI/UX Considerations:**
+
 - Medical-grade interface with professional color scheme
 - Clear visual distinction between routine and emergency medical events
 - Expandable timeline entries with detailed medical information
 - Quick-access buttons for scheduling and reminder functionality
 
 ### Story 3.4: Activity and Lifestyle Analytics
-**As a** pet owner  
-**I want to** understand my pet's activity levels and behavioral patterns  
+
+**As a** pet owner
+**I want to** understand my pet's activity levels and behavioral patterns
 **So that** I can ensure they maintain a healthy and happy lifestyle
 
 **Acceptance Criteria:**
+
 - ✅ Daily activity level charts with exercise duration and intensity
 - ✅ Mood tracking visualization showing happiness patterns over time
 - ✅ Activity correlation with weather, location, and social interactions
@@ -114,23 +131,27 @@ The Data Visualization & Analytics system transforms recorded pet activities int
 - ✅ Training progress visualization with skill acquisition timelines
 
 **Technical Notes:**
+
 - Multi-dimensional data analysis for activity correlations
 - Time-of-day and seasonal pattern recognition algorithms
 - Integration with weather APIs for environmental correlation
 - Social network analysis for interaction patterns
 
 **UI/UX Considerations:**
+
 - Engaging, pet-friendly visualizations with playful animations
 - Activity heatmaps showing peak energy times
 - Interactive mood calendar with emoji-based indicators
 - Gamification elements showing activity achievements
 
 ### Story 3.5: Financial Analysis and Expense Tracking
-**As a** pet owner  
-**I want to** understand my pet-related spending patterns  
+
+**As a** pet owner
+**I want to** understand my pet-related spending patterns
 **So that** I can budget effectively and identify cost optimization opportunities
 
 **Acceptance Criteria:**
+
 - ✅ Monthly and yearly expense breakdowns by category
 - ✅ Cost-per-day calculation with trend analysis
 - ✅ Budget vs. actual spending comparison with variance analysis
@@ -140,23 +161,27 @@ The Data Visualization & Analytics system transforms recorded pet activities int
 - ✅ Projected annual costs based on historical spending patterns
 
 **Technical Notes:**
+
 - Financial calculation engine with currency conversion support
 - Predictive modeling for expense forecasting
 - Multi-pet data aggregation and comparison algorithms
 - Budget alert system integration
 
 **UI/UX Considerations:**
+
 - Financial dashboard design with clear spending categories
 - Budget progress bars with visual alerts for overspending
 - Cost comparison charts with actionable insights
 - Export functionality for tax preparation and reimbursement
 
 ### Story 3.6: Comparative Analysis and Benchmarking
-**As a** pet owner  
-**I want to** compare my pet's data against breed standards and other pets  
+
+**As a** pet owner
+**I want to** compare my pet's data against breed standards and other pets
 **So that** I can understand if their development and behavior are normal
 
 **Acceptance Criteria:**
+
 - ✅ Breed-specific growth curve comparison with percentile rankings
 - ✅ Activity level benchmarking against similar pets (age, breed, size)
 - ✅ Health incident frequency compared to breed-typical issues
@@ -166,23 +191,27 @@ The Data Visualization & Analytics system transforms recorded pet activities int
 - ✅ Veterinary recommendation engine based on comparative analysis
 
 **Technical Notes:**
+
 - Statistical comparison algorithms with confidence intervals
 - Breed database with comprehensive standards and benchmarks
 - Anonymous data aggregation system for community insights
 - Predictive modeling for health and lifespan projections
 
 **UI/UX Considerations:**
+
 - Percentile charts with clear explanations of rankings
 - Comparative dashboards with actionable insights
 - Privacy controls for data sharing preferences
 - Educational content explaining normal ranges and variations
 
 ### Story 3.7: Custom Reports and Data Export
-**As a** pet owner  
-**I want to** create custom reports and export data  
+
+**As a** pet owner
+**I want to** create custom reports and export data
 **So that** I can share insights with veterinarians or analyze data externally
 
 **Acceptance Criteria:**
+
 - ✅ Custom date range selection for all visualizations and reports
 - ✅ Multi-format export options (PDF, CSV, JSON, images)
 - ✅ Report templates for common use cases (vet visits, insurance claims)
@@ -192,12 +221,14 @@ The Data Visualization & Analytics system transforms recorded pet activities int
 - ✅ Sharing functionality with privacy controls
 
 **Technical Notes:**
+
 - Flexible report generation engine with template system
 - Multi-format export using appropriate libraries (jsPDF, xlsx, etc.)
 - Print-friendly CSS with proper page breaks and formatting
 - Secure sharing mechanism with expiring links
 
 **UI/UX Considerations:**
+
 - Intuitive report builder interface with drag-and-drop elements
 - Preview functionality before export or sharing
 - Template gallery with customizable options
@@ -206,6 +237,7 @@ The Data Visualization & Analytics system transforms recorded pet activities int
 ## Technical Implementation Details
 
 ### Database Analytics Schema
+
 ```sql
 -- Pre-computed aggregations for performance
 CREATE TABLE analytics_cache (
@@ -225,6 +257,7 @@ CREATE INDEX idx_analytics_lookup ON analytics_cache(pet_id, metric_type, time_p
 ```
 
 ### Chart Configuration Types
+
 ```typescript
 interface ChartConfig {
   type: 'line' | 'bar' | 'pie' | 'area' | 'scatter';
@@ -252,6 +285,7 @@ interface DietAnalysisData {
 ```
 
 ### Analytics Service API
+
 ```typescript
 class AnalyticsService {
   async getWeightTrend(petId: string, timeRange: TimeRange): Promise<WeightTrendData>;
@@ -265,6 +299,7 @@ class AnalyticsService {
 ```
 
 ### Component Architecture
+
 ```
 components/
 ├── analytics/
@@ -286,24 +321,28 @@ components/
 ## UI/UX Design Requirements
 
 ### Chart Design Standards
+
 - **Consistency**: Unified color palette across all chart types
 - **Accessibility**: High contrast ratios and colorblind-friendly palettes
 - **Interactivity**: Hover states, click interactions, and zoom capabilities
 - **Responsiveness**: Adaptive layouts for desktop, tablet, and mobile
 
 ### Visual Design System
+
 - **Color Coding**: Consistent category colors matching activity system
 - **Typography**: Clear axis labels and data point annotations
 - **Animation**: Smooth transitions and loading states
 - **Error States**: Graceful handling of insufficient data scenarios
 
 ### Performance Requirements
+
 - **Rendering Speed**: <1s initial chart load, <300ms for interactions
 - **Data Efficiency**: Optimized queries with appropriate aggregation levels
 - **Memory Usage**: Efficient chart libraries with proper cleanup
 - **Offline Capability**: Cached analytics for recent time periods
 
 ## Definition of Done
+
 - [ ] All chart types implemented with interactive functionality
 - [ ] Performance benchmarks met for large datasets (1+ years of data)
 - [ ] Export functionality tested for all supported formats
@@ -316,6 +355,7 @@ components/
 - [ ] Caching strategy implemented for performance optimization
 
 ## Future Enhancements (Out of Scope)
+
 - Machine learning predictions for health and behavior patterns
 - Real-time data streaming from IoT devices and wearables
 - Advanced statistical analysis with confidence intervals

@@ -1,110 +1,111 @@
-import React, { useState } from 'react'
-import { Pet } from '../../lib/types'
-import { Button } from '../ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { Input } from '../ui/input'
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
+import { useState } from 'react';
+import { Pet } from '../../lib/types';
+import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
+import { Input } from '../ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger 
-} from '../ui/alert-dialog'
-import { 
-  Settings, 
-  Search, 
-  Archive, 
-  Trash2, 
-  GripVertical, 
-  RotateCcw, 
+  AlertDialogTrigger,
+} from '../ui/alert-dialog';
+import {
+  Settings,
+  Search,
+  Archive,
+  Trash2,
+  GripVertical,
+  RotateCcw,
   X,
   Eye,
-  EyeOff
-} from 'lucide-react'
-import { cn, calculateAge, getDefaultPetPhoto } from '../../lib/utils'
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+  EyeOff,
+} from 'lucide-react';
+import { cn, calculateAge, getDefaultPetPhoto } from '../../lib/utils';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
 interface PetManagementProps {
-  pets: Pet[]
-  isOpen: boolean
-  onClose: () => void
-  onReorder: (petIds: number[]) => Promise<void>
-  onArchive: (pet: Pet) => Promise<void>
-  onRestore: (pet: Pet) => Promise<void>
-  onDelete: (pet: Pet) => Promise<void>
-  onView: (pet: Pet) => void
+  pets: Pet[];
+  isOpen: boolean;
+  onClose: () => void;
+  onReorder: (petIds: number[]) => Promise<void>;
+  onArchive: (pet: Pet) => Promise<void>;
+  onRestore: (pet: Pet) => Promise<void>;
+  onDelete: (pet: Pet) => Promise<void>;
+  onView: (pet: Pet) => void;
 }
 
-export function PetManagement({ 
-  pets, 
-  isOpen, 
-  onClose, 
-  onReorder, 
-  onArchive, 
-  onRestore, 
+export function PetManagement({
+  pets,
+  isOpen,
+  onClose,
+  onReorder,
+  onArchive,
+  onRestore,
   onDelete,
-  onView 
+  onView,
 }: PetManagementProps) {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showArchived, setShowArchived] = useState(false)
-  const [orderedPets, setOrderedPets] = useState<Pet[]>(pets)
-  const [pendingDelete, setPendingDelete] = useState<Pet | null>(null)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const [orderedPets, setOrderedPets] = useState<Pet[]>(pets);
+  const [pendingDelete, setPendingDelete] = useState<Pet | null>(null);
 
   // Filter pets based on search and archive status
   const filteredPets = orderedPets.filter(pet => {
-    const matchesSearch = pet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         pet.breed?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         pet.species.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    const matchesArchiveStatus = showArchived ? pet.is_archived : !pet.is_archived
-    
-    return matchesSearch && matchesArchiveStatus
-  })
+    const matchesSearch =
+      pet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pet.breed?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pet.species.toLowerCase().includes(searchQuery.toLowerCase());
 
-  const handleDragEnd = async (result: any) => {
-    if (!result.destination) return
+    const matchesArchiveStatus = showArchived ? pet.is_archived : !pet.is_archived;
 
-    const items = Array.from(filteredPets)
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
+    return matchesSearch && matchesArchiveStatus;
+  });
+
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(filteredPets);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
 
     setOrderedPets(prev => {
-      const newOrder = [...prev]
+      const newOrder = [...prev];
       // Update display order based on new positions
       items.forEach((pet, index) => {
-        const petIndex = newOrder.findIndex(p => p.id === pet.id)
+        const petIndex = newOrder.findIndex(p => p.id === pet.id);
         if (petIndex !== -1) {
-          newOrder[petIndex] = { ...pet, display_order: index }
+          newOrder[petIndex] = { ...pet, display_order: index };
         }
-      })
-      return newOrder
-    })
+      });
+      return newOrder;
+    });
 
     try {
-      await onReorder(items.map(pet => pet.id))
+      await onReorder(items.map(pet => pet.id));
     } catch (error) {
-      console.error('Failed to reorder pets:', error)
+      console.error('Failed to reorder pets:', error);
       // Revert on error
-      setOrderedPets(pets)
+      setOrderedPets(pets);
     }
-  }
+  };
 
   const handleDeleteConfirm = async () => {
     if (pendingDelete) {
       try {
-        await onDelete(pendingDelete)
-        setPendingDelete(null)
+        await onDelete(pendingDelete);
+        setPendingDelete(null);
       } catch (error) {
-        console.error('Failed to delete pet:', error)
+        console.error('Failed to delete pet:', error);
       }
     }
-  }
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -113,9 +114,7 @@ export function PetManagement({
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-3">
             <Settings className="w-6 h-6 text-orange-600" />
-            <h2 className="text-xl font-semibold text-orange-900">
-              Pet Management
-            </h2>
+            <h2 className="text-xl font-semibold text-orange-900">Pet Management</h2>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
@@ -131,14 +130,14 @@ export function PetManagement({
               <Input
                 placeholder="Search pets by name, breed, or species..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
 
             {/* Toggle archived */}
             <Button
-              variant={showArchived ? "pet" : "outline"}
+              variant={showArchived ? 'pet' : 'outline'}
               onClick={() => setShowArchived(!showArchived)}
               className="flex items-center gap-2"
             >
@@ -168,7 +167,7 @@ export function PetManagement({
           ) : (
             <DragDropContext onDragEnd={handleDragEnd}>
               <Droppable droppableId="pets">
-                {(provided) => (
+                {provided => (
                   <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                     {filteredPets.map((pet, index) => (
                       <Draggable key={pet.id} draggableId={pet.id.toString()} index={index}>
@@ -177,9 +176,9 @@ export function PetManagement({
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             className={cn(
-                              "transition-all duration-200",
-                              snapshot.isDragging && "shadow-lg rotate-2",
-                              pet.is_archived && "opacity-60 bg-gray-50"
+                              'transition-all duration-200',
+                              snapshot.isDragging && 'shadow-lg rotate-2',
+                              pet.is_archived && 'opacity-60 bg-gray-50',
                             )}
                           >
                             <CardContent className="p-4">
@@ -196,9 +195,16 @@ export function PetManagement({
                                 <div className="flex-1 flex items-center gap-4">
                                   <div className="w-12 h-12 rounded-lg overflow-hidden bg-orange-100 border border-orange-200 flex-shrink-0">
                                     <img
-                                      src={getDefaultPetPhoto()}
+                                      src={
+                                        pet.photo_path
+                                          ? `photos://${pet.photo_path}`
+                                          : getDefaultPetPhoto()
+                                      }
                                       alt={pet.name}
                                       className="w-full h-full object-cover"
+                                      onError={e => {
+                                        (e.target as HTMLImageElement).src = getDefaultPetPhoto();
+                                      }}
                                     />
                                   </div>
 
@@ -222,11 +228,7 @@ export function PetManagement({
 
                                 {/* Actions */}
                                 <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => onView(pet)}
-                                  >
+                                  <Button size="sm" variant="outline" onClick={() => onView(pet)}>
                                     <Eye className="w-4 h-4 mr-1" />
                                     View
                                   </Button>
@@ -305,14 +307,13 @@ export function PetManagement({
         <div className="p-6 border-t bg-orange-50">
           <div className="flex items-center justify-between text-sm text-orange-600">
             <p>
-              Showing {filteredPets.length} of {pets.filter(p => showArchived ? true : !p.is_archived).length} pets
+              Showing {filteredPets.length} of{' '}
+              {pets.filter(p => (showArchived ? true : !p.is_archived)).length} pets
             </p>
-            <p className="text-xs">
-              Drag and drop to reorder • Changes are saved automatically
-            </p>
+            <p className="text-xs">Drag and drop to reorder • Changes are saved automatically</p>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

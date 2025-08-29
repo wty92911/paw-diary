@@ -222,25 +222,6 @@ pub async fn get_pet_photo_info(
     Ok(info)
 }
 
-/// Get the full path to a pet photo for local access
-#[tauri::command]
-pub async fn get_pet_photo_path(
-    state: State<'_, AppState>,
-    photo_filename: String,
-) -> Result<String, PetError> {
-    log::debug!("Getting photo path for: {photo_filename}");
-
-    if photo_filename.trim().is_empty() {
-        return Err(PetError::invalid_input("Photo filename cannot be empty"));
-    }
-
-    let path = state.photo_service.get_photo_path(&photo_filename)?;
-
-    let path_str = path.to_string_lossy().to_string();
-    log::debug!("Retrieved photo path: {path_str}");
-    Ok(path_str)
-}
-
 /// List all stored pet photos
 #[tauri::command]
 pub async fn list_pet_photos(state: State<'_, AppState>) -> Result<Vec<String>, PetError> {
@@ -272,13 +253,10 @@ pub async fn get_photo_storage_stats(state: State<'_, AppState>) -> Result<Stora
 pub async fn initialize_app(app_handle: AppHandle) -> Result<String, PetError> {
     log::info!("=== STARTING APPLICATION INITIALIZATION ===");
 
-    let app_data_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| {
-            log::error!("Failed to get app data directory: {e}");
-            PetError::file_system(format!("Failed to get app data directory: {e}"))
-        })?;
+    let app_data_dir = app_handle.path().app_data_dir().map_err(|e| {
+        log::error!("Failed to get app data directory: {e}");
+        PetError::file_system(format!("Failed to get app data directory: {e}"))
+    })?;
 
     log::info!("App data directory: {}", app_data_dir.display());
 
@@ -302,11 +280,13 @@ pub async fn initialize_app(app_handle: AppHandle) -> Result<String, PetError> {
 
     // Initialize app state
     log::info!("Creating AppState...");
-    let app_state = AppState::new(db_path.clone(), photo_dir).await.map_err(|e| {
-        log::error!("Failed to create AppState: {e}");
-        e
-    })?;
-    
+    let app_state = AppState::new(db_path.clone(), photo_dir)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to create AppState: {e}");
+            e
+        })?;
+
     log::info!("Managing AppState with Tauri...");
     app_handle.manage(app_state);
 

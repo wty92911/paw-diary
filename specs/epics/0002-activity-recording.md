@@ -1,17 +1,20 @@
 # Epic 0002: Activity Recording System (动态记录系统)
 
 ## Overview
-**Epic Title**: Activity Recording System  
-**Chinese Name**: 动态记录系统  
-**Milestone**: M1 (Foundation Framework)  
-**Priority**: P0 (Critical)  
-**Estimated Effort**: 12-15 story points  
+
+**Epic Title**: Activity Recording System
+**Chinese Name**: 动态记录系统
+**Milestone**: M1 (Foundation Framework)
+**Priority**: P0 (Critical)
+**Estimated Effort**: 12-15 story points
 **Dependencies**: Epic 0001 (Pet Management System)
 
 ## Epic Description
+
 The Activity Recording System enables pet owners to log structured activities across five core categories: Health, Growth, Diet, Lifestyle, and Expenses. This epic establishes the timeline-based recording interface and categorization system that forms the heart of daily pet tracking functionality.
 
 ## Success Criteria
+
 - Users can record activities in under 3 steps for any category
 - Comprehensive timeline view displays all activities chronologically
 - Rich media support for photos and videos in activity entries
@@ -22,11 +25,13 @@ The Activity Recording System enables pet owners to log structured activities ac
 ## User Stories
 
 ### Story 2.1: Quick Activity Creation
-**As a** pet owner  
-**I want to** quickly record a pet activity  
+
+**As a** pet owner
+**I want to** quickly record a pet activity
 **So that** I can capture moments without interrupting my daily routine
 
 **Acceptance Criteria:**
+
 - ✅ "Add Activity" button prominently placed and always accessible
 - ✅ One-tap category selection from 5 main types: Health, Growth, Diet, Lifestyle, Expenses
 - ✅ Smart defaults: current date/time, active pet selection
@@ -36,23 +41,27 @@ The Activity Recording System enables pet owners to log structured activities ac
 - ✅ Activity creation completed in maximum 3 user interactions
 
 **Technical Notes:**
+
 - Use React context for active pet and current date state
 - Implement activity templates as JSON configurations
 - Autocomplete powered by SQLite FTS (Full-Text Search)
 - Background save with optimistic UI updates
 
 **UI/UX Considerations:**
+
 - Floating action button (FAB) with paw print icon
 - Bottom sheet modal for quick category selection
 - Progressive form with smart field ordering
 - Haptic feedback for successful saves (via Tauri)
 
 ### Story 2.2: Structured Health Activity Recording
-**As a** pet owner  
-**I want to** record detailed health-related activities  
+
+**As a** pet owner
+**I want to** record detailed health-related activities
 **So that** I can maintain comprehensive medical records for my pet
 
 **Acceptance Criteria:**
+
 - ✅ Health subcategories: Birth, Vaccination, Checkup, Surgery, Illness, Medication
 - ✅ Required fields: activity type, date, veterinarian/clinic name
 - ✅ Optional fields: symptoms, diagnosis, treatment, medication dosage, next appointment
@@ -62,23 +71,27 @@ The Activity Recording System enables pet owners to log structured activities ac
 - ✅ Critical health events marked with priority flags
 
 **Technical Notes:**
+
 - Structured data schema for each health subcategory
 - Integration with expense tracking for medical costs
 - Medication reminder system foundation (expanded in M3)
 - Photo OCR capabilities for prescription parsing (future enhancement)
 
 **UI/UX Considerations:**
+
 - Medical form styling with clear section separations
 - Color coding: red for critical, yellow for follow-up, green for routine
 - Quick-add buttons for common vet clinics and medications
 - Visual timeline markers for vaccination schedules
 
 ### Story 2.3: Growth Tracking and Measurement Recording
-**As a** pet owner  
-**I want to** track my pet's physical development over time  
+
+**As a** pet owner
+**I want to** track my pet's physical development over time
 **So that** I can monitor their health and growth patterns
 
 **Acceptance Criteria:**
+
 - ✅ Growth subcategories: Weight, Height, Photos, Milestones
 - ✅ Weight entry with unit conversion (kg/lbs) and measurement context
 - ✅ Progress photos with comparison view (side-by-side previous photos)
@@ -88,23 +101,27 @@ The Activity Recording System enables pet owners to log structured activities ac
 - ✅ Export capability for sharing with veterinarians
 
 **Technical Notes:**
+
 - Weight data stored with precision for accurate trend analysis
 - Photo series linked with chronological ordering
 - Automatic growth curve calculations
 - Integration with data visualization components (Epic 0003)
 
 **UI/UX Considerations:**
+
 - Camera integration with before/after photo comparison
 - Weight entry with large, touch-friendly number input
 - Visual growth indicators with percentile charts
 - Celebration animations for milestone achievements
 
 ### Story 2.4: Diet and Nutrition Logging
-**As a** pet owner  
-**I want to** log my pet's food intake and dietary preferences  
+
+**As a** pet owner
+**I want to** log my pet's food intake and dietary preferences
 **So that** I can maintain optimal nutrition and track feeding patterns
 
 **Acceptance Criteria:**
+
 - ✅ Diet subcategories: Regular Feeding, Treats, Special Diet, Food Changes
 - ✅ Food database with brand, product name, and nutritional information
 - ✅ Portion size tracking with visual serving guides
@@ -114,23 +131,27 @@ The Activity Recording System enables pet owners to log structured activities ac
 - ✅ Cost per meal calculation and budget tracking
 
 **Technical Notes:**
+
 - Local food database with extensible product catalog
 - Portion calculation algorithms for different food types
 - Preference scoring system with machine learning potential
 - Integration with expense tracking for food costs
 
 **UI/UX Considerations:**
+
 - Visual portion guide with pet-sized serving examples
 - Swipe rating system for food preferences
 - Quick-select for frequently fed items
 - Photo capture for meal documentation
 
 ### Story 2.5: Lifestyle and Behavior Tracking
-**As a** pet owner  
-**I want to** record my pet's daily activities and behavioral patterns  
+
+**As a** pet owner
+**I want to** record my pet's daily activities and behavioral patterns
 **So that** I can understand their personality and happiness levels
 
 **Acceptance Criteria:**
+
 - ✅ Lifestyle subcategories: Exercise, Play, Training, Grooming, Social Activities
 - ✅ Activity duration tracking with start/stop timer functionality
 - ✅ Mood and energy level indicators (1-5 scale with emoji)
@@ -140,23 +161,27 @@ The Activity Recording System enables pet owners to log structured activities ac
 - ✅ Training progress tracking with achievement milestones
 
 **Technical Notes:**
+
 - Timer functionality with background operation support
 - Location services integration for activity mapping
 - Weather API integration for environmental context
 - Behavior pattern analysis foundation for future AI features
 
 **UI/UX Considerations:**
+
 - Fun, game-like interface with achievement badges
 - Large timer display with paw print animation
 - Emoji-based mood selection for intuitive input
 - Map integration for activity location visualization
 
 ### Story 2.6: Expense Tracking and Financial Management
-**As a** pet owner  
-**I want to** track all pet-related expenses  
+
+**As a** pet owner
+**I want to** track all pet-related expenses
 **So that** I can budget effectively and understand the cost of pet ownership
 
 **Acceptance Criteria:**
+
 - ✅ Expense categories: Medical, Food, Toys, Grooming, Training, Insurance, Other
 - ✅ Receipt photo capture with automatic OCR text extraction
 - ✅ Recurring expense setup (monthly food, annual insurance)
@@ -166,23 +191,27 @@ The Activity Recording System enables pet owners to log structured activities ac
 - ✅ Cost-per-day and monthly spending summaries
 
 **Technical Notes:**
+
 - OCR integration for receipt processing
 - Recurring expense scheduling system
 - Budget calculation and alert mechanisms
 - Multi-currency support for international users
 
 **UI/UX Considerations:**
+
 - Receipt camera with auto-crop and enhancement
 - Clear expense categorization with color coding
 - Budget dashboard with visual spending indicators
 - Export functionality for accounting software integration
 
 ### Story 2.7: Activity Timeline and History View
-**As a** pet owner  
-**I want to** view all recorded activities in chronological order  
+
+**As a** pet owner
+**I want to** view all recorded activities in chronological order
 **So that** I can see my pet's complete history and track patterns over time
 
 **Acceptance Criteria:**
+
 - ✅ Reverse chronological timeline with infinite scroll
 - ✅ Activity filtering by category, date range, and keywords
 - ✅ Search functionality across all activity text and metadata
@@ -192,12 +221,14 @@ The Activity Recording System enables pet owners to log structured activities ac
 - ✅ Export timeline as PDF report or JSON data
 
 **Technical Notes:**
+
 - Virtual scrolling for performance with large datasets
 - Full-text search implementation with SQLite FTS
 - Efficient pagination and lazy loading
 - Activity audit trail for edit tracking
 
 **UI/UX Considerations:**
+
 - Card-based timeline design with clear temporal grouping
 - Smooth scroll animations with momentum
 - Filter chips with active state indicators
@@ -206,6 +237,7 @@ The Activity Recording System enables pet owners to log structured activities ac
 ## Technical Implementation Details
 
 ### Database Schema
+
 ```sql
 CREATE TABLE activities (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -239,12 +271,13 @@ CREATE TABLE activity_attachments (
 
 -- Full-text search index
 CREATE VIRTUAL TABLE activities_fts USING fts5(
-    title, description, category, subcategory, 
+    title, description, category, subcategory,
     content='activities', content_rowid='id'
 );
 ```
 
 ### Activity Data Structures
+
 ```typescript
 interface BaseActivity {
   id: string;
@@ -287,6 +320,7 @@ interface GrowthActivity extends BaseActivity {
 ```
 
 ### API Endpoints (Tauri Commands)
+
 - `create_activity(activity_data: ActivityCreateRequest) -> Result<Activity, ActivityError>`
 - `get_activities(pet_id: i64, filters: ActivityFilters) -> Result<PaginatedActivities, ActivityError>`
 - `get_activity_by_id(id: i64) -> Result<Activity, ActivityError>`
@@ -296,6 +330,7 @@ interface GrowthActivity extends BaseActivity {
 - `upload_attachment(activity_id: i64, file_data: Vec<u8>, metadata: AttachmentMetadata) -> Result<Attachment, ActivityError>`
 
 ### Component Architecture
+
 ```
 components/
 ├── activities/
@@ -317,24 +352,28 @@ components/
 ## UI/UX Design Requirements
 
 ### Visual Design System
+
 - **Timeline Design**: Card-based entries with clear temporal grouping
 - **Category Colors**: Health (red), Growth (green), Diet (orange), Lifestyle (blue), Expenses (purple)
 - **Typography**: Clear hierarchy with readable body text for descriptions
 - **Iconography**: Category-specific icons with consistent style
 
 ### Form Design Patterns
+
 - **Progressive Disclosure**: Show relevant fields based on category selection
 - **Smart Defaults**: Auto-populate common fields and recent entries
 - **Validation**: Real-time validation with helpful error messages
 - **Media Upload**: Drag-and-drop with progress indicators and preview
 
 ### Performance Optimization
+
 - **Virtual Scrolling**: Efficient rendering of large activity lists
 - **Image Optimization**: Automatic resizing and compression for attachments
 - **Offline Support**: Local storage with sync capabilities for future cloud features
 - **Search Performance**: Indexed search with sub-100ms response times
 
 ## Definition of Done
+
 - [ ] All user stories completed with acceptance criteria met
 - [ ] Comprehensive form validation for all activity types
 - [ ] Media upload and management functionality tested
@@ -347,6 +386,7 @@ components/
 - [ ] API documentation and error handling specifications
 
 ## Future Enhancements (Out of Scope)
+
 - Advanced OCR for receipt and document processing
 - Integration with fitness trackers and IoT pet devices
 - Automatic activity suggestions based on behavior patterns

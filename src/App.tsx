@@ -1,178 +1,178 @@
-import React, { useState, useEffect } from 'react'
-import { invoke } from '@tauri-apps/api/core'
-import { Pet, PetCreateRequest, PetUpdateRequest, ViewType } from './lib/types'
-import { usePets } from './hooks/usePets'
-import { PetCardList, EmptyPetList } from './components/pets/PetCardList'
-import { PetForm } from './components/pets/PetForm'
-import { PetDetailView } from './components/pets/PetDetailView'
-import { PetManagement } from './components/pets/PetManagement'
-import { Button } from './components/ui/button'
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle 
-} from './components/ui/alert-dialog'
-import { Settings, Heart, Loader2 } from 'lucide-react'
-import { cn } from './lib/utils'
-import './App.css'
+import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { Pet, PetCreateRequest, PetUpdateRequest, ViewType } from './lib/types';
+import { usePets } from './hooks/usePets';
+import { PetCardList, EmptyPetList } from './components/pets/PetCardList';
+import { PetForm } from './components/pets/PetForm';
+import { PetDetailView } from './components/pets/PetDetailView';
+import { PetManagement } from './components/pets/PetManagement';
+import { Button } from './components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './components/ui/alert-dialog';
+import { Settings, Heart, Loader2 } from 'lucide-react';
+import './App.css';
 
 function App() {
   // App state
-  const [currentView, setCurrentView] = useState<ViewType>(ViewType.PetList)
-  const [activePetId, setActivePetId] = useState<number>()
-  const [selectedPet, setSelectedPet] = useState<Pet>()
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [isInitializing, setIsInitializing] = useState(false)
-  const [initError, setInitError] = useState<string>()
+  const [currentView, setCurrentView] = useState<ViewType>(ViewType.PetList);
+  const [activePetId, setActivePetId] = useState<number>();
+  const [selectedPet, setSelectedPet] = useState<Pet>();
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [initError, setInitError] = useState<string>();
 
   // Dialog states
-  const [isFormOpen, setIsFormOpen] = useState(false)
-  const [isManagementOpen, setIsManagementOpen] = useState(false)
-  const [editingPet, setEditingPet] = useState<Pet>()
-  const [pendingDeletePet, setPendingDeletePet] = useState<Pet>()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isManagementOpen, setIsManagementOpen] = useState(false);
+  const [editingPet, setEditingPet] = useState<Pet>();
+  const [pendingDeletePet, setPendingDeletePet] = useState<Pet>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Hooks
-  const { pets, isLoading, error, refetch, createPet, updatePet, deletePet, reorderPets } = usePets()
+  const { pets, isLoading, error, refetch, createPet, updatePet, deletePet, reorderPets } =
+    usePets();
 
   // Initialize the app
   useEffect(() => {
     // Prevent multiple initialization attempts
     if (isInitializing || isInitialized) {
-      return
+      return;
     }
 
     const initializeApp = async () => {
-      console.log('=== FRONTEND INITIALIZATION START ===')
-      
-      try {
-        console.log('Setting isInitializing to true')
-        setIsInitializing(true)
-        setInitError(undefined)
-        
-        console.log('Calling initialize_app command...')
-        const result = await invoke('initialize_app')
-        console.log('initialize_app result:', result)
-        
-        setIsInitialized(true)
-        console.log('Initialization successful, fetching pets...')
-        // Fetch pets after initialization
-        await refetch()
-        console.log('Pets fetched successfully')
-      } catch (error) {
-        console.error('Failed to initialize app:', error)
-        setInitError(error instanceof Error ? error.message : 'Failed to initialize application')
-      } finally {
-        console.log('Setting isInitializing to false')
-        setIsInitializing(false)
-      }
-    }
+      console.log('=== FRONTEND INITIALIZATION START ===');
 
-    initializeApp()
-  }, []) // Empty dependency array to run only once
+      try {
+        console.log('Setting isInitializing to true');
+        setIsInitializing(true);
+        setInitError(undefined);
+
+        console.log('Calling initialize_app command...');
+        const result = await invoke('initialize_app');
+        console.log('initialize_app result:', result);
+
+        setIsInitialized(true);
+        console.log('Initialization successful, fetching pets...');
+        // Fetch pets after initialization
+        await refetch();
+        console.log('Pets fetched successfully');
+      } catch (error) {
+        console.error('Failed to initialize app:', error);
+        setInitError(error instanceof Error ? error.message : 'Failed to initialize application');
+      } finally {
+        console.log('Setting isInitializing to false');
+        setIsInitializing(false);
+      }
+    };
+
+    initializeApp();
+  }, [isInitialized, isInitializing, refetch]); // Include all dependencies
 
   // Auto-select first pet if none selected
   useEffect(() => {
     if (!activePetId && pets.length > 0 && !pets[0].is_archived) {
-      setActivePetId(pets[0].id)
+      setActivePetId(pets[0].id);
     }
-  }, [pets, activePetId])
+  }, [pets, activePetId]);
 
   // Navigation handlers
   const handlePetClick = (pet: Pet) => {
-    setSelectedPet(pet)
-    setActivePetId(pet.id)
-    setCurrentView(ViewType.PetDetail)
-  }
+    setSelectedPet(pet);
+    setActivePetId(pet.id);
+    setCurrentView(ViewType.PetDetail);
+  };
 
   const handleBackToPetList = () => {
-    setCurrentView(ViewType.PetList)
-    setSelectedPet(undefined)
-  }
+    setCurrentView(ViewType.PetList);
+    setSelectedPet(undefined);
+  };
 
   // Form handlers
   const handleAddPet = () => {
-    setEditingPet(undefined)
-    setIsFormOpen(true)
-  }
+    setEditingPet(undefined);
+    setIsFormOpen(true);
+  };
 
   const handleEditPet = (pet: Pet) => {
-    setEditingPet(pet)
-    setIsFormOpen(true)
-  }
+    setEditingPet(pet);
+    setIsFormOpen(true);
+  };
 
   const handleFormSubmit = async (data: PetCreateRequest | PetUpdateRequest) => {
     try {
-      setIsSubmitting(true)
-      
+      setIsSubmitting(true);
+
       if (editingPet) {
         // Update existing pet
-        const updatedPet = await updatePet(editingPet.id, data as PetUpdateRequest)
+        const updatedPet = await updatePet(editingPet.id, data as PetUpdateRequest);
         if (selectedPet?.id === editingPet.id) {
-          setSelectedPet(updatedPet)
+          setSelectedPet(updatedPet);
         }
       } else {
         // Create new pet
-        const newPet = await createPet(data as PetCreateRequest)
-        setActivePetId(newPet.id)
+        const newPet = await createPet(data as PetCreateRequest);
+        setActivePetId(newPet.id);
       }
 
-      setIsFormOpen(false)
-      setEditingPet(undefined)
+      setIsFormOpen(false);
+      setEditingPet(undefined);
     } catch (error) {
-      console.error('Failed to save pet:', error)
+      console.error('Failed to save pet:', error);
       // Error handling is done by the form component
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Management handlers
   const handleArchivePet = async (pet: Pet) => {
     try {
-      await updatePet(pet.id, { is_archived: true })
+      await updatePet(pet.id, { is_archived: true });
       if (activePetId === pet.id) {
         // Switch to another pet if the current one was archived
-        const activePets = pets.filter(p => !p.is_archived && p.id !== pet.id)
-        setActivePetId(activePets.length > 0 ? activePets[0].id : undefined)
+        const activePets = pets.filter(p => !p.is_archived && p.id !== pet.id);
+        setActivePetId(activePets.length > 0 ? activePets[0].id : undefined);
       }
     } catch (error) {
-      console.error('Failed to archive pet:', error)
+      console.error('Failed to archive pet:', error);
     }
-  }
+  };
 
   const handleRestorePet = async (pet: Pet) => {
     try {
-      await updatePet(pet.id, { is_archived: false })
+      await updatePet(pet.id, { is_archived: false });
     } catch (error) {
-      console.error('Failed to restore pet:', error)
+      console.error('Failed to restore pet:', error);
     }
-  }
+  };
 
   const handleDeletePet = async (pet: Pet) => {
     try {
-      await deletePet(pet.id)
+      await deletePet(pet.id);
       if (activePetId === pet.id) {
         // Switch to another pet if the current one was deleted
-        const activePets = pets.filter(p => !p.is_archived && p.id !== pet.id)
-        setActivePetId(activePets.length > 0 ? activePets[0].id : undefined)
+        const activePets = pets.filter(p => !p.is_archived && p.id !== pet.id);
+        setActivePetId(activePets.length > 0 ? activePets[0].id : undefined);
       }
-      setPendingDeletePet(undefined)
+      setPendingDeletePet(undefined);
     } catch (error) {
-      console.error('Failed to delete pet:', error)
+      console.error('Failed to delete pet:', error);
     }
-  }
+  };
 
   const handleDeleteConfirm = () => {
     if (pendingDeletePet) {
-      handleDeletePet(pendingDeletePet)
+      handleDeletePet(pendingDeletePet);
     }
-  }
+  };
 
   // Loading and error states
   if (!isInitialized) {
@@ -183,12 +183,10 @@ function App() {
           <p className="text-orange-700">
             {isInitializing ? 'Initializing Paw Diary...' : 'Starting up...'}
           </p>
-          {initError && (
-            <p className="text-red-600 text-sm mt-2">{initError}</p>
-          )}
+          {initError && <p className="text-red-600 text-sm mt-2">{initError}</p>}
         </div>
       </div>
-    )
+    );
   }
 
   if (isLoading && pets.length === 0) {
@@ -199,7 +197,7 @@ function App() {
           <p className="text-orange-700">Loading your pets...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -214,12 +212,8 @@ function App() {
                 <Heart className="w-5 h-5 text-white fill-current" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-orange-900">
-                  Paw Diary
-                </h1>
-                <p className="text-xs text-orange-600 -mt-1">
-                  刨刨日记
-                </p>
+                <h1 className="text-xl font-bold text-orange-900">Paw Diary</h1>
+                <p className="text-xs text-orange-600 -mt-1">刨刨日记</p>
               </div>
             </div>
 
@@ -266,9 +260,7 @@ function App() {
               <div className="space-y-8">
                 {/* Welcome message */}
                 <div className="text-center">
-                  <h2 className="text-2xl font-semibold text-orange-900 mb-2">
-                    Welcome back! 🐾
-                  </h2>
+                  <h2 className="text-2xl font-semibold text-orange-900 mb-2">Welcome back! 🐾</h2>
                   <p className="text-orange-600">
                     Select a pet to view their profile or add a new furry friend to your family.
                   </p>
@@ -281,7 +273,7 @@ function App() {
                   onPetClick={handlePetClick}
                   onAddPet={handleAddPet}
                   onEditPet={handleEditPet}
-                  onDeletePet={(pet) => setPendingDeletePet(pet)}
+                  onDeletePet={pet => setPendingDeletePet(pet)}
                 />
               </div>
             )}
@@ -289,11 +281,7 @@ function App() {
         )}
 
         {currentView === ViewType.PetDetail && selectedPet && (
-          <PetDetailView
-            pet={selectedPet}
-            onBack={handleBackToPetList}
-            onEdit={handleEditPet}
-          />
+          <PetDetailView pet={selectedPet} onBack={handleBackToPetList} onEdit={handleEditPet} />
         )}
       </main>
 
@@ -313,18 +301,21 @@ function App() {
         onReorder={reorderPets}
         onArchive={handleArchivePet}
         onRestore={handleRestorePet}
-        onDelete={async (pet) => setPendingDeletePet(pet)}
+        onDelete={async pet => setPendingDeletePet(pet)}
         onView={handlePetClick}
       />
 
       {/* Delete confirmation dialog */}
-      <AlertDialog open={!!pendingDeletePet} onOpenChange={(open) => !open && setPendingDeletePet(undefined)}>
+      <AlertDialog
+        open={!!pendingDeletePet}
+        onOpenChange={open => !open && setPendingDeletePet(undefined)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {pendingDeletePet?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete{' '}
-              {pendingDeletePet?.name}'s profile and all associated data from your device.
+              This action cannot be undone. This will permanently delete {pendingDeletePet?.name}'s
+              profile and all associated data from your device.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -339,7 +330,7 @@ function App() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

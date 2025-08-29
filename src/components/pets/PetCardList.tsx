@@ -1,19 +1,19 @@
-import React, { useRef, useEffect } from 'react'
-import { Pet } from '../../lib/types'
-import { PetCard, AddPetCard } from './PetCard'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from '../ui/button'
-import { cn } from '../../lib/utils'
+import { useRef, useEffect, useCallback } from 'react';
+import { Pet } from '../../lib/types';
+import { PetCard, AddPetCard } from './PetCard';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '../ui/button';
+import { cn } from '../../lib/utils';
 
 interface PetCardListProps {
-  pets: Pet[]
-  activePetId?: number
-  onPetClick: (pet: Pet) => void
-  onAddPet: () => void
-  onEditPet?: (pet: Pet) => void
-  onDeletePet?: (pet: Pet) => void
-  showActions?: boolean
-  className?: string
+  pets: Pet[];
+  activePetId?: number;
+  onPetClick: (pet: Pet) => void;
+  onAddPet: () => void;
+  onEditPet?: (pet: Pet) => void;
+  onDeletePet?: (pet: Pet) => void;
+  showActions?: boolean;
+  className?: string;
 }
 
 export function PetCardList({
@@ -24,53 +24,53 @@ export function PetCardList({
   onEditPet,
   onDeletePet,
   showActions = true,
-  className
+  className,
 }: PetCardListProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollBy({
         left: -280, // Card width (264px) + gap (16px)
-        behavior: 'smooth'
-      })
+        behavior: 'smooth',
+      });
     }
-  }
+  };
 
   const scrollRight = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollBy({
         left: 280, // Card width (264px) + gap (16px)
-        behavior: 'smooth'
-      })
+        behavior: 'smooth',
+      });
     }
-  }
+  };
 
-  const scrollToActivePet = () => {
-    if (!activePetId || !scrollContainerRef.current) return
+  const scrollToActivePet = useCallback(() => {
+    if (!activePetId || !scrollContainerRef.current) return;
 
-    const activePetIndex = pets.findIndex(pet => pet.id === activePetId)
-    if (activePetIndex === -1) return
+    const activePetIndex = pets.findIndex(pet => pet.id === activePetId);
+    if (activePetIndex === -1) return;
 
-    const cardWidth = 280 // Card width + gap
-    const scrollPosition = activePetIndex * cardWidth
-    
+    const cardWidth = 280; // Card width + gap
+    const scrollPosition = activePetIndex * cardWidth;
+
     scrollContainerRef.current.scrollTo({
       left: scrollPosition,
-      behavior: 'smooth'
-    })
-  }
+      behavior: 'smooth',
+    });
+  }, [activePetId, pets]);
 
   // Auto-scroll to active pet when it changes
   useEffect(() => {
-    scrollToActivePet()
-  }, [activePetId])
+    scrollToActivePet();
+  }, [activePetId, scrollToActivePet]);
 
-  const displayPets = pets.filter(pet => !pet.is_archived)
-  const hasScrollableContent = displayPets.length > 3 // Show nav if more than 3 cards fit in view
+  const displayPets = pets.filter(pet => !pet.is_archived);
+  const hasScrollableContent = displayPets.length > 3; // Show nav if more than 3 cards fit in view
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn('relative', className)}>
       {/* Navigation arrows */}
       {hasScrollableContent && (
         <>
@@ -103,7 +103,7 @@ export function PetCardList({
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {/* Pet cards */}
-        {displayPets.map((pet) => (
+        {displayPets.map(pet => (
           <div key={pet.id} className="flex-shrink-0">
             <PetCard
               pet={pet}
@@ -129,7 +129,7 @@ export function PetCardList({
         </span>
       </div>
     </div>
-  )
+  );
 }
 
 // Empty state component for when no pets exist
@@ -140,15 +140,13 @@ export function EmptyPetList({ onAddPet }: { onAddPet: () => void }) {
         <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
           <span className="text-4xl">🐾</span>
         </div>
-        <h2 className="text-2xl font-semibold text-orange-900 mb-2">
-          Welcome to Paw Diary!
-        </h2>
+        <h2 className="text-2xl font-semibold text-orange-900 mb-2">Welcome to Paw Diary!</h2>
         <p className="text-orange-600 mb-6 max-w-md">
-          Start your pet's journey by creating their first profile. 
-          Track their growth, health, and precious moments all in one place.
+          Start your pet's journey by creating their first profile. Track their growth, health, and
+          precious moments all in one place.
         </p>
       </div>
-      
+
       <Button
         onClick={onAddPet}
         variant="pet"
@@ -158,5 +156,5 @@ export function EmptyPetList({ onAddPet }: { onAddPet: () => void }) {
         Create Your First Pet Profile
       </Button>
     </div>
-  )
+  );
 }

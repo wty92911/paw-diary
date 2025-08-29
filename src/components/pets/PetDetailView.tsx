@@ -1,49 +1,48 @@
-import React, { useState, useEffect } from 'react'
-import { Pet } from '../../lib/types'
-import { Button } from '../ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { ArrowLeft, Edit, Calendar, Scale, Palette, Heart, FileText, Camera } from 'lucide-react'
-import { cn, calculateAge, formatDate, formatWeight, getDefaultPetPhoto } from '../../lib/utils'
-import { usePhotos } from '../../hooks/usePhotos'
+import { useState, useEffect } from 'react';
+import { Pet } from '../../lib/types';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { ArrowLeft, Edit, Calendar, Scale, Palette, Heart, FileText, Camera } from 'lucide-react';
+import { cn, calculateAge, formatDate, formatWeight, getDefaultPetPhoto } from '../../lib/utils';
 
 interface PetDetailViewProps {
-  pet: Pet
-  onBack: () => void
-  onEdit: (pet: Pet) => void
-  className?: string
+  pet: Pet;
+  onBack: () => void;
+  onEdit: (pet: Pet) => void;
+  className?: string;
 }
 
 export function PetDetailView({ pet, onBack, onEdit, className }: PetDetailViewProps) {
-  const [photoUrl, setPhotoUrl] = useState<string>(getDefaultPetPhoto())
-  const [imageError, setImageError] = useState(false)
-  const { getPhotoPath } = usePhotos()
+  const [photoUrl, setPhotoUrl] = useState<string>(getDefaultPetPhoto());
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     const loadPhoto = async () => {
       if (pet.photo_path && !imageError) {
         try {
-          const fullPath = await getPhotoPath(pet.photo_path)
-          setPhotoUrl(`asset://localhost/${fullPath}`)
+          // Use custom photos:// protocol instead of asset://
+          // This works on iOS where asset:// is restricted to bundled resources
+          setPhotoUrl(`photos://${pet.photo_path}`);
         } catch (error) {
-          console.error('Failed to load pet photo:', error)
-          setImageError(true)
-          setPhotoUrl(getDefaultPetPhoto())
+          console.error('Failed to load pet photo:', error);
+          setImageError(true);
+          setPhotoUrl(getDefaultPetPhoto());
         }
       } else {
-        setPhotoUrl(getDefaultPetPhoto())
+        setPhotoUrl(getDefaultPetPhoto());
       }
-    }
+    };
 
-    loadPhoto()
-  }, [pet.photo_path, getPhotoPath, imageError])
+    loadPhoto();
+  }, [pet.photo_path, imageError]);
 
   const handleImageError = () => {
-    setImageError(true)
-    setPhotoUrl(getDefaultPetPhoto())
-  }
+    setImageError(true);
+    setPhotoUrl(getDefaultPetPhoto());
+  };
 
   return (
-    <div className={cn("max-w-4xl mx-auto p-6", className)}>
+    <div className={cn('max-w-4xl mx-auto p-6', className)}>
       {/* Header with navigation */}
       <div className="flex items-center justify-between mb-6">
         <Button
@@ -55,11 +54,7 @@ export function PetDetailView({ pet, onBack, onEdit, className }: PetDetailViewP
           Back to Pets
         </Button>
 
-        <Button
-          onClick={() => onEdit(pet)}
-          variant="pet"
-          className="flex items-center gap-2"
-        >
+        <Button onClick={() => onEdit(pet)} variant="pet" className="flex items-center gap-2">
           <Edit className="w-4 h-4" />
           Edit Profile
         </Button>
@@ -81,7 +76,7 @@ export function PetDetailView({ pet, onBack, onEdit, className }: PetDetailViewP
                     onError={handleImageError}
                   />
                 </div>
-                
+
                 {!pet.photo_path && (
                   <div className="absolute inset-0 flex items-center justify-center bg-orange-100 rounded-lg">
                     <div className="text-center text-orange-400">
@@ -100,17 +95,13 @@ export function PetDetailView({ pet, onBack, onEdit, className }: PetDetailViewP
 
               {/* Basic info */}
               <div className="text-center">
-                <h1 className="text-2xl font-bold text-orange-900 mb-2">
-                  {pet.name}
-                </h1>
+                <h1 className="text-2xl font-bold text-orange-900 mb-2">{pet.name}</h1>
                 <div className="flex items-center justify-center gap-2 text-orange-700 mb-2">
                   <Heart className="w-4 h-4 fill-current" />
                   <span className="capitalize">{pet.species.toLowerCase()}</span>
                 </div>
-                <p className="text-lg text-orange-600 mb-4">
-                  {calculateAge(pet.birth_date)}
-                </p>
-                
+                <p className="text-lg text-orange-600 mb-4">{calculateAge(pet.birth_date)}</p>
+
                 {/* Quick stats */}
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-center">
@@ -127,9 +118,7 @@ export function PetDetailView({ pet, onBack, onEdit, className }: PetDetailViewP
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-orange-600">Pet ID:</span>
-                    <span className="font-medium text-orange-900">
-                      #{pet.id}
-                    </span>
+                    <span className="font-medium text-orange-900">#{pet.id}</span>
                   </div>
                 </div>
               </div>
@@ -214,13 +203,9 @@ export function PetDetailView({ pet, onBack, onEdit, className }: PetDetailViewP
               {/* Notes section */}
               {pet.notes && (
                 <div className="mt-6 pt-6 border-t border-orange-200">
-                  <label className="text-sm font-medium text-orange-700 block mb-2">
-                    Notes
-                  </label>
+                  <label className="text-sm font-medium text-orange-700 block mb-2">Notes</label>
                   <div className="bg-orange-50 rounded-md p-3 border border-orange-200">
-                    <p className="text-orange-900 whitespace-pre-wrap">
-                      {pet.notes}
-                    </p>
+                    <p className="text-orange-900 whitespace-pre-wrap">{pet.notes}</p>
                   </div>
                 </div>
               )}
@@ -246,7 +231,9 @@ export function PetDetailView({ pet, onBack, onEdit, className }: PetDetailViewP
           {/* Timestamps */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-orange-700">Record Information</CardTitle>
+              <CardTitle className="text-sm font-medium text-orange-700">
+                Record Information
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -264,5 +251,5 @@ export function PetDetailView({ pet, onBack, onEdit, className }: PetDetailViewP
         </div>
       </div>
     </div>
-  )
+  );
 }

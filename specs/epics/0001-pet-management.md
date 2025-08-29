@@ -1,18 +1,21 @@
 # Epic 0001: Pet Management System (宠物管理系统)
 
 ## Overview
-**Epic Title**: Pet Management System  
-**Chinese Name**: 宠物管理系统  
-**Milestone**: M1 (Foundation Framework)  
-**Priority**: P0 (Critical)  
-**Estimated Effort**: 8-10 story points  
+
+**Epic Title**: Pet Management System
+**Chinese Name**: 宠物管理系统
+**Milestone**: M1 (Foundation Framework)
+**Priority**: P0 (Critical)
+**Estimated Effort**: 8-10 story points
 **Dependencies**: None (Foundation epic)
 
 ## Epic Description
+
 The Pet Management System forms the core foundation of Paw Diary, enabling users to create, manage, and switch between multiple pet profiles. This epic establishes the fundamental data model and user interface patterns that all other features will build upon.
 Focus on the MVP, do not try to add "user" or "login" or "register".
 
 ## Success Criteria
+
 - Users can add unlimited pet profiles with complete information
 - Intuitive swipe-based navigation between pet profiles on the main interface
 - Comprehensive pet detail views with key information at a glance
@@ -22,11 +25,13 @@ Focus on the MVP, do not try to add "user" or "login" or "register".
 ## User Stories
 
 ### Story 1.1: Add New Pet Profile
-**As a** pet owner  
-**I want to** create a detailed profile for my pet  
+
+**As a** pet owner
+**I want to** create a detailed profile for my pet
 **So that** I can start tracking their growth and activities
 
 **Acceptance Criteria:**
+
 - ✅ User can access "Add Pet" interface from main screen's rightmost card
 - ✅ Required fields: pet name, birth date, species (cat/dog), gender
 - ✅ Optional fields: breed, color, weight, photo, personal notes
@@ -36,23 +41,27 @@ Focus on the MVP, do not try to add "user" or "login" or "register".
 - ✅ New pet automatically becomes the active pet view
 
 **Technical Notes:**
+
 - Use Tauri's file system APIs for photo storage in local app directory
 - Implement form validation using React Hook Form with Zod schema
 - Store pet data in SQLite with proper indexing for fast retrieval
 - Image processing handled by Rust backend for performance
 
 **UI/UX Considerations:**
+
 - Clean, card-based form layout with progressive disclosure
 - Photo upload with drag-drop and click-to-browse options
 - Warm visual feedback with paw print loading animations
 - Auto-save draft functionality to prevent data loss
 
 ### Story 1.2: Pet Profile Card Navigation
-**As a** multi-pet owner  
-**I want to** easily switch between my pets' profiles  
+
+**As a** multi-pet owner
+**I want to** easily switch between my pets' profiles
 **So that** I can manage all my pets from a single interface
 
 **Acceptance Criteria:**
+
 - ✅ Main screen displays pet profiles as horizontally scrollable cards
 - ✅ Each card shows pet photo, name, age, and key stats preview
 - ✅ Smooth swipe/drag navigation between pet cards
@@ -62,23 +71,27 @@ Focus on the MVP, do not try to add "user" or "login" or "register".
 - ✅ Cards maintain consistent spacing and sizing across different screen sizes
 
 **Technical Notes:**
+
 - Use React horizontal scroll component with momentum scrolling
 - Implement virtualization for performance with many pets
 - Cache pet preview data for instant card updates
 - Use CSS transforms for smooth animations
 
 **UI/UX Considerations:**
+
 - Card design reflects diary/scrapbook aesthetic with rounded corners
 - Subtle shadows and warm color palette (cream white, light yellow)
 - Pet cards show personality through photos and color coding
 - Visual indicators for active pet and navigation state
 
 ### Story 1.3: Pet Detail View
-**As a** pet owner  
-**I want to** view comprehensive information about my selected pet  
+
+**As a** pet owner
+**I want to** view comprehensive information about my selected pet
 **So that** I can see their profile and key metrics at a glance
 
 **Acceptance Criteria:**
+
 - ✅ Tapping pet card navigates to detailed pet view
 - ✅ Profile section displays: full photo, name, birth date, age calculation, breed, gender, color
 - ✅ Quick stats section shows: latest weight, last vet visit, recent activity count
@@ -88,23 +101,27 @@ Focus on the MVP, do not try to add "user" or "login" or "register".
 - ✅ Data loads within 300ms for smooth user experience
 
 **Technical Notes:**
+
 - Implement optimistic UI updates for fast navigation
 - Query recent activities with LIMIT for performance
 - Use React Query for caching and background updates
 - Calculate age dynamically from birth date
 
 **UI/UX Considerations:**
+
 - Hero section with large pet photo and essential info
 - Card-based layout for different information sections
 - Consistent spacing and typography hierarchy
 - Subtle animations for section reveals and data updates
 
 ### Story 1.4: Edit Pet Profile
-**As a** pet owner  
-**I want to** modify my pet's profile information  
+
+**As a** pet owner
+**I want to** modify my pet's profile information
 **So that** I can keep their data current and accurate
 
 **Acceptance Criteria:**
+
 - ✅ "Edit Profile" accessible from pet detail view
 - ✅ Pre-populated form with current pet information
 - ✅ All fields editable except creation date (shown as read-only)
@@ -115,23 +132,27 @@ Focus on the MVP, do not try to add "user" or "login" or "register".
 - ✅ Form validation prevents invalid data submission
 
 **Technical Notes:**
+
 - Use same form component as pet creation with edit mode
 - Implement optimistic updates for instant UI feedback
 - Handle photo replacement with old file cleanup
 - Use SQLite transactions for data consistency
 
 **UI/UX Considerations:**
+
 - Same visual design as creation form for consistency
 - Clear visual feedback for unsaved changes
 - Confirmation dialogs for destructive actions
 - Auto-save functionality to prevent accidental data loss
 
 ### Story 1.5: Pet Profile Management
-**As a** pet owner  
-**I want to** organize and manage multiple pet profiles  
+
+**As a** pet owner
+**I want to** organize and manage multiple pet profiles
 **So that** I can maintain accurate records for all my pets
 
 **Acceptance Criteria:**
+
 - ✅ Ability to archive pets (hide without deleting data)
 - ✅ Reorder pets by drag and drop on main screen
 - ✅ Delete pet profile with confirmation and data cleanup
@@ -141,12 +162,14 @@ Focus on the MVP, do not try to add "user" or "login" or "register".
 - ✅ Bulk operations available when managing 5+ pets
 
 **Technical Notes:**
+
 - Implement soft delete with archive flag
 - Use drag-and-drop library compatible with Tauri
 - Export functionality using Tauri's file system APIs
 - Cascade delete relationships for data integrity
 
 **UI/UX Considerations:**
+
 - Management mode toggle for advanced operations
 - Confirmation patterns for all destructive actions
 - Progress indicators for bulk operations
@@ -155,6 +178,7 @@ Focus on the MVP, do not try to add "user" or "login" or "register".
 ## Technical Implementation Details
 
 ### Database Schema
+
 ```sql
 CREATE TABLE pets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -175,6 +199,7 @@ CREATE TABLE pets (
 ```
 
 ### API Endpoints (Tauri Commands)
+
 - `create_pet(pet_data: PetCreateRequest) -> Result<Pet, PetError>`
 - `get_pets(include_archived: bool) -> Result<Vec<Pet>, PetError>`
 - `get_pet_by_id(id: i64) -> Result<Pet, PetError>`
@@ -183,6 +208,7 @@ CREATE TABLE pets (
 - `reorder_pets(pet_ids: Vec<i64>) -> Result<(), PetError>`
 
 ### Component Architecture
+
 ```
 components/
 ├── pets/
@@ -197,23 +223,27 @@ components/
 ## UI/UX Design Requirements
 
 ### Visual Design System
+
 - **Color Palette**: Cream white (#FEF9F3), Light yellow (#FEF7CD), Light blue (#E0F2FE)
 - **Typography**: Clean, readable fonts with proper hierarchy
 - **Iconography**: Paw prints, heart shapes, diary elements
 - **Photography**: Rounded corners, consistent aspect ratios, warm filters
 
 ### Responsive Design
+
 - **Desktop**: Card-based layout with sidebar navigation
 - **Tablet**: Optimized card sizing for touch interaction
 - **Mobile**: Full-width cards with gesture-based navigation
 
 ### Accessibility
+
 - **Screen Reader**: Proper ARIA labels and semantic HTML
 - **Keyboard Navigation**: Tab order and focus management
 - **Color Contrast**: WCAG 2.1 AA compliance for all text
 - **Touch Targets**: Minimum 44px touch targets for interactive elements
 
 ## Definition of Done
+
 - [ ] All user stories completed with acceptance criteria met
 - [ ] Unit tests written with >80% code coverage
 - [ ] Integration tests for all API endpoints
@@ -225,6 +255,7 @@ components/
 - [ ] End-to-end testing scenarios validated
 
 ## Future Enhancements (Out of Scope)
+
 - Multi-user pet sharing capabilities
 - Pet social features and community integration
 - Advanced pet health scoring algorithms

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { 
-  Pet, 
-  PetCreateRequest, 
-  PetUpdateRequest, 
+import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Pet,
+  PetCreateRequest,
+  PetUpdateRequest,
   petFormSchema,
   PetFormData,
   PetSpecies,
@@ -13,33 +13,40 @@ import {
   GENDER_OPTIONS,
   COMMON_CAT_BREEDS,
   COMMON_DOG_BREEDS,
-  COMMON_PET_COLORS
-} from '../../lib/types'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
-import { Upload, X, Camera, Loader2 } from 'lucide-react'
-import { cn, getDefaultPetPhoto } from '../../lib/utils'
-import { usePhotos } from '../../hooks/usePhotos'
+  COMMON_PET_COLORS,
+} from '../../lib/types';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
+import { Upload, X, Camera, Loader2 } from 'lucide-react';
+import { cn } from '../../lib/utils';
+import { usePhotos } from '../../hooks/usePhotos';
 
 interface PetFormProps {
-  pet?: Pet
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (data: PetCreateRequest | PetUpdateRequest) => Promise<void>
-  isSubmitting?: boolean
+  pet?: Pet;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: PetCreateRequest | PetUpdateRequest) => Promise<void>;
+  isSubmitting?: boolean;
 }
 
 export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = false }: PetFormProps) {
-  const isEditing = Boolean(pet)
-  const [photoPreview, setPhotoPreview] = useState<string>()
-  const [photoFile, setPhotoFile] = useState<File>()
-  const [selectedSpecies, setSelectedSpecies] = useState<PetSpecies>()
-  
-  const { uploadPhoto, isUploading } = usePhotos()
+  const isEditing = Boolean(pet);
+  const [photoPreview, setPhotoPreview] = useState<string>();
+  const [photoFile, setPhotoFile] = useState<File>();
+  const [selectedSpecies, setSelectedSpecies] = useState<PetSpecies>();
+
+  const { uploadPhoto, isUploading } = usePhotos();
 
   const {
     register,
@@ -48,80 +55,83 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
     setValue,
     watch,
     reset,
-    clearErrors
+    clearErrors,
   } = useForm<PetFormData>({
     resolver: zodResolver(petFormSchema),
-    defaultValues: isEditing ? {
-      name: pet?.name,
-      birth_date: pet?.birth_date,
-      species: pet?.species,
-      gender: pet?.gender,
-      breed: pet?.breed || '',
-      color: pet?.color || '',
-      weight_kg: pet?.weight_kg || undefined,
-      notes: pet?.notes || '',
-    } : {
-      species: PetSpecies.Cat,
-      gender: PetGender.Unknown,
-    }
-  })
+    defaultValues: isEditing
+      ? {
+          name: pet?.name,
+          birth_date: pet?.birth_date,
+          species: pet?.species,
+          gender: pet?.gender,
+          breed: pet?.breed || '',
+          color: pet?.color || '',
+          weight_kg: pet?.weight_kg || undefined,
+          notes: pet?.notes || '',
+        }
+      : {
+          species: PetSpecies.Cat,
+          gender: PetGender.Unknown,
+        },
+  });
 
-  const watchedSpecies = watch('species')
+  const watchedSpecies = watch('species');
 
   // Update selected species when form value changes
   useEffect(() => {
-    setSelectedSpecies(watchedSpecies)
-  }, [watchedSpecies])
+    setSelectedSpecies(watchedSpecies);
+  }, [watchedSpecies]);
 
   // Load existing photo for editing
   useEffect(() => {
     if (isEditing && pet?.photo_path) {
-      // For editing, show the existing photo
-      setPhotoPreview(getDefaultPetPhoto()) // Placeholder until we can load the actual photo
+      // Use custom photos:// protocol instead of asset://
+      // This works on iOS where asset:// is restricted to bundled resources
+      setPhotoPreview(`photos://${pet.photo_path}`);
     }
-  }, [isEditing, pet])
+  }, [isEditing, pet]);
 
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (!open) {
-      reset()
-      setPhotoPreview(undefined)
-      setPhotoFile(undefined)
-      setSelectedSpecies(undefined)
+      reset();
+      setPhotoPreview(undefined);
+      setPhotoFile(undefined);
+      setSelectedSpecies(undefined);
     }
-  }, [open, reset])
+  }, [open, reset]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
     if (file) {
-      setPhotoFile(file)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setPhotoPreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-      
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onload = e => {
+        setPhotoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+
       // Clear any previous photo errors
-      clearErrors('photo')
+      clearErrors('photo');
     }
-  }
+  };
 
   const handlePhotoRemove = () => {
-    setPhotoFile(undefined)
-    setPhotoPreview(undefined)
-    const fileInput = document.getElementById('photo-upload') as HTMLInputElement
+    setPhotoFile(undefined);
+    setPhotoPreview(undefined);
+    const fileInput = document.getElementById('photo-upload') as HTMLInputElement;
     if (fileInput) {
-      fileInput.value = ''
+      fileInput.value = '';
     }
-  }
+  };
 
   const handleFormSubmit = async (data: PetFormData) => {
     try {
-      let photoPath = pet?.photo_path
+      let photoPath = pet?.photo_path;
 
       // Upload new photo if one was selected
       if (photoFile) {
-        photoPath = await uploadPhoto(photoFile)
+        photoPath = await uploadPhoto(photoFile);
       }
 
       // Prepare form data
@@ -135,36 +145,33 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
         weight_kg: typeof data.weight_kg === 'number' ? data.weight_kg : undefined,
         notes: data.notes || undefined,
         photo_path: photoPath,
-      }
+      };
 
-      await onSubmit(formData)
-      onOpenChange(false)
+      await onSubmit(formData);
+      onOpenChange(false);
     } catch (error) {
-      console.error('Failed to submit form:', error)
+      console.error('Failed to submit form:', error);
     }
-  }
+  };
 
   const getBreedOptions = () => {
     if (selectedSpecies === PetSpecies.Cat) {
-      return COMMON_CAT_BREEDS
+      return COMMON_CAT_BREEDS;
     } else if (selectedSpecies === PetSpecies.Dog) {
-      return COMMON_DOG_BREEDS
+      return COMMON_DOG_BREEDS;
     }
-    return []
-  }
+    return [];
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? `Edit ${pet?.name}` : 'Add New Pet'}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? `Edit ${pet?.name}` : 'Add New Pet'}</DialogTitle>
           <DialogDescription>
-            {isEditing 
-              ? 'Update your pet\'s information below.' 
-              : 'Fill in your pet\'s information to create their profile.'
-            }
+            {isEditing
+              ? "Update your pet's information below."
+              : "Fill in your pet's information to create their profile."}
           </DialogDescription>
         </DialogHeader>
 
@@ -189,7 +196,7 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
                       <Camera className="w-8 h-8 text-orange-400" />
                     )}
                   </div>
-                  
+
                   {photoPreview && (
                     <Button
                       type="button"
@@ -220,14 +227,10 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
                     className="hidden"
                     onChange={handleFileChange}
                   />
-                  <p className="text-xs text-orange-600 text-center">
-                    PNG, JPG, WebP up to 10MB
-                  </p>
+                  <p className="text-xs text-orange-600 text-center">PNG, JPG, WebP up to 10MB</p>
                 </div>
 
-                {errors.photo && (
-                  <p className="text-sm text-red-600">{errors.photo.message}</p>
-                )}
+                {errors.photo && <p className="text-sm text-red-600">{errors.photo.message}</p>}
               </div>
             </CardContent>
           </Card>
@@ -241,11 +244,9 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
                 id="name"
                 {...register('name')}
                 placeholder="Enter pet name"
-                className={cn(errors.name && "border-red-500")}
+                className={cn(errors.name && 'border-red-500')}
               />
-              {errors.name && (
-                <p className="text-sm text-red-600">{errors.name.message}</p>
-              )}
+              {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
             </div>
 
             {/* Birth Date */}
@@ -255,7 +256,7 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
                 id="birth_date"
                 type="date"
                 {...register('birth_date')}
-                className={cn(errors.birth_date && "border-red-500")}
+                className={cn(errors.birth_date && 'border-red-500')}
               />
               {errors.birth_date && (
                 <p className="text-sm text-red-600">{errors.birth_date.message}</p>
@@ -269,20 +270,18 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
                 value={watch('species')}
                 onValueChange={(value: PetSpecies) => setValue('species', value)}
               >
-                <SelectTrigger className={cn(errors.species && "border-red-500")}>
+                <SelectTrigger className={cn(errors.species && 'border-red-500')}>
                   <SelectValue placeholder="Select species" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SPECIES_OPTIONS.map((option) => (
+                  {SPECIES_OPTIONS.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.species && (
-                <p className="text-sm text-red-600">{errors.species.message}</p>
-              )}
+              {errors.species && <p className="text-sm text-red-600">{errors.species.message}</p>}
             </div>
 
             {/* Gender */}
@@ -292,20 +291,18 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
                 value={watch('gender')}
                 onValueChange={(value: PetGender) => setValue('gender', value)}
               >
-                <SelectTrigger className={cn(errors.gender && "border-red-500")}>
+                <SelectTrigger className={cn(errors.gender && 'border-red-500')}>
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
                 <SelectContent>
-                  {GENDER_OPTIONS.map((option) => (
+                  {GENDER_OPTIONS.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.gender && (
-                <p className="text-sm text-red-600">{errors.gender.message}</p>
-              )}
+              {errors.gender && <p className="text-sm text-red-600">{errors.gender.message}</p>}
             </div>
           </div>
 
@@ -316,22 +313,20 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
               <Label htmlFor="breed">Breed</Label>
               <Select
                 value={watch('breed') || ''}
-                onValueChange={(value) => setValue('breed', value)}
+                onValueChange={value => setValue('breed', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select breed (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getBreedOptions().map((breed) => (
+                  {getBreedOptions().map(breed => (
                     <SelectItem key={breed} value={breed}>
                       {breed}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.breed && (
-                <p className="text-sm text-red-600">{errors.breed.message}</p>
-              )}
+              {errors.breed && <p className="text-sm text-red-600">{errors.breed.message}</p>}
             </div>
 
             {/* Color */}
@@ -339,22 +334,20 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
               <Label htmlFor="color">Color</Label>
               <Select
                 value={watch('color') || ''}
-                onValueChange={(value) => setValue('color', value)}
+                onValueChange={value => setValue('color', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select color (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {COMMON_PET_COLORS.map((color) => (
+                  {COMMON_PET_COLORS.map(color => (
                     <SelectItem key={color} value={color}>
                       {color}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.color && (
-                <p className="text-sm text-red-600">{errors.color.message}</p>
-              )}
+              {errors.color && <p className="text-sm text-red-600">{errors.color.message}</p>}
             </div>
 
             {/* Weight */}
@@ -368,7 +361,7 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
                 max="200"
                 {...register('weight_kg', { valueAsNumber: true })}
                 placeholder="Enter weight in kg (optional)"
-                className={cn(errors.weight_kg && "border-red-500")}
+                className={cn(errors.weight_kg && 'border-red-500')}
               />
               {errors.weight_kg && (
                 <p className="text-sm text-red-600">{errors.weight_kg.message}</p>
@@ -385,13 +378,11 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
               rows={3}
               placeholder="Any additional notes about your pet (optional)"
               className={cn(
-                "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none",
-                errors.notes && "border-red-500"
+                'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none',
+                errors.notes && 'border-red-500',
               )}
             />
-            {errors.notes && (
-              <p className="text-sm text-red-600">{errors.notes.message}</p>
-            )}
+            {errors.notes && <p className="text-sm text-red-600">{errors.notes.message}</p>}
           </div>
 
           <DialogFooter>
@@ -403,19 +394,13 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              variant="pet"
-              disabled={isSubmitting || isUploading}
-            >
-              {(isSubmitting || isUploading) && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
+            <Button type="submit" variant="pet" disabled={isSubmitting || isUploading}>
+              {(isSubmitting || isUploading) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {isEditing ? 'Update Pet' : 'Create Pet'}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
