@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import { Pet } from '@/lib/types'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { Pet } from '../../lib/types'
+import { Button } from '../ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Input } from '../ui/input'
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -13,7 +13,7 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle,
   AlertDialogTrigger 
-} from '@/components/ui/alert-dialog'
+} from '../ui/alert-dialog'
 import { 
   Settings, 
   Search, 
@@ -25,7 +25,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react'
-import { cn, calculateAge, getDefaultPetPhoto } from '@/lib/utils'
+import { cn, calculateAge, getDefaultPetPhoto } from '../../lib/utils'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 
 interface PetManagementProps {

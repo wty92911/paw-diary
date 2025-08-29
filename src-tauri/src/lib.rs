@@ -63,7 +63,7 @@ pub fn run() {
             list_pet_photos,
             get_photo_storage_stats
         ])
-        .setup(|_app| {
+        .setup(|app| {
             log::info!("Tauri application setup started");
             // Don't initialize AppState here - let initialize_app command handle it
             log::info!("Tauri application setup complete");

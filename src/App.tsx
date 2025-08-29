@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { Pet, PetCreateRequest, PetUpdateRequest, ViewType } from '@/lib/types'
-import { usePets } from '@/hooks/usePets'
-import { PetCardList, EmptyPetList } from '@/components/pets/PetCardList'
-import { PetForm } from '@/components/pets/PetForm'
-import { PetDetailView } from '@/components/pets/PetDetailView'
-import { PetManagement } from '@/components/pets/PetManagement'
-import { Button } from '@/components/ui/button'
+import { Pet, PetCreateRequest, PetUpdateRequest, ViewType } from './lib/types'
+import { usePets } from './hooks/usePets'
+import { PetCardList, EmptyPetList } from './components/pets/PetCardList'
+import { PetForm } from './components/pets/PetForm'
+import { PetDetailView } from './components/pets/PetDetailView'
+import { PetManagement } from './components/pets/PetManagement'
+import { Button } from './components/ui/button'
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -16,9 +16,9 @@ import {
   AlertDialogFooter, 
   AlertDialogHeader, 
   AlertDialogTitle 
-} from '@/components/ui/alert-dialog'
+} from './components/ui/alert-dialog'
 import { Settings, Heart, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from './lib/utils'
 import './App.css'
 
 function App() {

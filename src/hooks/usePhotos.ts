@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { PhotoInfo } from '@/lib/types'
-import { validateImageFile } from '@/lib/utils'
+import { PhotoInfo } from '../lib/types'
+import { validateImageFile } from '../lib/utils'
 
 export interface UsePhotosState {
   isUploading: boolean

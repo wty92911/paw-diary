@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Pet } from '@/lib/types'
-import { cn, calculateAge, getDefaultPetPhoto } from '@/lib/utils'
+import { Card, CardContent } from '../ui/card'
+import { Button } from '../ui/button'
+import { Pet } from '../../lib/types'
+import { cn, calculateAge, getDefaultPetPhoto } from '../../lib/utils'
 import { Heart, Edit, Trash2 } from 'lucide-react'
-import { usePhotos } from '@/hooks/usePhotos'
+import { usePhotos } from '../../hooks/usePhotos'
 
 interface PetCardProps {
   pet: Pet

@@ -14,16 +14,16 @@ import {
   COMMON_CAT_BREEDS,
   COMMON_DOG_BREEDS,
   COMMON_PET_COLORS
-} from '@/lib/types'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+} from '../../lib/types'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Upload, X, Camera, Loader2 } from 'lucide-react'
-import { cn, getDefaultPetPhoto } from '@/lib/utils'
-import { usePhotos } from '@/hooks/usePhotos'
+import { cn, getDefaultPetPhoto } from '../../lib/utils'
+import { usePhotos } from '../../hooks/usePhotos'
 
 interface PetFormProps {
   pet?: Pet
@@ -52,14 +52,14 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
   } = useForm<PetFormData>({
     resolver: zodResolver(petFormSchema),
     defaultValues: isEditing ? {
-      name: pet.name,
-      birth_date: pet.birth_date,
-      species: pet.species,
-      gender: pet.gender,
-      breed: pet.breed || '',
-      color: pet.color || '',
-      weight_kg: pet.weight_kg || undefined,
-      notes: pet.notes || '',
+      name: pet?.name,
+      birth_date: pet?.birth_date,
+      species: pet?.species,
+      gender: pet?.gender,
+      breed: pet?.breed || '',
+      color: pet?.color || '',
+      weight_kg: pet?.weight_kg || undefined,
+      notes: pet?.notes || '',
     } : {
       species: PetSpecies.Cat,
       gender: PetGender.Unknown,
@@ -158,7 +158,7 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? `Edit ${pet.name}` : 'Add New Pet'}
+            {isEditing ? `Edit ${pet?.name}` : 'Add New Pet'}
           </DialogTitle>
           <DialogDescription>
             {isEditing 

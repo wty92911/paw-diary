@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { Pet, PetCreateRequest, PetUpdateRequest, PetError } from '@/lib/types'
+import { Pet, PetCreateRequest, PetUpdateRequest, PetError } from '../lib/types'
 
 export interface UsePetsState {
   pets: Pet[]
@@ -31,7 +31,7 @@ export function usePets(includeArchived = false): UsePetsState & UsePetsActions 
       setError(null)
       
       console.log('Calling get_pets command...')
-      const fetchedPets = await invoke<Pet[]>('get_pets', { include_archived: includeArchived })
+      const fetchedPets = await invoke<Pet[]>('get_pets', { includeArchived })
       console.log('get_pets result:', fetchedPets)
       console.log('Number of pets received:', fetchedPets?.length || 0)
       
