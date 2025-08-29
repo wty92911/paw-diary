@@ -197,7 +197,7 @@ export function PetManagement({
                                     <img
                                       src={
                                         pet.photo_path
-                                          ? `photos://${pet.photo_path}`
+                                          ? `photos://localhost/${pet.photo_path}`
                                           : getDefaultPetPhoto()
                                       }
                                       alt={pet.name}

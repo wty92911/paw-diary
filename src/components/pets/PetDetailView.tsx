@@ -22,7 +22,7 @@ export function PetDetailView({ pet, onBack, onEdit, className }: PetDetailViewP
         try {
           // Use custom photos:// protocol instead of asset://
           // This works on iOS where asset:// is restricted to bundled resources
-          setPhotoUrl(`photos://${pet.photo_path}`);
+          setPhotoUrl(`photos://localhost/${pet.photo_path}`);
         } catch (error) {
           console.error('Failed to load pet photo:', error);
           setImageError(true);

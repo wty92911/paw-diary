@@ -87,7 +87,7 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
     if (isEditing && pet?.photo_path) {
       // Use custom photos:// protocol instead of asset://
       // This works on iOS where asset:// is restricted to bundled resources
-      setPhotoPreview(`photos://${pet.photo_path}`);
+      setPhotoPreview(`photos://localhost/${pet.photo_path}`);
     }
   }, [isEditing, pet]);
 

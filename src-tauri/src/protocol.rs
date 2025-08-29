@@ -20,9 +20,10 @@ pub async fn handle_photos_protocol_request(
 ) -> Result<Response<Vec<u8>>, Box<dyn std::error::Error + Send + Sync>> {
     let uri = request.uri();
 
-    log::info!("handle_photos_protocol_request: {uri}");
     // parse the url after "localhost/" as the filename
     let path = uri.path();
+
+    log::info!("handle_photos_protocol_request: uri: {uri}, path: {path}");
 
     // Remove leading slash if present
     let filename = if let Some(p) = path.strip_prefix("/") {

@@ -35,13 +35,16 @@
 		3B3252D214F5D98C3E7B08E7 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		4646CCF8B85D11123AB2FCD6 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		4A625FBB134539DCB9EB6CC0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		60E5F8A604A108BD99551D1D /* app_state.rs */ = {isa = PBXFileReference; path = app_state.rs; sourceTree = "<group>"; };
 		741E8BEB9E6D02B22BBC4815 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7FB176CFB834F740F11F5764 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
+		80E25ACEA36D9DFB386825EF /* protocol.rs */ = {isa = PBXFileReference; path = protocol.rs; sourceTree = "<group>"; };
 		83CF8CCDD9BAC8834E21E3B0 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
 		8561376E8131019482915F5E /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		A28AFC9E0D42C8981355D736 /* photo.rs */ = {isa = PBXFileReference; path = photo.rs; sourceTree = "<group>"; };
 		BBA9BC246B4536F49CC1F2B7 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		C2A6C97C6AC04B04072F0E0E /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		C67B0DD87859ED23E9D8F7F0 /* logger.rs */ = {isa = PBXFileReference; path = logger.rs; sourceTree = "<group>"; };
 		C6C837EDD7B398D182205545 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
 		E43765B2B0433F291C70A76A /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
 		E833457C4172B3B3401A6E63 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
@@ -93,12 +96,15 @@
 		159E5F7B141AF87758EBB5D9 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				60E5F8A604A108BD99551D1D /* app_state.rs */,
 				3179FAB2CE8D256EB6BF916D /* commands.rs */,
 				08663CC7F8D94936A26EE0AB /* database.rs */,
 				0B93EB716F05053260ABE20F /* errors.rs */,
 				7FB176CFB834F740F11F5764 /* lib.rs */,
+				C67B0DD87859ED23E9D8F7F0 /* logger.rs */,
 				C6C837EDD7B398D182205545 /* main.rs */,
 				A28AFC9E0D42C8981355D736 /* photo.rs */,
+				80E25ACEA36D9DFB386825EF /* protocol.rs */,
 			);
 			name = src;
 			path = ../../src;
@@ -177,7 +183,7 @@
 			path = bindings;
 			sourceTree = "<group>";
 		};
-		"TEMP_197C05B3-0A5F-4433-86B8-3D4F9CFC3765" /* x86_64 */ = {
+		"TEMP_0E658823-A42B-4975-B99A-76B974C323A2" /* x86_64 */ = {
 			isa = PBXGroup;
 			children = (
 			);
