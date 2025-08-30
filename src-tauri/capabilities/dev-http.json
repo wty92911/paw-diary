@@ -1,7 +1,0 @@
-{
-    "identifier": "dev-http-scope",
-    "permissions": [
-      "http:default",
-      { "identifier": "http:allow", "allow": [{ "url": "http://192.168.31.123:1420/**" }] }
-    ]
-  }
