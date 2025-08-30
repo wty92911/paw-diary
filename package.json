@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "ios:dev:iphone16Pro": "TAURI_IOS_DEVICE=0C6C1566-F028-4B21-A312-D2A189349614 tauri ios dev",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",

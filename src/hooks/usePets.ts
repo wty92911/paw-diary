@@ -80,12 +80,9 @@ export function usePets(includeArchived = false): UsePetsState & UsePetsActions 
     try {
       setError(null);
       await invoke('delete_pet', { id });
-      // Remove from list if not including archived, otherwise refetch to show archived status
-      if (!includeArchived) {
-        setPets(prev => prev.filter(pet => pet.id !== id));
-      } else {
-        await refetch();
-      }
+      // Always refetch to ensure UI state is consistent with database after deletion
+      // This guarantees that soft-deleted pets are properly removed from the UI
+      await refetch();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete pet';
       setError(errorMessage);

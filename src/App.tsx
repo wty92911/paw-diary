@@ -35,6 +35,7 @@ function App() {
   const [editingPet, setEditingPet] = useState<Pet>();
   const [pendingDeletePet, setPendingDeletePet] = useState<Pet>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Hooks
   const { pets, isLoading, error, refetch, createPet, updatePet, deletePet, reorderPets } =
@@ -156,6 +157,7 @@ function App() {
 
   const handleDeletePet = async (pet: Pet) => {
     try {
+      setIsDeleting(true);
       await deletePet(pet.id);
       if (activePetId === pet.id) {
         // Switch to another pet if the current one was deleted
@@ -165,6 +167,8 @@ function App() {
       setPendingDeletePet(undefined);
     } catch (error) {
       console.error('Failed to delete pet:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -319,12 +323,20 @@ function App() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-red-600 hover:bg-red-700"
+              disabled={isDeleting}
             >
-              Delete Forever
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Forever'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
