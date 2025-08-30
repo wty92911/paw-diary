@@ -4,8 +4,10 @@ import { Pet, PetCreateRequest, PetUpdateRequest, ViewType } from './lib/types';
 import { usePets } from './hooks/usePets';
 import { PetCardList, EmptyPetList } from './components/pets/PetCardList';
 import { PetForm } from './components/pets/PetForm';
+import { PetFormPage } from './components/pets/PetFormPage';
 import { PetDetailView } from './components/pets/PetDetailView';
 import { PetManagement } from './components/pets/PetManagement';
+import { useResponsiveNavigation } from './hooks/useResponsiveNavigation';
 import { Button } from './components/ui/button';
 import {
   AlertDialog,
@@ -37,9 +39,13 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Mobile view state
+  const [showMobileFormPage, setShowMobileFormPage] = useState(false);
+
   // Hooks
   const { pets, isLoading, error, refetch, createPet, updatePet, deletePet, reorderPets } =
     usePets();
+  const { isMobile } = useResponsiveNavigation();
 
   // Initialize the app
   useEffect(() => {
@@ -99,12 +105,25 @@ function App() {
   // Form handlers
   const handleAddPet = () => {
     setEditingPet(undefined);
-    setIsFormOpen(true);
+    if (isMobile) {
+      setShowMobileFormPage(true);
+    } else {
+      setIsFormOpen(true);
+    }
   };
 
   const handleEditPet = (pet: Pet) => {
     setEditingPet(pet);
-    setIsFormOpen(true);
+    if (isMobile) {
+      setShowMobileFormPage(true);
+    } else {
+      setIsFormOpen(true);
+    }
+  };
+
+  const handleBackFromMobileForm = () => {
+    setShowMobileFormPage(false);
+    setEditingPet(undefined);
   };
 
   const handleFormSubmit = async (data: PetCreateRequest | PetUpdateRequest) => {
@@ -123,7 +142,12 @@ function App() {
         setActivePetId(newPet.id);
       }
 
-      setIsFormOpen(false);
+      // Close appropriate form interface
+      if (isMobile) {
+        setShowMobileFormPage(false);
+      } else {
+        setIsFormOpen(false);
+      }
       setEditingPet(undefined);
     } catch (error) {
       console.error('Failed to save pet:', error);
@@ -289,14 +313,28 @@ function App() {
         )}
       </main>
 
-      {/* Dialogs and modals */}
-      <PetForm
-        pet={editingPet}
-        open={isFormOpen}
-        onOpenChange={setIsFormOpen}
-        onSubmit={handleFormSubmit}
-        isSubmitting={isSubmitting}
-      />
+      {/* Responsive form rendering */}
+      {!isMobile && (
+        <PetForm
+          pet={editingPet}
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+          onSubmit={handleFormSubmit}
+          isSubmitting={isSubmitting}
+        />
+      )}
+
+      {/* Mobile form page overlay */}
+      {isMobile && showMobileFormPage && (
+        <div className="fixed inset-0 z-50">
+          <PetFormPage
+            pet={editingPet}
+            onSubmit={handleFormSubmit}
+            onBack={handleBackFromMobileForm}
+            isSubmitting={isSubmitting}
+          />
+        </div>
+      )}
 
       <PetManagement
         pets={pets}
