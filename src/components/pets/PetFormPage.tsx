@@ -144,9 +144,9 @@ export function PetFormPage({ pet, onSubmit, onBack, isSubmitting = false }: Pet
   };
 
   return (
-    <div className="min-h-screen bg-cream-50 flex flex-col">
+    <div className="h-screen bg-cream-50 flex flex-col">
       {/* Mobile Header with Back Button */}
-      <div className="bg-white border-b border-cream-200 p-4 flex items-center space-x-4 sticky top-0 z-10">
+      <div className="bg-white border-b border-cream-200 p-4 flex items-center space-x-4 flex-shrink-0">
         <Button
           type="button"
           variant="ghost"
@@ -391,8 +391,8 @@ export function PetFormPage({ pet, onSubmit, onBack, isSubmitting = false }: Pet
             </CardContent>
           </Card>
 
-          {/* Submit Button - Fixed at bottom */}
-          <div className="sticky bottom-4 bg-cream-50 pt-4">
+          {/* Submit Button with proper spacing */}
+          <div className="pt-6 pb-12">
             <Button
               type="submit"
               variant="pet"
