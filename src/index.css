@@ -29,7 +29,7 @@
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-cream-50 font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -43,8 +43,8 @@
 @layer components {
   /* Pet Card Styles */
   .pet-card {
-    @apply bg-white rounded-pet shadow-pet-card border border-cream-200 
-           transition-all duration-200 ease-in-out hover:shadow-pet-card-hover 
+    @apply bg-white rounded-pet shadow-pet-card border border-cream-200
+           transition-all duration-200 ease-in-out hover:shadow-pet-card-hover
            hover:scale-[1.02] cursor-pointer;
   }
 
@@ -53,33 +53,33 @@
   }
 
   .pet-card-add {
-    @apply bg-gradient-to-br from-yellow-100 to-yellow-200 
-           border-2 border-dashed border-yellow-300 
+    @apply bg-gradient-to-br from-yellow-100 to-yellow-200
+           border-2 border-dashed border-yellow-300
            hover:from-yellow-200 hover:to-yellow-300
            hover:border-yellow-400 transition-all duration-200;
   }
 
   /* Button Styles */
   .btn-primary {
-    @apply bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-medium 
+    @apply bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-medium
            px-4 py-2 rounded-button transition-all duration-200
            focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2;
   }
 
   .btn-secondary {
-    @apply bg-blue-100 hover:bg-blue-200 text-blue-800 font-medium 
+    @apply bg-blue-100 hover:bg-blue-200 text-blue-800 font-medium
            px-4 py-2 rounded-button transition-all duration-200
            focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2;
   }
 
   .btn-danger {
-    @apply bg-red-100 hover:bg-red-200 text-red-800 font-medium 
+    @apply bg-red-100 hover:bg-red-200 text-red-800 font-medium
            px-4 py-2 rounded-button transition-all duration-200
            focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2;
   }
 
   .btn-ghost {
-    @apply bg-transparent hover:bg-cream-100 text-gray-700 font-medium 
+    @apply bg-transparent hover:bg-cream-100 text-gray-700 font-medium
            px-4 py-2 rounded-button transition-all duration-200
            focus:outline-none focus:ring-2 focus:ring-cream-200 focus:ring-offset-2;
   }
@@ -114,7 +114,7 @@
 
   /* Scroll Area Styles */
   .scroll-area {
-    @apply scrollbar-thin scrollbar-track-cream-100 scrollbar-thumb-cream-300 
+    @apply scrollbar-thin scrollbar-track-cream-100 scrollbar-thumb-cream-300
            hover:scrollbar-thumb-cream-400;
   }
 
@@ -136,7 +136,7 @@
   }
 
   .pet-photo-placeholder {
-    @apply bg-gradient-to-br from-cream-100 to-cream-200 
+    @apply bg-gradient-to-br from-cream-100 to-cream-200
            flex items-center justify-center text-cream-500;
   }
 }
@@ -161,7 +161,7 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
@@ -185,5 +185,17 @@
 
   .hover\:scrollbar-thumb-cream-400:hover::-webkit-scrollbar-thumb {
     background-color: #F8DECB;
+  }
+
+  /* Mobile input zoom prevention */
+  @media (max-width: 768px) {
+    input, textarea, select {
+      font-size: 16px !important; /* Prevent zoom on iOS Safari */
+    }
+
+    /* Ensure form inputs maintain consistent styling */
+    .form-input {
+      font-size: 16px !important;
+    }
   }
 }
