@@ -7,6 +7,9 @@ import { PetForm } from './components/pets/PetForm';
 import { PetFormPage } from './components/pets/PetFormPage';
 import { PetDetailView } from './components/pets/PetDetailView';
 import { PetManagement } from './components/pets/PetManagement';
+import { PetProfileNavigation } from './components/pets/PetProfileNavigation';
+import { PetProfile } from './components/pets/PetProfile';
+import { AddPetProfile } from './components/pets/AddPetProfile';
 import { useResponsiveNavigation } from './hooks/useResponsiveNavigation';
 import { Button } from './components/ui/button';
 import {
@@ -47,6 +50,13 @@ function App() {
     usePets();
   const { isMobile } = useResponsiveNavigation();
 
+  // Helper functions for pet navigation
+  const getCurrentPetIndex = (): number => {
+    if (!activePetId) return -1;
+    const activePets = pets.filter(p => !p.is_archived);
+    return activePets.findIndex(p => p.id === activePetId);
+  };
+
   // Initialize the app
   useEffect(() => {
     // Prevent multiple initialization attempts
@@ -83,12 +93,60 @@ function App() {
     initializeApp();
   }, [isInitialized, isInitializing, refetch]); // Include all dependencies
 
-  // Auto-select first pet if none selected
+  // Intelligent homepage routing and pet selection
   useEffect(() => {
-    if (!activePetId && pets.length > 0 && !pets[0].is_archived) {
-      setActivePetId(pets[0].id);
+    if (isLoading) return;
+
+    const activePets = pets.filter(p => !p.is_archived);
+
+    // Intelligent routing based on pet state
+    if (activePets.length === 0) {
+      // No pets: navigate to PetProfile view (will show AddPetProfile)
+      if (currentView !== ViewType.PetProfile) {
+        setCurrentView(ViewType.PetProfile);
+      }
+      setActivePetId(undefined);
+    } else {
+      // Pets exist: ensure we're in PetProfile view and have an active pet
+      if (currentView === ViewType.PetList) {
+        setCurrentView(ViewType.PetProfile);
+      }
+
+      // Auto-select first pet if none selected or selected pet is archived
+      if (!activePetId || !activePets.find(p => p.id === activePetId)) {
+        setActivePetId(activePets[0].id);
+      }
     }
-  }, [pets, activePetId]);
+  }, [pets, activePetId, currentView, isLoading]);
+
+  // Error handling and recovery for navigation state inconsistencies
+  useEffect(() => {
+    if (isLoading) return;
+
+    const activePets = pets.filter(p => !p.is_archived);
+
+    // Recovery: if activePetId is set but pet doesn't exist, clear it
+    if (activePetId && !pets.find(p => p.id === activePetId)) {
+      console.warn(`Active pet ${activePetId} no longer exists, clearing selection`);
+      setActivePetId(undefined);
+    }
+
+    // Recovery: if we're in PetProfile view but no valid pets and not showing add form
+    if (
+      currentView === ViewType.PetProfile &&
+      activePets.length > 0 &&
+      getCurrentPetIndex() === -1
+    ) {
+      console.warn('PetProfile view with pets but no valid active pet, selecting first pet');
+      setActivePetId(activePets[0].id);
+    }
+
+    // Recovery: if selectedPet is inconsistent with activePetId in PetDetail view
+    if (currentView === ViewType.PetDetail && selectedPet && selectedPet.id !== activePetId) {
+      console.warn('Selected pet inconsistent with active pet, syncing state');
+      setActivePetId(selectedPet.id);
+    }
+  }, [pets, activePetId, currentView, selectedPet, isLoading, getCurrentPetIndex]);
 
   // Navigation handlers
   const handlePetClick = (pet: Pet) => {
@@ -100,6 +158,15 @@ function App() {
   const handleBackToPetList = () => {
     setCurrentView(ViewType.PetList);
     setSelectedPet(undefined);
+  };
+
+  // Pet profile navigation handlers
+  const handlePetProfileChange = (index: number) => {
+    const activePets = pets.filter(p => !p.is_archived);
+    if (index >= 0 && index < activePets.length) {
+      const selectedPet = activePets[index];
+      setActivePetId(selectedPet.id);
+    }
   };
 
   // Form handlers
@@ -140,6 +207,10 @@ function App() {
         // Create new pet
         const newPet = await createPet(data as PetCreateRequest);
         setActivePetId(newPet.id);
+        // Navigate to PetProfile view if first pet or if we were in AddPetProfile
+        if (pets.filter(p => !p.is_archived).length === 0 || currentView === ViewType.PetProfile) {
+          setCurrentView(ViewType.PetProfile);
+        }
       }
 
       // Close appropriate form interface
@@ -248,15 +319,27 @@ function App() {
             {/* Header actions */}
             <div className="flex items-center gap-2">
               {pets.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsManagementOpen(true)}
-                  className="text-orange-700 hover:text-orange-800 hover:bg-orange-100"
-                >
-                  <Settings className="w-4 h-4 mr-1" />
-                  Manage Pets
-                </Button>
+                <>
+                  {currentView === ViewType.PetProfile && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentView(ViewType.PetList)}
+                      className="text-orange-700 hover:text-orange-800 hover:bg-orange-100"
+                    >
+                      View All Pets
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsManagementOpen(true)}
+                    className="text-orange-700 hover:text-orange-800 hover:bg-orange-100"
+                  >
+                    <Settings className="w-4 h-4 mr-1" />
+                    Manage Pets
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -310,6 +393,41 @@ function App() {
 
         {currentView === ViewType.PetDetail && selectedPet && (
           <PetDetailView pet={selectedPet} onBack={handleBackToPetList} onEdit={handleEditPet} />
+        )}
+
+        {currentView === ViewType.PetProfile && (
+          <div className="fixed inset-0 z-30 bg-gradient-to-br from-orange-50 to-yellow-50">
+            {pets.filter(p => !p.is_archived).length === 0 ? (
+              <div className="h-full flex items-center justify-center">
+                <AddPetProfile
+                  onSubmit={handleFormSubmit}
+                  isSubmitting={isSubmitting}
+                  onBack={() => setCurrentView(ViewType.PetList)}
+                />
+              </div>
+            ) : (
+              <PetProfileNavigation
+                pets={pets.filter(p => !p.is_archived)}
+                activePetIndex={getCurrentPetIndex()}
+                onPetChange={handlePetProfileChange}
+              >
+                {(pet, index) => (
+                  <PetProfile
+                    key={pet.id}
+                    pet={pet}
+                    onEdit={handleEditPet}
+                    onAddActivity={() => {
+                      // TODO: Implement activity addition
+                      console.log('Add activity for pet:', pet.name);
+                    }}
+                    currentIndex={index}
+                    totalPets={pets.filter(p => !p.is_archived).length}
+                    className="h-full"
+                  />
+                )}
+              </PetProfileNavigation>
+            )}
+          </div>
         )}
       </main>
 
