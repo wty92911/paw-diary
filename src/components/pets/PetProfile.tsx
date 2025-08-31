@@ -45,17 +45,21 @@ export function PetProfile({
             onClick={onPrevious}
             disabled={!hasPrevious}
             className="text-orange-700 hover:text-orange-800 hover:bg-orange-100 disabled:opacity-50"
+            aria-label="Previous pet"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
 
           {/* Pet counter */}
           {typeof currentIndex === 'number' && typeof totalPets === 'number' && (
-            <div className="text-center">
+            <div className="text-center" role="status" aria-live="polite">
               <p className="text-sm font-medium text-orange-900">
                 {currentIndex + 1} of {totalPets}
               </p>
-              <div className="flex gap-1 mt-1">
+              <div
+                className="flex gap-1 mt-1"
+                aria-label={`Pet ${currentIndex + 1} of ${totalPets}`}
+              >
                 {Array.from({ length: totalPets }, (_, i) => (
                   <div
                     key={i}
@@ -63,6 +67,7 @@ export function PetProfile({
                       'w-2 h-2 rounded-full transition-colors',
                       i === currentIndex ? 'bg-orange-500' : 'bg-orange-200',
                     )}
+                    aria-hidden="true"
                   />
                 ))}
               </div>
@@ -76,6 +81,7 @@ export function PetProfile({
             onClick={onNext}
             disabled={!hasNext}
             className="text-orange-700 hover:text-orange-800 hover:bg-orange-100 disabled:opacity-50"
+            aria-label="Next pet"
           >
             <ArrowRight className="w-5 h-5" />
           </Button>
@@ -90,9 +96,11 @@ export function PetProfile({
 
           {/* Pet Name and Basic Info */}
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-orange-900">{pet.name}</h1>
+            <h1 className="text-3xl font-bold text-orange-900" id={`pet-name-${pet.id}`}>
+              {pet.name}
+            </h1>
             <div className="flex items-center justify-center gap-2 text-orange-700">
-              <Heart className="w-4 h-4 fill-current" />
+              <Heart className="w-4 h-4 fill-current" aria-hidden="true" />
               <span className="capitalize font-medium">{pet.species.toLowerCase()}</span>
             </div>
             <p className="text-lg text-orange-600">{age}</p>
@@ -104,6 +112,7 @@ export function PetProfile({
               onClick={() => onEdit(pet)}
               variant="outline"
               className="mt-4 border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+              aria-label={`Edit ${pet.name}'s profile`}
             >
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
@@ -135,7 +144,7 @@ export function PetProfile({
 
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-orange-700 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
+                <Calendar className="w-3 h-3" aria-hidden="true" />
                 Born
               </span>
               <span className="text-sm text-orange-900">
@@ -163,10 +172,10 @@ export function PetProfile({
         )}
 
         {/* Activity Preview Section */}
-        <div>
+        <section aria-labelledby={`pet-name-${pet.id}`}>
           <h2 className="text-xl font-bold text-orange-900 mb-4">Activities & Health</h2>
           <PetActivityPreview pet={pet} onAddActivity={onAddActivity} />
-        </div>
+        </section>
 
         {/* Bottom spacing for safe area */}
         <div className="h-8" />

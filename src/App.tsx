@@ -10,6 +10,7 @@ import { PetManagement } from './components/pets/PetManagement';
 import { PetProfileNavigation } from './components/pets/PetProfileNavigation';
 import { PetProfile } from './components/pets/PetProfile';
 import { AddPetProfile } from './components/pets/AddPetProfile';
+import { ActivityForm } from './components/activities/ActivityForm';
 import { useResponsiveNavigation } from './hooks/useResponsiveNavigation';
 import { Button } from './components/ui/button';
 import {
@@ -41,6 +42,11 @@ function App() {
   const [pendingDeletePet, setPendingDeletePet] = useState<Pet>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Activity form states
+  const [isActivityFormOpen, setIsActivityFormOpen] = useState(false);
+  const [selectedPetForActivity, setSelectedPetForActivity] = useState<Pet>();
+  const [isActivitySubmitting, setIsActivitySubmitting] = useState(false);
 
   // Mobile view state
   const [showMobileFormPage, setShowMobileFormPage] = useState(false);
@@ -273,6 +279,35 @@ function App() {
     }
   };
 
+  // Activity handlers
+  const handleAddActivity = (pet: Pet) => {
+    setSelectedPetForActivity(pet);
+    setIsActivityFormOpen(true);
+  };
+
+  const handleActivitySubmit = async (activityData: any) => {
+    try {
+      setIsActivitySubmitting(true);
+      // TODO: Implement activity creation with backend
+      console.log('Creating activity for pet:', selectedPetForActivity?.name, activityData);
+
+      // Mock success - in real implementation, this would call the backend
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Show success feedback
+      console.log('Activity created successfully');
+
+      // Close form and refresh pet data if needed
+      setIsActivityFormOpen(false);
+      setSelectedPetForActivity(undefined);
+    } catch (error) {
+      console.error('Failed to create activity:', error);
+      // Error handling would be done by the form component
+    } finally {
+      setIsActivitySubmitting(false);
+    }
+  };
+
   // Loading and error states
   if (!isInitialized) {
     return (
@@ -416,10 +451,7 @@ function App() {
                     key={pet.id}
                     pet={pet}
                     onEdit={handleEditPet}
-                    onAddActivity={() => {
-                      // TODO: Implement activity addition
-                      console.log('Add activity for pet:', pet.name);
-                    }}
+                    onAddActivity={() => handleAddActivity(pet)}
                     currentIndex={index}
                     totalPets={pets.filter(p => !p.is_archived).length}
                     className="h-full"
@@ -439,6 +471,17 @@ function App() {
           onOpenChange={setIsFormOpen}
           onSubmit={handleFormSubmit}
           isSubmitting={isSubmitting}
+        />
+      )}
+
+      {/* Activity form */}
+      {selectedPetForActivity && (
+        <ActivityForm
+          pet={selectedPetForActivity}
+          open={isActivityFormOpen}
+          onOpenChange={setIsActivityFormOpen}
+          onSubmit={handleActivitySubmit}
+          isSubmitting={isActivitySubmitting}
         />
       )}
 
