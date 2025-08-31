@@ -181,12 +181,15 @@ export enum ViewType {
   PetDetail = 'pet-detail',
   PetForm = 'pet-form',
   PetManagement = 'pet-management',
+  PetProfile = 'pet-profile',
 }
 
 export interface NavigationState {
   currentView: ViewType;
   activePetId?: number;
   isEditMode?: boolean;
+  petIndex?: number; // For horizontal navigation between pets
+  totalPets?: number; // Total number of pets for navigation
 }
 
 // Utility types for common operations
