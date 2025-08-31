@@ -3,6 +3,7 @@ import { Pet, ViewType, PetCreateRequest } from '../../lib/types';
 import { AddPetProfile } from './AddPetProfile';
 import { EmptyPetList } from './PetCardList';
 import { cn } from '../../lib/utils';
+import { useEmptyStateNavigation } from '../../hooks/useEmptyStateNavigation';
 
 interface EmptyStateHandlerProps {
   pets: Pet[];
@@ -148,40 +149,6 @@ function EmptyStateLoadingSkeleton() {
   );
 }
 
-// Hook for smart navigation logic
-export function useEmptyStateNavigation(pets: Pet[], _currentView: ViewType) {
-  const activePets = pets.filter(pet => !pet.is_archived);
-  const hasNoPets = activePets.length === 0;
-
-  // Determine what view should be shown
-  const getRecommendedView = (): ViewType => {
-    if (hasNoPets) {
-      // For empty states, prefer profile-style navigation on mobile
-      // and traditional list on desktop
-      return ViewType.PetProfile;
-    }
-
-    // If pets exist, show profile view by default for mobile-first experience
-    return ViewType.PetProfile;
-  };
-
-  // Determine if we should show empty state handler
-  const shouldShowEmptyState = hasNoPets;
-
-  // Get first available pet for navigation
-  const getFirstAvailablePet = () => {
-    return activePets.length > 0 ? activePets[0] : null;
-  };
-
-  return {
-    hasNoPets,
-    shouldShowEmptyState,
-    recommendedView: getRecommendedView(),
-    firstAvailablePet: getFirstAvailablePet(),
-    activePetCount: activePets.length,
-  };
-}
-
 // Smart routing component that handles all navigation logic
 export function SmartPetRouter({
   pets,
@@ -198,10 +165,7 @@ export function SmartPetRouter({
   onAddPet: () => void;
   className?: string;
 }) {
-  const { shouldShowEmptyState, firstAvailablePet, activePetCount } = useEmptyStateNavigation(
-    pets,
-    currentView,
-  );
+  const { shouldShowEmptyState, firstAvailablePet, activePetCount } = useEmptyStateNavigation(pets);
 
   // Auto-navigate to first pet if no specific pet is selected
   useEffect(() => {
