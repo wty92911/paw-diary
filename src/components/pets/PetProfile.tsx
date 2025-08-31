@@ -17,6 +17,7 @@ interface PetProfileProps {
   currentIndex?: number;
   totalPets?: number;
   className?: string;
+  disableVerticalScroll?: boolean;
 }
 
 export function PetProfile({
@@ -30,13 +31,15 @@ export function PetProfile({
   currentIndex,
   totalPets,
   className,
+  disableVerticalScroll = false,
 }: PetProfileProps) {
   const age = calculateAge(pet.birth_date);
 
   return (
     <div
       className={cn(
-        'h-full bg-gradient-to-br from-orange-50 to-yellow-50 overflow-y-auto',
+        'h-full bg-gradient-to-br from-orange-50 to-yellow-50',
+        disableVerticalScroll ? 'overflow-hidden' : 'overflow-y-auto',
         className,
       )}
     >

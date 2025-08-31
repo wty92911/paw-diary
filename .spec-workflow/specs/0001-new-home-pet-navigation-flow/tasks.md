@@ -101,6 +101,66 @@ This implementation transforms the current pet list interface into an iPhone-sty
   - _Requirements: 7.1-7.5, Error handling requirements, Accessibility requirements_
   - _Leverage: Performance patterns, photo loading from PetCard, accessibility patterns, error handling from App.tsx_
 
+- [ ] 6. Build Immersive Thumbnail View (Pet Gallery)
+  - **Files**:
+    - `src/components/pets/PetThumbnail.tsx`
+    - `src/components/pets/PetThumbnailNavigation.tsx`
+    - `src/hooks/usePetThumbnailNavigation.ts`
+  - **Implementation Details**:
+
+    - Create a **PetThumbnail** component with full-screen photos and blurred background (`backdrop-filter: blur`) to provide a calm, immersive atmosphere.
+    - Overlay basic info (name, age, breed) on the thumbnail.
+    - Implement `PetThumbnailNavigation` with **horizontal-only swiping** (no vertical scroll), ensuring smooth transitions (<300ms, GPU-accelerated transforms).
+    - Introduce a **“+ Add Pet” card** at the far right, which navigates to `AddPetProfile` when tapped.
+  - **Purpose**: Deliver an iOS-like entry experience where pets are presented as immersive gallery cards.
+  - _Requirements: 1.1, 2.1–2.4, 6.1–6.4_
+  - _Leverage: `PetProfileNavigation`, `EmptyStateHandler`, `PetForm`_
+
+- [ ] 7. Connect Thumbnails with Detail Pages
+
+  - **Files**:
+    - `src/components/pets/PetThumbnail.tsx`
+    - `src/components/pets/PetProfileNavigation.tsx`
+    - `src/hooks/usePetProfileNavigation.ts`
+  - **Implementation Details**:
+
+    - Tapping a `PetThumbnail` transitions to the **PetProfile** detail page.
+    - Add a **back gesture/button** in the detail page to return to thumbnails.
+    - Keep **navigation indexes synchronized**: swiping to Pet #3 in thumbnails → opening detail for Pet #3.
+    - Maintain consistent swipe behavior in both views, sharing the same `activePetId` across navigation hooks.
+  - **Purpose**: Provide a consistent and predictable flow between the immersive thumbnail gallery and detailed profiles.
+  - _Requirements: 1.2, 2.5–2.7, 6.5_
+  - _Leverage: `usePets activePetId`, `App.tsx` routing_
+
+- [ ] 8. Enhance “Add Pet” Entry and Onboarding
+  - **Files**:
+
+    - `src/components/pets/AddPetThumbnail.tsx`
+    - `src/components/pets/EmptyStateHandler.tsx`
+  - **Implementation Details**:
+
+    - Design a **dedicated “Add Pet Thumbnail” card** in the thumbnail carousel, styled like a pet card but with a large “+”.
+    - On first app launch (no pets), `EmptyStateHandler` automatically redirects to the AddPet flow.
+    -  After adding a new pet, return to the thumbnail gallery and auto-focus on the newly created pet card.
+  - **Purpose**: Streamline pet addition for new and existing users, ensuring the onboarding is smooth.
+  - _Requirements: 2.7, 3.1, 3.2_
+  - _Leverage: `AddPetProfile`, `EmptyStateHandler`_
+
+- [ ] 9. Animation and Interaction Enhancements
+
+  - **Files**:
+
+    - `src/components/pets/PetThumbnailNavigation.tsx`
+    - `src/components/pets/PetProfileNavigation.tsx`
+  - **Implementation Details**:
+
+    - Use **Framer Motion** or CSS transforms for silky-smooth swipe animations (\~250–300ms, 60fps target).
+    - Add **“elastic edge feedback”**: swiping beyond the last card bounces slightly, hinting the presence of the “+ Add Pet” card.
+    - Optimize image loading with **progressive placeholders** (low-res preview → high-res photo) to prevent flicker during swipes.
+  - **Purpose**: Refine navigation to feel natural and native-like, reinforcing iOS-quality interactions.
+  - _Requirements: 6.1–6.5, animation smoothness_
+  - _Leverage: `PetProfilePhoto` progressive loading, CSS transform patterns_
+
 ## Implementation Notes
 
 **Performance Targets**: Each navigation transition must complete in <300ms with 60fps animations

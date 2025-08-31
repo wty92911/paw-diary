@@ -447,7 +447,7 @@ function App() {
                   activePetIndex={getCurrentPetIndex()}
                   onPetChange={handlePetProfileChange}
                 >
-                  {(pet, index) => (
+                  {(pet, index, disableVerticalScroll) => (
                     <PetProfile
                       key={pet.id}
                       pet={pet}
@@ -456,6 +456,7 @@ function App() {
                       currentIndex={index}
                       totalPets={pets.filter(p => !p.is_archived).length}
                       className="h-full"
+                      disableVerticalScroll={disableVerticalScroll}
                     />
                   )}
                 </PetProfileNavigation>
