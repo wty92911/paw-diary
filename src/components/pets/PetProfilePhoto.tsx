@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Pet } from '../../lib/types';
-import { cn, getDefaultPetPhoto } from '../../lib/utils';
+import { cn } from '../../lib/utils';
 import { Camera, Loader2 } from 'lucide-react';
+import { usePhotoState } from '../../hooks/usePhotoCache';
 
 interface PetProfilePhotoProps {
   pet: Pet;
@@ -16,47 +17,20 @@ export function PetProfilePhoto({
   className,
   showPlaceholder = true,
 }: PetProfilePhotoProps) {
-  const [photoUrl, setPhotoUrl] = useState<string>(getDefaultPetPhoto());
-  const [backgroundUrl, setBackgroundUrl] = useState<string>(getDefaultPetPhoto());
-  const [imageError, setImageError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { photoUrl, isLoading } = usePhotoState(pet.photo_path);
+  const [showSkeleton, setShowSkeleton] = useState(false);
 
+  // Show skeleton after 200ms delay to prevent flash
   useEffect(() => {
-    const loadPhoto = async () => {
-      setIsLoading(true);
-
-      if (pet.photo_path && !imageError) {
-        try {
-          // Use custom photos:// protocol for pet photos
-          const photoPath = `photos://localhost/${pet.photo_path}`;
-          setPhotoUrl(photoPath);
-          setBackgroundUrl(photoPath);
-        } catch (error) {
-          console.error('Failed to load pet photo:', error);
-          setImageError(true);
-          setPhotoUrl(getDefaultPetPhoto());
-          setBackgroundUrl(getDefaultPetPhoto());
-        }
-      } else {
-        setPhotoUrl(getDefaultPetPhoto());
-        setBackgroundUrl(getDefaultPetPhoto());
-      }
-
-      setIsLoading(false);
-    };
-
-    loadPhoto();
-  }, [pet.photo_path, imageError]);
-
-  const handleImageError = () => {
-    setImageError(true);
-    setPhotoUrl(getDefaultPetPhoto());
-    setBackgroundUrl(getDefaultPetPhoto());
-  };
-
-  const handleImageLoad = () => {
-    setIsLoading(false);
-  };
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setShowSkeleton(true);
+      }, 200);
+      return () => clearTimeout(timer);
+    } else {
+      setShowSkeleton(false);
+    }
+  }, [isLoading]);
 
   const sizeClasses = {
     large: {
@@ -83,7 +57,7 @@ export function PetProfilePhoto({
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url(${backgroundUrl})`,
+          backgroundImage: `url(${photoUrl})`,
           filter: 'blur(20px) brightness(0.7)',
           transform: 'scale(1.1)', // Prevent blur edges
         }}
@@ -92,10 +66,13 @@ export function PetProfilePhoto({
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
 
-      {/* Loading state */}
-      {isLoading && (
+      {/* Loading state with skeleton */}
+      {showSkeleton && (
         <div className="absolute inset-0 flex items-center justify-center bg-orange-100/80">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-orange-600 mx-auto mb-2" />
+            <p className="text-sm text-orange-600">Loading photo...</p>
+          </div>
         </div>
       )}
 
@@ -104,15 +81,15 @@ export function PetProfilePhoto({
         {pet.photo_path || !showPlaceholder ? (
           <img
             src={photoUrl}
-            alt={`Photo of ${pet.name}`}
+            alt={`Photo of ${pet.name}, a ${pet.species.toLowerCase()}`}
             className={cn(
               'object-cover rounded-2xl shadow-2xl border-4 border-white/20 backdrop-blur-sm',
               currentSizeClasses.image,
               isLoading && 'opacity-0',
               !isLoading && 'opacity-100 transition-opacity duration-300',
             )}
-            onError={handleImageError}
-            onLoad={handleImageLoad}
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           showPlaceholder && (
@@ -121,9 +98,11 @@ export function PetProfilePhoto({
                 'bg-orange-100/80 backdrop-blur-sm rounded-2xl shadow-2xl border-4 border-white/20 flex items-center justify-center',
                 currentSizeClasses.image,
               )}
+              role="img"
+              aria-label={`No photo available for ${pet.name}`}
             >
               <div className="text-center text-orange-500">
-                <Camera className="w-16 h-16 mx-auto mb-4" />
+                <Camera className="w-16 h-16 mx-auto mb-4" aria-hidden="true" />
                 <p className="text-lg font-medium">No photo</p>
                 <p className="text-sm opacity-75">Add a photo of {pet.name}</p>
               </div>
@@ -134,13 +113,17 @@ export function PetProfilePhoto({
 
       {/* Pet status indicator */}
       {pet.is_archived && (
-        <div className="absolute top-4 left-4 bg-gray-800/80 backdrop-blur-sm text-white text-sm px-3 py-1 rounded-full">
+        <div
+          className="absolute top-4 left-4 bg-gray-800/80 backdrop-blur-sm text-white text-sm px-3 py-1 rounded-full"
+          role="status"
+          aria-label={`${pet.name} is archived`}
+        >
           Archived
         </div>
       )}
 
       {/* Decorative paw print watermark */}
-      <div className="absolute bottom-4 right-4 text-white/20">
+      <div className="absolute bottom-4 right-4 text-white/20" aria-hidden="true">
         <svg
           width="32"
           height="32"
@@ -175,10 +158,12 @@ export function PetProfilePhotoSkeleton({
         sizeClasses[size],
         className,
       )}
+      role="status"
+      aria-label="Loading pet photo"
     >
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="text-center text-orange-400">
-          <Loader2 className="w-12 h-12 mx-auto mb-2 animate-spin" />
+          <Loader2 className="w-12 h-12 mx-auto mb-2 animate-spin" aria-hidden="true" />
           <p className="text-sm">Loading photo...</p>
         </div>
       </div>

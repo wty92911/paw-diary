@@ -11,7 +11,9 @@ import { PetProfileNavigation } from './components/pets/PetProfileNavigation';
 import { PetProfile } from './components/pets/PetProfile';
 import { AddPetProfile } from './components/pets/AddPetProfile';
 import { ActivityForm } from './components/activities/ActivityForm';
+import { PetProfileNavigationErrorBoundary } from './components/pets/PetProfileNavigationErrorBoundary';
 import { useResponsiveNavigation } from './hooks/useResponsiveNavigation';
+import { usePreloadPetPhotos } from './hooks/usePhotoCache';
 import { Button } from './components/ui/button';
 import {
   AlertDialog,
@@ -55,6 +57,9 @@ function App() {
   const { pets, isLoading, error, refetch, createPet, updatePet, deletePet, reorderPets } =
     usePets();
   const { isMobile } = useResponsiveNavigation();
+
+  // Preload all pet photos for instant display
+  usePreloadPetPhotos(pets);
 
   // Helper functions for pet navigation
   const getCurrentPetIndex = (): number => {
@@ -441,23 +446,32 @@ function App() {
                 />
               </div>
             ) : (
-              <PetProfileNavigation
+              <PetProfileNavigationErrorBoundary
                 pets={pets.filter(p => !p.is_archived)}
-                activePetIndex={getCurrentPetIndex()}
-                onPetChange={handlePetProfileChange}
+                onNavigateToView={view => {
+                  if (view === 'pet-list') {
+                    setCurrentView(ViewType.PetList);
+                  }
+                }}
               >
-                {(pet, index) => (
-                  <PetProfile
-                    key={pet.id}
-                    pet={pet}
-                    onEdit={handleEditPet}
-                    onAddActivity={() => handleAddActivity(pet)}
-                    currentIndex={index}
-                    totalPets={pets.filter(p => !p.is_archived).length}
-                    className="h-full"
-                  />
-                )}
-              </PetProfileNavigation>
+                <PetProfileNavigation
+                  pets={pets.filter(p => !p.is_archived)}
+                  activePetIndex={getCurrentPetIndex()}
+                  onPetChange={handlePetProfileChange}
+                >
+                  {(pet, index) => (
+                    <PetProfile
+                      key={pet.id}
+                      pet={pet}
+                      onEdit={handleEditPet}
+                      onAddActivity={() => handleAddActivity(pet)}
+                      currentIndex={index}
+                      totalPets={pets.filter(p => !p.is_archived).length}
+                      className="h-full"
+                    />
+                  )}
+                </PetProfileNavigation>
+              </PetProfileNavigationErrorBoundary>
             )}
           </div>
         )}

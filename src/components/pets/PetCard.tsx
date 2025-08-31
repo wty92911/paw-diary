@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Pet } from '../../lib/types';
-import { cn, calculateAge, getDefaultPetPhoto } from '../../lib/utils';
+import { cn, calculateAge } from '../../lib/utils';
 import { Heart, Edit, Trash2 } from 'lucide-react';
+import { usePhotoState } from '../../hooks/usePhotoCache';
 
 interface PetCardProps {
   pet: Pet;
@@ -22,33 +23,7 @@ export function PetCard({
   onDelete,
   showActions = true,
 }: PetCardProps) {
-  const [photoUrl, setPhotoUrl] = useState<string>(getDefaultPetPhoto());
-  const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-    const loadPhoto = async () => {
-      if (pet.photo_path && !imageError) {
-        try {
-          // Use custom photos:// protocol instead of asset://
-          // This works on iOS where asset:// is restricted to bundled resources
-          setPhotoUrl(`photos://localhost/${pet.photo_path}`);
-        } catch (error) {
-          console.error('Failed to load pet photo:', error);
-          setImageError(true);
-          setPhotoUrl(getDefaultPetPhoto());
-        }
-      } else {
-        setPhotoUrl(getDefaultPetPhoto());
-      }
-    };
-
-    loadPhoto();
-  }, [pet.photo_path, imageError]);
-
-  const handleImageError = () => {
-    setImageError(true);
-    setPhotoUrl(getDefaultPetPhoto());
-  };
+  const { photoUrl } = usePhotoState(pet.photo_path);
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -82,7 +57,6 @@ export function PetCard({
             src={photoUrl}
             alt={`Photo of ${pet.name}`}
             className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
-            onError={handleImageError}
           />
 
           {/* Status indicator */}

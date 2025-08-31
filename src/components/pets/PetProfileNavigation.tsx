@@ -1,8 +1,9 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useTransition } from 'react';
 import { Pet } from '../../lib/types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
+import { PetProfileNavigationErrorBoundary } from './PetProfileNavigationErrorBoundary';
 
 interface PetProfileNavigationProps {
   pets: Pet[];
@@ -37,29 +38,35 @@ export function PetProfileNavigation({
   const profilesRef = useRef<HTMLDivElement>(null);
   const isTransitioning = useRef(false);
   const gestureStartRef = useRef<{ x: number; time: number } | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  // Navigation functions
+  // Navigation functions with performance optimization
   const navigateToPrevious = useCallback(() => {
     if (activePetIndex > 0 && !isTransitioning.current) {
-      onPetChange(activePetIndex - 1);
+      startTransition(() => {
+        onPetChange(activePetIndex - 1);
+      });
     }
-  }, [activePetIndex, onPetChange]);
+  }, [activePetIndex, onPetChange, startTransition]);
 
   const navigateToNext = useCallback(() => {
     if (activePetIndex < pets.length - 1 && !isTransitioning.current) {
-      onPetChange(activePetIndex + 1);
+      startTransition(() => {
+        onPetChange(activePetIndex + 1);
+      });
     }
-  }, [activePetIndex, pets.length, onPetChange]);
+  }, [activePetIndex, pets.length, onPetChange, startTransition]);
 
-  // Transform profiles container to show active pet
+  // Transform profiles container to show active pet with hardware acceleration
   const updateTransform = useCallback(() => {
     if (!profilesRef.current) return;
 
     const containerWidth = containerRef.current?.clientWidth || 0;
     const translateX = -activePetIndex * containerWidth;
 
-    // Use transform3d for hardware acceleration
+    // Use transform3d for hardware acceleration and will-change for optimization
     profilesRef.current.style.transform = `translate3d(${translateX}px, 0, 0)`;
+    profilesRef.current.style.willChange = 'transform';
   }, [activePetIndex]);
 
   // Handle touch gestures
@@ -180,117 +187,155 @@ export function PetProfileNavigation({
   // Error boundary for navigation failures
   if (pets.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
-        No pets available for navigation
+      <div
+        className="flex items-center justify-center h-64 text-gray-500"
+        role="status"
+        aria-live="polite"
+      >
+        <p>No pets available for navigation</p>
       </div>
     );
   }
 
   if (activePetIndex < 0 || activePetIndex >= pets.length) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
-        Invalid pet index: {activePetIndex}
+      <div
+        className="flex items-center justify-center h-64 text-gray-500"
+        role="alert"
+        aria-live="assertive"
+      >
+        <p>Invalid pet index: {activePetIndex}</p>
       </div>
     );
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        'relative overflow-hidden w-full h-full',
-        'touch-pan-x', // Allow horizontal panning
-        className,
-      )}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onWheel={handleWheel}
+    <PetProfileNavigationErrorBoundary
+      pets={pets}
+      onNavigateToView={view => {
+        // This would be passed from parent component
+        console.log('Navigate to view:', view);
+      }}
     >
-      {/* Navigation Arrows */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className={cn(
-          'absolute left-4 top-1/2 -translate-y-1/2 z-20',
-          'bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white/95',
-          'transition-all duration-200',
-          !canNavigatePrevious && 'opacity-50 cursor-not-allowed',
-        )}
-        onClick={navigateToPrevious}
-        disabled={!canNavigatePrevious}
-        aria-label="Previous pet"
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        className={cn(
-          'absolute right-4 top-1/2 -translate-y-1/2 z-20',
-          'bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white/95',
-          'transition-all duration-200',
-          !canNavigateNext && 'opacity-50 cursor-not-allowed',
-        )}
-        onClick={navigateToNext}
-        disabled={!canNavigateNext}
-        aria-label="Next pet"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </Button>
-
-      {/* Pet Profiles Container */}
       <div
-        ref={profilesRef}
-        className="flex h-full transition-transform duration-300 ease-out"
-        style={{
-          width: `${pets.length * 100}%`,
-          willChange: 'transform', // Optimize for animations
-        }}
+        ref={containerRef}
+        className={cn(
+          'relative overflow-hidden w-full h-full',
+          'touch-pan-x', // Allow horizontal panning
+          className,
+        )}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel}
+        role="region"
+        aria-label="Pet profile navigation"
+        aria-live="polite"
       >
-        {pets.map((pet, index) => (
+        {/* Navigation Arrows */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            'absolute left-4 top-1/2 -translate-y-1/2 z-20',
+            'bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white/95',
+            'transition-all duration-200',
+            !canNavigatePrevious && 'opacity-50 cursor-not-allowed',
+            isPending && 'opacity-75',
+          )}
+          onClick={navigateToPrevious}
+          disabled={!canNavigatePrevious || isPending}
+          aria-label="Previous pet"
+          aria-describedby={isPending ? 'navigation-loading' : undefined}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            'absolute right-4 top-1/2 -translate-y-1/2 z-20',
+            'bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white/95',
+            'transition-all duration-200',
+            !canNavigateNext && 'opacity-50 cursor-not-allowed',
+            isPending && 'opacity-75',
+          )}
+          onClick={navigateToNext}
+          disabled={!canNavigateNext || isPending}
+          aria-label="Next pet"
+          aria-describedby={isPending ? 'navigation-loading' : undefined}
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+
+        {/* Pet Profiles Container */}
+        <div
+          ref={profilesRef}
+          className="flex h-full transition-transform duration-300 ease-out"
+          style={{
+            width: `${pets.length * 100}%`,
+            willChange: 'transform', // Optimize for animations
+          }}
+        >
+          {pets.map((pet, index) => (
+            <div
+              key={pet.id}
+              className="w-full h-full flex-shrink-0"
+              style={{
+                width: `${100 / pets.length}%`,
+              }}
+            >
+              {/* Pre-load content for current and adjacent pets for smooth UX */}
+              {Math.abs(index - activePetIndex) <= 1 && children(pet, index)}
+            </div>
+          ))}
+        </div>
+
+        {/* Pet Counter */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/20 backdrop-blur-sm rounded-full text-white text-sm">
+            <span className="font-medium">{activePetIndex + 1}</span>
+            <span className="text-white/70">of</span>
+            <span className="font-medium">{pets.length}</span>
+          </div>
+        </div>
+
+        {/* Loading indicator for transitions */}
+        {isPending && (
           <div
-            key={pet.id}
-            className="w-full h-full flex-shrink-0"
-            style={{
-              width: `${100 / pets.length}%`,
-            }}
+            id="navigation-loading"
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-30"
+            role="status"
+            aria-live="polite"
           >
-            {/* Pre-load content for current and adjacent pets for smooth UX */}
-            {Math.abs(index - activePetIndex) <= 1 && children(pet, index)}
+            <div className="bg-black/20 backdrop-blur-sm rounded-full px-3 py-1.5 text-white text-sm">
+              Loading...
+            </div>
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* Pet Counter */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-black/20 backdrop-blur-sm rounded-full text-white text-sm">
-          <span className="font-medium">{activePetIndex + 1}</span>
-          <span className="text-white/70">of</span>
-          <span className="font-medium">{pets.length}</span>
-        </div>
-      </div>
-
-      {/* Dots Indicator (for small number of pets) */}
-      {pets.length <= 5 && (
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10">
-          <div className="flex items-center gap-2">
-            {pets.map((_, index) => (
-              <button
-                key={index}
-                className={cn(
-                  'w-2 h-2 rounded-full transition-all duration-200',
-                  index === activePetIndex
-                    ? 'bg-white shadow-sm scale-125'
-                    : 'bg-white/50 hover:bg-white/75',
-                )}
-                onClick={() => onPetChange(index)}
-                aria-label={`Go to pet ${index + 1}`}
-              />
-            ))}
+        {/* Dots Indicator (for small number of pets) */}
+        {pets.length <= 5 && (
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10">
+            <div className="flex items-center gap-2">
+              {pets.map((_, index) => (
+                <button
+                  key={index}
+                  className={cn(
+                    'w-2 h-2 rounded-full transition-all duration-200',
+                    index === activePetIndex
+                      ? 'bg-white shadow-sm scale-125'
+                      : 'bg-white/50 hover:bg-white/75',
+                  )}
+                  onClick={() => onPetChange(index)}
+                  aria-label={`Go to pet ${index + 1}`}
+                  disabled={isPending}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </PetProfileNavigationErrorBoundary>
   );
 }
