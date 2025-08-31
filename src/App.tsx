@@ -1,17 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Pet, PetCreateRequest, PetUpdateRequest, ViewType } from './lib/types';
+import { Pet, PetCreateRequest, PetUpdateRequest } from './lib/types';
 import { usePets } from './hooks/usePets';
-import { PetCardList, EmptyPetList } from './components/pets/PetCardList';
+import { PetThumbnailNavigation } from './components/pets/PetThumbnailNavigation';
 import { PetForm } from './components/pets/PetForm';
 import { PetFormPage } from './components/pets/PetFormPage';
-import { PetDetailView } from './components/pets/PetDetailView';
 import { PetManagement } from './components/pets/PetManagement';
-import { PetProfileNavigation } from './components/pets/PetProfileNavigation';
-import { PetProfile } from './components/pets/PetProfile';
-import { AddPetProfile } from './components/pets/AddPetProfile';
 import { ActivityForm } from './components/activities/ActivityForm';
-import { PetProfileNavigationErrorBoundary } from './components/pets/PetProfileNavigationErrorBoundary';
 import { useResponsiveNavigation } from './hooks/useResponsiveNavigation';
 import { usePreloadPetPhotos } from './hooks/usePhotoCache';
 import { Button } from './components/ui/button';
@@ -29,10 +24,8 @@ import { Settings, Heart, Loader2 } from 'lucide-react';
 import './App.css';
 
 function App() {
-  // App state
-  const [currentView, setCurrentView] = useState<ViewType>(ViewType.PetList);
-  const [activePetId, setActivePetId] = useState<number>();
-  const [selectedPet, setSelectedPet] = useState<Pet>();
+  // App state - simplified for thumbnail navigation
+  const [autoFocusPetId, setAutoFocusPetId] = useState<number | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [initError, setInitError] = useState<string>();
@@ -61,12 +54,10 @@ function App() {
   // Preload all pet photos for instant display
   usePreloadPetPhotos(pets);
 
-  // Helper functions for pet navigation
-  const getCurrentPetIndex = useCallback((): number => {
-    if (!activePetId) return -1;
-    const activePets = pets.filter(p => !p.is_archived);
-    return activePets.findIndex(p => p.id === activePetId);
-  }, [activePetId, pets]);
+  // Clear auto-focus after timeout
+  const handleAutoFocusComplete = useCallback(() => {
+    setAutoFocusPetId(null);
+  }, []);
 
   // Initialize the app
   useEffect(() => {
@@ -104,82 +95,6 @@ function App() {
     initializeApp();
   }, [isInitialized, isInitializing, refetch]); // Include all dependencies
 
-  // Intelligent homepage routing and pet selection
-  useEffect(() => {
-    if (isLoading) return;
-
-    const activePets = pets.filter(p => !p.is_archived);
-
-    // Intelligent routing based on pet state
-    if (activePets.length === 0) {
-      // No pets: navigate to PetProfile view (will show AddPetProfile)
-      if (currentView !== ViewType.PetProfile) {
-        setCurrentView(ViewType.PetProfile);
-      }
-      setActivePetId(undefined);
-    } else {
-      // Pets exist: ensure we're in PetProfile view and have an active pet
-      if (currentView === ViewType.PetList) {
-        setCurrentView(ViewType.PetProfile);
-      }
-
-      // Auto-select first pet if none selected or selected pet is archived
-      if (!activePetId || !activePets.find(p => p.id === activePetId)) {
-        setActivePetId(activePets[0].id);
-      }
-    }
-  }, [pets, activePetId, currentView, isLoading]);
-
-  // Error handling and recovery for navigation state inconsistencies
-  useEffect(() => {
-    if (isLoading) return;
-
-    const activePets = pets.filter(p => !p.is_archived);
-
-    // Recovery: if activePetId is set but pet doesn't exist, clear it
-    if (activePetId && !pets.find(p => p.id === activePetId)) {
-      console.warn(`Active pet ${activePetId} no longer exists, clearing selection`);
-      setActivePetId(undefined);
-    }
-
-    // Recovery: if we're in PetProfile view but no valid pets and not showing add form
-    if (
-      currentView === ViewType.PetProfile &&
-      activePets.length > 0 &&
-      getCurrentPetIndex() === -1
-    ) {
-      console.warn('PetProfile view with pets but no valid active pet, selecting first pet');
-      setActivePetId(activePets[0].id);
-    }
-
-    // Recovery: if selectedPet is inconsistent with activePetId in PetDetail view
-    if (currentView === ViewType.PetDetail && selectedPet && selectedPet.id !== activePetId) {
-      console.warn('Selected pet inconsistent with active pet, syncing state');
-      setActivePetId(selectedPet.id);
-    }
-  }, [pets, activePetId, currentView, selectedPet, isLoading, getCurrentPetIndex]);
-
-  // Navigation handlers
-  const handlePetClick = (pet: Pet) => {
-    setSelectedPet(pet);
-    setActivePetId(pet.id);
-    setCurrentView(ViewType.PetDetail);
-  };
-
-  const handleBackToPetList = () => {
-    setCurrentView(ViewType.PetList);
-    setSelectedPet(undefined);
-  };
-
-  // Pet profile navigation handlers
-  const handlePetProfileChange = (index: number) => {
-    const activePets = pets.filter(p => !p.is_archived);
-    if (index >= 0 && index < activePets.length) {
-      const selectedPet = activePets[index];
-      setActivePetId(selectedPet.id);
-    }
-  };
-
   // Form handlers
   const handleAddPet = () => {
     setEditingPet(undefined);
@@ -210,18 +125,11 @@ function App() {
 
       if (editingPet) {
         // Update existing pet
-        const updatedPet = await updatePet(editingPet.id, data as PetUpdateRequest);
-        if (selectedPet?.id === editingPet.id) {
-          setSelectedPet(updatedPet);
-        }
+        await updatePet(editingPet.id, data as PetUpdateRequest);
       } else {
-        // Create new pet
+        // Create new pet and auto-focus on it
         const newPet = await createPet(data as PetCreateRequest);
-        setActivePetId(newPet.id);
-        // Navigate to PetProfile view if first pet or if we were in AddPetProfile
-        if (pets.filter(p => !p.is_archived).length === 0 || currentView === ViewType.PetProfile) {
-          setCurrentView(ViewType.PetProfile);
-        }
+        setAutoFocusPetId(newPet.id);
       }
 
       // Close appropriate form interface
@@ -243,11 +151,6 @@ function App() {
   const handleArchivePet = async (pet: Pet) => {
     try {
       await updatePet(pet.id, { is_archived: true });
-      if (activePetId === pet.id) {
-        // Switch to another pet if the current one was archived
-        const activePets = pets.filter(p => !p.is_archived && p.id !== pet.id);
-        setActivePetId(activePets.length > 0 ? activePets[0].id : undefined);
-      }
     } catch (error) {
       console.error('Failed to archive pet:', error);
     }
@@ -265,11 +168,6 @@ function App() {
     try {
       setIsDeleting(true);
       await deletePet(pet.id);
-      if (activePetId === pet.id) {
-        // Switch to another pet if the current one was deleted
-        const activePets = pets.filter(p => !p.is_archived && p.id !== pet.id);
-        setActivePetId(activePets.length > 0 ? activePets[0].id : undefined);
-      }
       setPendingDeletePet(undefined);
     } catch (error) {
       console.error('Failed to delete pet:', error);
@@ -285,10 +183,6 @@ function App() {
   };
 
   // Activity handlers
-  const handleAddActivity = (pet: Pet) => {
-    setSelectedPetForActivity(pet);
-    setIsActivityFormOpen(true);
-  };
 
   const handleActivitySubmit = async (activityData: Record<string, unknown>) => {
     try {
@@ -390,80 +284,22 @@ function App() {
           </div>
         )}
 
-        {/* View rendering */}
-        {currentView === ViewType.PetList && (
-          <>
-            {pets.filter(p => !p.is_archived).length === 0 ? (
-              <EmptyPetList onAddPet={handleAddPet} />
-            ) : (
-              <div className="space-y-8">
-                {/* Welcome message */}
-                <div className="text-center">
-                  <h2 className="text-2xl font-semibold text-orange-900 mb-2">Welcome back! 🐾</h2>
-                  <p className="text-orange-600">
-                    Select a pet to view their profile or add a new furry friend to your family.
-                  </p>
-                </div>
-
-                {/* Pet cards */}
-                <PetCardList
-                  pets={pets}
-                  activePetId={activePetId}
-                  onPetClick={handlePetClick}
-                  onAddPet={handleAddPet}
-                  onEditPet={handleEditPet}
-                  onDeletePet={pet => setPendingDeletePet(pet)}
-                />
-              </div>
-            )}
-          </>
-        )}
-
-        {currentView === ViewType.PetDetail && selectedPet && (
-          <PetDetailView pet={selectedPet} onBack={handleBackToPetList} onEdit={handleEditPet} />
-        )}
-
-        {currentView === ViewType.PetProfile && (
-          <div className="fixed inset-0 z-30 bg-gradient-to-br from-orange-50 to-yellow-50 overflow-hidden">
-            {pets.filter(p => !p.is_archived).length === 0 ? (
-              <div className="h-full flex items-center justify-center">
-                <AddPetProfile
-                  onSubmit={handleFormSubmit}
-                  isSubmitting={isSubmitting}
-                  onBack={() => setCurrentView(ViewType.PetList)}
-                />
-              </div>
-            ) : (
-              <PetProfileNavigationErrorBoundary
-                pets={pets.filter(p => !p.is_archived)}
-                onNavigateToView={view => {
-                  if (view === 'pet-list') {
-                    setCurrentView(ViewType.PetList);
-                  }
-                }}
-              >
-                <PetProfileNavigation
-                  pets={pets.filter(p => !p.is_archived)}
-                  activePetIndex={getCurrentPetIndex()}
-                  onPetChange={handlePetProfileChange}
-                >
-                  {(pet, index, disableVerticalScroll) => (
-                    <PetProfile
-                      key={pet.id}
-                      pet={pet}
-                      onEdit={handleEditPet}
-                      onAddActivity={() => handleAddActivity(pet)}
-                      currentIndex={index}
-                      totalPets={pets.filter(p => !p.is_archived).length}
-                      className="h-full"
-                      disableVerticalScroll={disableVerticalScroll}
-                    />
-                  )}
-                </PetProfileNavigation>
-              </PetProfileNavigationErrorBoundary>
-            )}
-          </div>
-        )}
+        {/* Immersive Thumbnail Navigation - Default View */}
+        <div className="fixed inset-0 z-30 bg-gradient-to-br from-orange-50 to-yellow-50 overflow-hidden">
+          <PetThumbnailNavigation
+            pets={pets.filter(p => !p.is_archived)}
+            onPetSelect={undefined}
+            onAddPet={handleAddPet}
+            onEditPet={handleEditPet}
+            onAddActivity={() => console.log('Add activity clicked')}
+            autoFocusPetId={autoFocusPetId}
+            onAutoFocusComplete={handleAutoFocusComplete}
+            className="h-full"
+            showAddPetCard={true}
+            enableElasticFeedback={true}
+            autoPlay={false}
+          />
+        </div>
       </main>
 
       {/* Responsive form rendering */}
@@ -508,7 +344,7 @@ function App() {
         onArchive={handleArchivePet}
         onRestore={handleRestorePet}
         onDelete={async pet => setPendingDeletePet(pet)}
-        onView={handlePetClick}
+        onView={pet => console.log('View pet:', pet.name)}
       />
 
       {/* Delete confirmation dialog */}

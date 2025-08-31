@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Pet, ViewType, PetCreateRequest } from '../../lib/types';
 import { AddPetProfile } from './AddPetProfile';
-import { EmptyPetList } from './PetCardList';
+import { EmptyPetList } from './EmptyPetList';
 import { cn } from '../../lib/utils';
 import { useEmptyStateNavigation } from '../../hooks/useEmptyStateNavigation';
 
