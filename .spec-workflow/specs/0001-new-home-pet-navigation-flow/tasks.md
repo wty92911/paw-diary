@@ -2,7 +2,7 @@
 
 ## Task Overview
 
-This implementation transforms the current pet list interface into an iPhone-style horizontal navigation system with dedicated pet profile pages. The approach leverages existing components heavily while introducing new navigation patterns, consolidated into 5 comprehensive tasks that cover the complete feature.
+This implementation transforms the current pet list interface into an iPhone-style horizontal navigation system with dedicated pet profile pages. The approach leverages existing components heavily while introducing new navigation patterns, consolidated into comprehensive tasks that cover the complete feature.
 
 ## Steering Document Compliance
 
@@ -111,7 +111,7 @@ This implementation transforms the current pet list interface into an iPhone-sty
     - Create a **PetThumbnail** component with full-screen photos and blurred background (`backdrop-filter: blur`) to provide a calm, immersive atmosphere.
     - Overlay basic info (name, age, breed) on the thumbnail.
     - Implement `PetThumbnailNavigation` with **horizontal-only swiping** (no vertical scroll), ensuring smooth transitions (<300ms, GPU-accelerated transforms).
-    - Introduce a **“+ Add Pet” card** at the far right, which navigates to `AddPetProfile` when tapped.
+    - Introduce a **"+ Add Pet" card** at the far right, which navigates to `AddPetProfile` when tapped.
   - **Purpose**: Deliver an iOS-like entry experience where pets are presented as immersive gallery cards.
   - _Requirements: 1.1, 2.1–2.4, 6.1–6.4_
   - _Leverage: `PetProfileNavigation`, `EmptyStateHandler`, `PetForm`_
@@ -132,14 +132,14 @@ This implementation transforms the current pet list interface into an iPhone-sty
   - _Requirements: 1.2, 2.5–2.7, 6.5_
   - _Leverage: `usePets activePetId`, `App.tsx` routing_
 
-- [x] 8. Enhance “Add Pet” Entry and Onboarding
+- [x] 8. Enhance "Add Pet" Entry and Onboarding
   - **Files**:
 
     - `src/components/pets/AddPetThumbnail.tsx`
     - `src/components/pets/EmptyStateHandler.tsx`
   - **Implementation Details**:
 
-    - Design a **dedicated “Add Pet Thumbnail” card** in the thumbnail carousel, styled like a pet card but with a large “+”.
+    - Design a **dedicated "Add Pet Thumbnail" card** in the thumbnail carousel, styled like a pet card but with a large "+".
     - On first app launch (no pets), `EmptyStateHandler` automatically redirects to the AddPet flow.
     -  After adding a new pet, return to the thumbnail gallery and auto-focus on the newly created pet card.
   - **Purpose**: Streamline pet addition for new and existing users, ensuring the onboarding is smooth.
@@ -154,12 +154,29 @@ This implementation transforms the current pet list interface into an iPhone-sty
     - `src/components/pets/PetProfileNavigation.tsx`
   - **Implementation Details**:
 
-    - Use **Framer Motion** or CSS transforms for silky-smooth swipe animations (\~250–300ms, 60fps target).
-    - Add **“elastic edge feedback”**: swiping beyond the last card bounces slightly, hinting the presence of the “+ Add Pet” card.
+    - Use **Framer Motion** or CSS transforms for silky-smooth swipe animations (~250–300ms, 60fps target).
+    - Add **"elastic edge feedback"**: swiping beyond the last card bounces slightly, hinting the presence of the "+ Add Pet" card.
     - Optimize image loading with **progressive placeholders** (low-res preview → high-res photo) to prevent flicker during swipes.
   - **Purpose**: Refine navigation to feel natural and native-like, reinforcing iOS-quality interactions.
   - _Requirements: 6.1–6.5, animation smoothness_
   - _Leverage: `PetProfilePhoto` progressive loading, CSS transform patterns_
+
+- [ ] 10. Optimize Thumbnail Navigation Layout and Performance
+  - **Files**:
+    - `src/components/pets/PetThumbnailNavigation.tsx` - Improve layout and sliding performance
+    - `src/components/pets/PetThumbnail.tsx` - Add details page navigation button
+    - `src/hooks/usePetThumbnailNavigation.ts` - Optimize sliding speed and disable conflicting animations
+  - **Implementation Details**:
+    - **Optimize sliding speed**: Reduce transition duration from current slow animations to snappy 200-250ms for better responsiveness
+    - **Disable click animation conflicts**: Remove or disable click-to-animate effects that interfere with horizontal sliding gestures
+    - **Horizontal-only navigation**: Ensure thumbnail pages only support left/right sliding, block any vertical scroll interactions
+    - **Add details navigation button**: Include prominent "View Details" or "More Info" button/icon on each thumbnail to clearly indicate how to enter pet details page
+    - **Improve layout spacing**: Optimize thumbnail layout for better visual balance and touch targets
+    - **Performance optimization**: Implement hardware acceleration for smoother sliding with `transform3d` and `will-change` properties
+    - **Touch gesture refinement**: Fine-tune touch sensitivity and momentum for natural iOS-like sliding behavior
+  - **Purpose**: Create smooth, intuitive thumbnail navigation with clear user guidance for accessing detailed pet information
+  - _Requirements: 2.1-2.7, 6.1-6.5, 7.1-7.5, User Experience requirements_
+  - _Leverage: Existing CSS transform patterns, touch gesture handling, iOS design principles_
 
 ## Implementation Notes
 
