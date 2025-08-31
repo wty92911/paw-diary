@@ -316,7 +316,7 @@ export function useTouchThumbnailNavigation(
     enableWrapping: false, // Better UX for thumbnails
     preloadAdjacent: true,
     elasticEdges: true,
-    transitionDuration: responsiveNav.isMobile ? 200 : 250, // Faster on mobile
+    transitionDuration: responsiveNav.isMobile ? 180 : 220, // Even faster for snappy response
     showAddPetCard: true,
   });
 }
@@ -329,8 +329,11 @@ export function useThumbnailSwipeGestures() {
   const [swipeState, setSwipeState] = useState({
     isDragging: false,
     startX: 0,
+    startY: 0,
     currentX: 0,
+    currentY: 0,
     deltaX: 0,
+    deltaY: 0,
     isHorizontalGesture: false,
   });
 
@@ -340,8 +343,11 @@ export function useThumbnailSwipeGestures() {
       ...prev,
       isDragging: true,
       startX: touch.clientX,
+      startY: touch.clientY,
       currentX: touch.clientX,
+      currentY: touch.clientY,
       deltaX: 0,
+      deltaY: 0,
       isHorizontalGesture: false,
     }));
   }, []);
@@ -352,23 +358,27 @@ export function useThumbnailSwipeGestures() {
 
       const touch = e.touches[0];
       const deltaX = touch.clientX - swipeState.startX;
-      const deltaY = touch.clientY - (e.touches[0]?.clientY || 0);
+      const deltaY = touch.clientY - swipeState.startY;
 
-      // Determine if this is a horizontal gesture
-      const isHorizontalGesture = Math.abs(deltaX) > Math.abs(deltaY) * 1.5;
+      // More aggressive horizontal gesture detection for better UX
+      const isHorizontalGesture = Math.abs(deltaX) > Math.abs(deltaY) * 1.2;
 
-      if (isHorizontalGesture) {
+      // Always prevent default for horizontal gestures to block scrolling
+      if (isHorizontalGesture && Math.abs(deltaX) > 10) {
         e.preventDefault(); // Prevent vertical scrolling
+        e.stopPropagation(); // Prevent other handlers
       }
 
       setSwipeState(prev => ({
         ...prev,
         currentX: touch.clientX,
+        currentY: touch.clientY,
         deltaX,
+        deltaY,
         isHorizontalGesture,
       }));
     },
-    [swipeState.isDragging, swipeState.startX],
+    [swipeState.isDragging, swipeState.startX, swipeState.startY],
   );
 
   const handleTouchEnd = useCallback(() => {
@@ -376,8 +386,11 @@ export function useThumbnailSwipeGestures() {
       ...prev,
       isDragging: false,
       startX: 0,
+      startY: 0,
       currentX: 0,
+      currentY: 0,
       deltaX: 0,
+      deltaY: 0,
       isHorizontalGesture: false,
     }));
   }, []);
