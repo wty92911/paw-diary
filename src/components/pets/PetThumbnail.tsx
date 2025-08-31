@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
-import { Calendar, Heart } from 'lucide-react';
+import { Calendar, Heart, Info } from 'lucide-react';
 import { usePhotoState } from '../../hooks/usePhotoCache';
 interface PetThumbnailProps {
   pet: Pet;
@@ -48,14 +48,21 @@ export function PetThumbnail({
     return `${months}m`;
   };
 
-  const handleClick = () => {
+  const handleGeneralClick = () => {
     if (isLoading) return;
 
-    // Priority: onTapToDetail for navigation to detail page, then onClick for other actions
+    // General click (non-button areas) for selection only
+    if (onClick) {
+      onClick();
+    }
+  };
+
+  const handleDetailsClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent parent click
+    if (isLoading) return;
+
     if (onTapToDetail) {
       onTapToDetail(pet);
-    } else if (onClick) {
-      onClick();
     }
   };
 
@@ -74,16 +81,16 @@ export function PetThumbnail({
     <div
       className={cn(
         'relative w-full h-full overflow-hidden',
-        'cursor-pointer select-none',
-        'transform-gpu will-change-transform transition-transform duration-150 ease-out',
-        'active:scale-95 hover:scale-[1.02]',
+        'select-none',
+        // Remove conflicting scale animations that interfere with horizontal sliding
+        'transform-gpu will-change-transform',
         className,
       )}
-      onClick={handleClick}
+      onClick={handleGeneralClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
-      role="button"
-      aria-label={`View ${pet.name}'s profile`}
+      role="region"
+      aria-label={`${pet.name}'s thumbnail`}
       aria-describedby={`pet-${pet.id}-info`}
     >
       {/* Full-screen blurred background */}
@@ -164,8 +171,33 @@ export function PetThumbnail({
       {/* Pet information overlay */}
       <div id={`pet-${pet.id}-info`} className="absolute bottom-0 left-0 right-0 p-6 text-white">
         <div className="space-y-3">
-          {/* Pet name */}
-          <h2 className="text-3xl font-bold tracking-tight drop-shadow-lg">{pet.name}</h2>
+          {/* Pet name and details button */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-bold tracking-tight drop-shadow-lg flex-1 pr-4">
+              {pet.name}
+            </h2>
+
+            {/* Details Navigation Button */}
+            {onTapToDetail && (
+              <button
+                onClick={handleDetailsClick}
+                className={cn(
+                  'flex items-center justify-center',
+                  'w-12 h-12 rounded-full',
+                  'bg-white/20 backdrop-blur-sm',
+                  'border border-white/30',
+                  'text-white hover:bg-white/30 active:bg-white/40',
+                  'transition-all duration-200 ease-out',
+                  'focus:outline-none focus:ring-2 focus:ring-white/50',
+                  'transform hover:scale-105 active:scale-95',
+                )}
+                aria-label={`View ${pet.name}'s detailed profile`}
+                title="View Details"
+              >
+                <Info className="w-6 h-6" strokeWidth={2} />
+              </button>
+            )}
+          </div>
 
           {/* Pet details */}
           <div className="flex items-center gap-4 text-lg">
@@ -237,9 +269,9 @@ export function PetThumbnail({
         />
       )}
 
-      {/* Touch ripple effect for iOS-like feedback */}
+      {/* Subtle touch feedback that doesn't interfere with sliding */}
       <div
-        className="absolute inset-0 bg-white/0 hover:bg-white/5 active:bg-white/10 transition-colors duration-150"
+        className="absolute inset-0 bg-white/0 hover:bg-white/5 transition-colors duration-300 pointer-events-none"
         aria-hidden="true"
       />
     </div>

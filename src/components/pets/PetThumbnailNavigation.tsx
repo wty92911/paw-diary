@@ -126,11 +126,11 @@ export function PetThumbnailNavigation({
         ? 'transform'
         : 'auto';
 
-      // Update transition based on interaction state with optimized timing
+      // Update transition based on interaction state with faster, snappier timing
       thumbnailsRef.current.style.transition =
         swipeGestures.swipeState.isDragging || immediate
           ? 'none'
-          : 'transform 0.25s cubic-bezier(0.2, 0, 0.2, 1)'; // iOS-like easing
+          : 'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; // Faster, snappier easing
     },
     [navigation.activePetIndex, elasticOffset, swipeGestures.swipeState.isDragging],
   );
@@ -141,17 +141,18 @@ export function PetThumbnailNavigation({
 
     setElasticOffset(0);
 
-    // Apply elastic bounce animation using CSS
+    // Apply elastic bounce animation using CSS with faster timing
     thumbnailsRef.current.style.transition =
-      'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
     updateTransform();
 
-    // Reset to normal transition after animation
+    // Reset to normal transition after animation with faster timing
     setTimeout(() => {
       if (thumbnailsRef.current) {
-        thumbnailsRef.current.style.transition = 'transform 0.25s cubic-bezier(0.2, 0, 0.2, 1)';
+        thumbnailsRef.current.style.transition =
+          'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       }
-    }, 500);
+    }, 400);
   }, [updateTransform]);
 
   // Handle touch gestures with elastic feedback
@@ -166,6 +167,11 @@ export function PetThumbnailNavigation({
   const handleTouchMove = useCallback(
     (e: React.TouchEvent) => {
       swipeGestures.handleTouchMove(e);
+
+      // Enforce horizontal-only navigation - prevent vertical scrolling
+      if (swipeGestures.swipeState.isHorizontalGesture) {
+        e.preventDefault(); // Block vertical scrolling when horizontal swipe is detected
+      }
 
       if (!swipeGestures.swipeState.isHorizontalGesture || !containerRef.current) {
         return;
@@ -424,6 +430,7 @@ export function PetThumbnailNavigation({
         'relative w-full h-full overflow-hidden',
         'touch-pan-x', // Allow horizontal panning only
         'select-none', // Prevent text selection during swipes
+        'overscroll-x-contain overscroll-y-none', // Contain horizontal overscroll, prevent vertical
         className,
       )}
       onTouchStart={handleTouchStart}
@@ -432,6 +439,12 @@ export function PetThumbnailNavigation({
       role="region"
       aria-label="Pet thumbnail gallery"
       aria-live="polite"
+      style={{
+        // Additional CSS to enforce horizontal-only behavior
+        touchAction: 'pan-x', // Only allow horizontal panning
+        overflowX: 'hidden',
+        overflowY: 'hidden',
+      }}
     >
       {/* Thumbnails Container */}
       <div
