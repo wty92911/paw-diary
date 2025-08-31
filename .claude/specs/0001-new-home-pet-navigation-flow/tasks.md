@@ -17,9 +17,9 @@ This implementation transforms the current pet list interface into an iPhone-sty
 **No Testing**: Testing tasks removed as requested
 **Agent-Friendly**: Clear input/output with minimal context switching between major functional areas
 
-## Task 1: Core Components and Type Foundation
+## Implementation Tasks
 
-- [ ] **Task 1: Create all core pet profile components and type definitions**
+- [ ] 1. Create all core pet profile components and type definitions
   - **Files**:
     - `src/lib/types.ts` - Add PetProfile ViewType and NavigationState interface
     - `src/components/pets/PetProfilePhoto.tsx` - Large photo display with blur background
@@ -38,9 +38,7 @@ This implementation transforms the current pet list interface into an iPhone-sty
   - _Requirements: 1.1, 3.1-3.6, 4.1, 4.4, 5.1-5.5_
   - _Leverage: PetCard/PetDetailView photo loading, PetForm patterns, EmptyPetList styling, UI components_
 
-## Task 2: Navigation Container and State Management
-
-- [ ] **Task 2: Implement horizontal navigation system and state management**
+- [ ] 2. Implement horizontal navigation system and state management
   - **Files**:
     - `src/components/pets/PetProfileNavigation.tsx` - Main navigation container
     - `src/hooks/usePetProfileNavigation.ts` - Navigation state management hook
@@ -56,9 +54,7 @@ This implementation transforms the current pet list interface into an iPhone-sty
   - _Requirements: 2.1-2.7, 6.1-6.5, 7.1-7.5_
   - _Leverage: PetCardList scrolling logic, useResponsiveNavigation patterns, existing pet state management_
 
-## Task 3: App Integration and Routing Logic
-
-- [ ] **Task 3: Integrate navigation system into main app with intelligent routing**
+- [ ] 3. Integrate navigation system into main app with intelligent routing
   - **Files**:
     - `src/App.tsx` - Complete app integration with PetProfile view support
   - **Implementation Details**:
@@ -72,9 +68,7 @@ This implementation transforms the current pet list interface into an iPhone-sty
   - _Requirements: 1.1-1.4, 2.6_
   - _Leverage: App.tsx existing ViewType handling, pet loading, and state management patterns_
 
-## Task 4: Activity System Integration and User Interactions
-
-- [ ] **Task 4: Implement activity management and user interaction features**
+- [ ] 4. Implement activity management and user interaction features
   - **Files**:
     - `src/components/pets/PetProfile.tsx` - Add Activity button functionality
     - `src/components/pets/PetActivityPreview.tsx` - Enhanced activity display
@@ -89,9 +83,7 @@ This implementation transforms the current pet list interface into an iPhone-sty
   - _Requirements: 4.1-4.5, 6.3-6.5, Accessibility requirements_
   - _Leverage: PetForm patterns, Card components, date formatting utilities, accessibility patterns_
 
-## Task 5: Performance Optimization and Final Polish
-
-- [ ] **Task 5: Implement performance optimizations, error handling, and accessibility features**
+- [ ] 5. Implement performance optimizations, error handling, and accessibility features
   - **Files**:
     - `src/components/pets/PetProfileNavigation.tsx` - Final performance optimizations
     - `src/components/pets/PetProfilePhoto.tsx` - Progressive loading and error handling
