@@ -116,7 +116,7 @@ This implementation transforms the current pet list interface into an iPhone-sty
   - _Requirements: 1.1, 2.1–2.4, 6.1–6.4_
   - _Leverage: `PetProfileNavigation`, `EmptyStateHandler`, `PetForm`_
 
-- [ ] 7. Connect Thumbnails with Detail Pages
+- [x] 7. Connect Thumbnails with Detail Pages
 
   - **Files**:
     - `src/components/pets/PetThumbnail.tsx`
@@ -132,7 +132,7 @@ This implementation transforms the current pet list interface into an iPhone-sty
   - _Requirements: 1.2, 2.5–2.7, 6.5_
   - _Leverage: `usePets activePetId`, `App.tsx` routing_
 
-- [ ] 8. Enhance “Add Pet” Entry and Onboarding
+- [x] 8. Enhance “Add Pet” Entry and Onboarding
   - **Files**:
 
     - `src/components/pets/AddPetThumbnail.tsx`
@@ -146,7 +146,7 @@ This implementation transforms the current pet list interface into an iPhone-sty
   - _Requirements: 2.7, 3.1, 3.2_
   - _Leverage: `AddPetProfile`, `EmptyStateHandler`_
 
-- [ ] 9. Animation and Interaction Enhancements
+- [x] 9. Animation and Interaction Enhancements
 
   - **Files**:
 

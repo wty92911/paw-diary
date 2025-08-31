@@ -30,12 +30,27 @@ export function EmptyStateHandler({
   const activePets = pets.filter(pet => !pet.is_archived);
   const hasNoPets = activePets.length === 0;
 
-  // Auto-navigate based on current state and view
+  // Auto-navigate based on current state and view - Enhanced onboarding flow
   useEffect(() => {
     if (isLoading) return;
 
-    // If no pets exist and we're in PetList view, stay there (shows EmptyPetList)
-    if (hasNoPets && currentView === ViewType.PetList) {
+    // First app launch - automatically redirect to AddPet flow
+    if (hasNoPets && pets.length === 0) {
+      // Direct to AddPetProfile for immediate onboarding
+      if (currentView !== ViewType.PetProfile && onAddPetProfileSubmit) {
+        onNavigate(ViewType.PetProfile);
+        return;
+      }
+
+      // Fallback to traditional add pet flow
+      if (currentView !== ViewType.PetForm) {
+        onNavigate(ViewType.PetForm);
+        return;
+      }
+    }
+
+    // If no active pets exist but some archived pets exist, show EmptyPetList
+    if (hasNoPets && pets.length > 0 && currentView === ViewType.PetList) {
       return;
     }
 
@@ -48,7 +63,7 @@ export function EmptyStateHandler({
     if (!hasNoPets && (currentView === ViewType.PetList || currentView === ViewType.PetProfile)) {
       return;
     }
-  }, [hasNoPets, currentView, isLoading, onNavigate]);
+  }, [hasNoPets, currentView, isLoading, onNavigate, pets.length, onAddPetProfileSubmit]);
 
   // Loading state
   if (isLoading) {
