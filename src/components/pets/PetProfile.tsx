@@ -34,7 +34,12 @@ export function PetProfile({
   const age = calculateAge(pet.birth_date);
 
   return (
-    <div className={cn('min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50', className)}>
+    <div
+      className={cn(
+        'h-full bg-gradient-to-br from-orange-50 to-yellow-50 overflow-y-auto',
+        className,
+      )}
+    >
       {/* Navigation Header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-orange-200">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">

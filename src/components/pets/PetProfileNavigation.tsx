@@ -37,7 +37,7 @@ export function PetProfileNavigation({
   const containerRef = useRef<HTMLDivElement>(null);
   const profilesRef = useRef<HTMLDivElement>(null);
   const isTransitioning = useRef(false);
-  const gestureStartRef = useRef<{ x: number; time: number } | null>(null);
+  const gestureStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Navigation functions with performance optimization
@@ -77,6 +77,7 @@ export function PetProfileNavigation({
       const touch = e.touches[0];
       gestureStartRef.current = {
         x: touch.clientX,
+        y: touch.clientY,
         time: Date.now(),
       };
     },
@@ -90,14 +91,25 @@ export function PetProfileNavigation({
       const touch = e.changedTouches[0];
       const gestureStart = gestureStartRef.current;
       const deltaX = touch.clientX - gestureStart.x;
+      const deltaY = touch.clientY - gestureStart.y;
       const deltaTime = Date.now() - gestureStart.time;
-      const velocity = Math.abs(deltaX) / deltaTime;
 
-      // Swipe detection thresholds
-      const MIN_SWIPE_DISTANCE = 50;
-      const MIN_SWIPE_VELOCITY = 0.3;
+      // Calculate swipe angle and distance
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      const angle = Math.abs(Math.atan2(deltaY, deltaX) * (180 / Math.PI));
+      const velocity = distance / deltaTime;
 
-      const isValidSwipe = Math.abs(deltaX) > MIN_SWIPE_DISTANCE || velocity > MIN_SWIPE_VELOCITY;
+      // Swipe detection thresholds - more strict for horizontal swipes
+      const MIN_SWIPE_DISTANCE = 80; // Increased from 50
+      const MIN_SWIPE_VELOCITY = 0.5; // Increased from 0.3
+      const MAX_VERTICAL_ANGLE = 30; // Maximum angle for horizontal swipe (degrees)
+
+      // Check if it's a valid horizontal swipe
+      const isHorizontalSwipe = angle < MAX_VERTICAL_ANGLE || angle > 180 - MAX_VERTICAL_ANGLE;
+      const hasMinimumDistance = Math.abs(deltaX) > MIN_SWIPE_DISTANCE;
+      const hasMinimumVelocity = velocity > MIN_SWIPE_VELOCITY;
+
+      const isValidSwipe = isHorizontalSwipe && (hasMinimumDistance || hasMinimumVelocity);
 
       if (isValidSwipe) {
         if (deltaX > 0) {
@@ -119,13 +131,17 @@ export function PetProfileNavigation({
     (e: React.WheelEvent) => {
       if (disableGestures || isTransitioning.current) return;
 
-      // Prevent default scrolling
+      // Only handle horizontal scroll or when horizontal scroll is significantly larger
+      const isHorizontalScroll = Math.abs(e.deltaX) > Math.abs(e.deltaY) * 2;
+
+      if (!isHorizontalScroll) return; // Allow vertical scrolling to pass through
+
+      // Prevent default scrolling only for horizontal movements
       e.preventDefault();
 
-      const isHorizontalScroll = Math.abs(e.deltaX) > Math.abs(e.deltaY);
-      const delta = isHorizontalScroll ? e.deltaX : e.deltaY;
+      const delta = e.deltaX;
 
-      if (Math.abs(delta) < 10) return; // Ignore small movements
+      if (Math.abs(delta) < 20) return; // Increased threshold for mouse wheel
 
       if (delta > 0) {
         navigateToNext();

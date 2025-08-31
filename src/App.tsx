@@ -359,27 +359,15 @@ function App() {
             {/* Header actions */}
             <div className="flex items-center gap-2">
               {pets.length > 0 && (
-                <>
-                  {currentView === ViewType.PetProfile && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCurrentView(ViewType.PetList)}
-                      className="text-orange-700 hover:text-orange-800 hover:bg-orange-100"
-                    >
-                      View All Pets
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsManagementOpen(true)}
-                    className="text-orange-700 hover:text-orange-800 hover:bg-orange-100"
-                  >
-                    <Settings className="w-4 h-4 mr-1" />
-                    Manage Pets
-                  </Button>
-                </>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsManagementOpen(true)}
+                  className="text-orange-700 hover:text-orange-800 hover:bg-orange-100"
+                >
+                  <Settings className="w-4 h-4 mr-1" />
+                  Manage Pets
+                </Button>
               )}
             </div>
           </div>
@@ -436,7 +424,7 @@ function App() {
         )}
 
         {currentView === ViewType.PetProfile && (
-          <div className="fixed inset-0 z-30 bg-gradient-to-br from-orange-50 to-yellow-50">
+          <div className="fixed inset-0 z-30 bg-gradient-to-br from-orange-50 to-yellow-50 overflow-hidden">
             {pets.filter(p => !p.is_archived).length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <AddPetProfile
