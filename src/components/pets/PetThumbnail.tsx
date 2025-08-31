@@ -1,17 +1,13 @@
 import React from 'react';
 import { Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
-import { Calendar, Heart, Plus } from 'lucide-react';
+import { Calendar, Heart } from 'lucide-react';
 import { usePhotoState } from '../../hooks/usePhotoCache';
 interface PetThumbnailProps {
   pet: Pet;
   isActive?: boolean;
   onClick?: () => void;
-  className?: string;
-}
-
-interface AddPetThumbnailProps {
-  onClick?: () => void;
+  onTapToDetail?: (pet: Pet) => void;
   className?: string;
 }
 
@@ -26,7 +22,13 @@ interface AddPetThumbnailProps {
  * - Progressive loading states
  * - Accessibility support
  */
-export function PetThumbnail({ pet, isActive = false, onClick, className }: PetThumbnailProps) {
+export function PetThumbnail({
+  pet,
+  isActive = false,
+  onClick,
+  onTapToDetail,
+  className,
+}: PetThumbnailProps) {
   const { photoUrl, isLoading } = usePhotoState(pet.photo_path);
 
   // Calculate pet age using native Date methods
@@ -47,15 +49,24 @@ export function PetThumbnail({ pet, isActive = false, onClick, className }: PetT
   };
 
   const handleClick = () => {
-    if (onClick && !isLoading) {
+    if (isLoading) return;
+
+    // Priority: onTapToDetail for navigation to detail page, then onClick for other actions
+    if (onTapToDetail) {
+      onTapToDetail(pet);
+    } else if (onClick) {
       onClick();
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.key === 'Enter' || e.key === ' ') && onClick && !isLoading) {
+    if ((e.key === 'Enter' || e.key === ' ') && !isLoading) {
       e.preventDefault();
-      onClick();
+      if (onTapToDetail) {
+        onTapToDetail(pet);
+      } else if (onClick) {
+        onClick();
+      }
     }
   };
 
@@ -64,7 +75,8 @@ export function PetThumbnail({ pet, isActive = false, onClick, className }: PetT
       className={cn(
         'relative w-full h-full overflow-hidden',
         'cursor-pointer select-none',
-        'transform-gpu will-change-transform',
+        'transform-gpu will-change-transform transition-transform duration-150 ease-out',
+        'active:scale-95 hover:scale-[1.02]',
         className,
       )}
       onClick={handleClick}
@@ -95,12 +107,15 @@ export function PetThumbnail({ pet, isActive = false, onClick, className }: PetT
         aria-hidden="true"
       />
 
-      {/* Loading state */}
+      {/* Loading state with enhanced animation */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="text-center text-white">
-            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm font-medium">Loading photo...</p>
+            <div className="relative w-12 h-12 mx-auto mb-4">
+              <div className="absolute inset-0 border-2 border-white/20 rounded-full"></div>
+              <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p className="text-sm font-medium opacity-90">Loading photo...</p>
           </div>
         </div>
       )}
@@ -114,13 +129,16 @@ export function PetThumbnail({ pet, isActive = false, onClick, className }: PetT
             className={cn(
               'max-w-full max-h-full object-cover rounded-3xl shadow-2xl',
               'border-4 border-white/20 backdrop-blur-sm',
-              'transform-gpu transition-all duration-500',
+              'transform-gpu transition-all duration-300 ease-out',
               isActive && 'scale-105',
-              isLoading && 'opacity-0 scale-95',
-              !isLoading && 'opacity-100 scale-100',
+              isLoading && 'opacity-0 scale-95 blur-sm',
+              !isLoading && 'opacity-100 scale-100 blur-0',
             )}
             loading="eager" // Prioritize loading for thumbnails
             decoding="async"
+            style={{
+              transition: 'all 0.3s cubic-bezier(0.2, 0, 0.2, 1)',
+            }}
           />
         ) : (
           // Placeholder for pets without photos
@@ -220,97 +238,6 @@ export function PetThumbnail({ pet, isActive = false, onClick, className }: PetT
       )}
 
       {/* Touch ripple effect for iOS-like feedback */}
-      <div
-        className="absolute inset-0 bg-white/0 hover:bg-white/5 active:bg-white/10 transition-colors duration-150"
-        aria-hidden="true"
-      />
-    </div>
-  );
-}
-
-/**
- * AddPetThumbnail provides a special thumbnail for adding new pets
- * Styled consistently with pet thumbnails but with add functionality
- */
-export function AddPetThumbnail({ onClick, className }: AddPetThumbnailProps) {
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.key === 'Enter' || e.key === ' ') && onClick) {
-      e.preventDefault();
-      onClick();
-    }
-  };
-
-  return (
-    <div
-      className={cn(
-        'relative w-full h-full overflow-hidden',
-        'cursor-pointer select-none',
-        'transform-gpu will-change-transform',
-        className,
-      )}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-      role="button"
-      aria-label="Add new pet"
-    >
-      {/* Gradient background */}
-      <div
-        className="absolute inset-0 bg-gradient-to-br from-orange-400/20 via-yellow-400/15 to-orange-500/25"
-        aria-hidden="true"
-      />
-
-      {/* Pattern overlay for texture */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-          backgroundSize: '24px 24px',
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Main content */}
-      <div className="absolute inset-0 flex items-center justify-center p-8">
-        <div className="text-center text-white">
-          {/* Add icon container */}
-          <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center transition-all duration-200 hover:bg-white/25 hover:border-white/40 hover:scale-105">
-            <Plus className="w-16 h-16" aria-hidden="true" />
-          </div>
-
-          {/* Add pet text */}
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold tracking-tight drop-shadow-lg">Add New Pet</h2>
-            <p className="text-lg opacity-90 drop-shadow">Welcome your furry friend</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Decorative elements */}
-      <div className="absolute top-4 right-4 text-white/20" aria-hidden="true">
-        <Heart className="w-7 h-7 fill-current drop-shadow-lg animate-pulse" />
-      </div>
-
-      {/* Bottom decorative paw */}
-      <div className="absolute bottom-4 left-4 text-white/20" aria-hidden="true">
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="drop-shadow-lg"
-        >
-          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9C22.1 9 23 9.9 23 11C23 12.1 22.1 13 21 13C19.9 13 19 12.1 19 11C19 9.9 19.9 9 21 9ZM3 9C4.1 9 5 9.9 5 11C5 12.1 4.1 13 3 13C1.9 13 1 12.1 1 11C1 9.9 1.9 9 3 9ZM15 7C16.1 7 17 7.9 17 9C17 10.1 16.1 11 15 11C13.9 11 13 10.1 13 9C13 7.9 13.9 7 15 7ZM9 7C10.1 7 11 7.9 11 9C11 10.1 10.1 11 9 11C7.9 11 7 10.1 7 9C7 7.9 7.9 7 9 7ZM12 15C15.9 15 19 17.6 19 20.5C19 21.3 18.3 22 17.5 22H6.5C5.7 22 5 21.3 5 20.5C5 17.6 8.1 15 12 15Z" />
-        </svg>
-      </div>
-
-      {/* Touch ripple effect */}
       <div
         className="absolute inset-0 bg-white/0 hover:bg-white/5 active:bg-white/10 transition-colors duration-150"
         aria-hidden="true"
