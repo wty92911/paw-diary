@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Pet, PetCreateRequest, PetUpdateRequest, ViewType } from './lib/types';
 import { usePets } from './hooks/usePets';
@@ -62,11 +62,11 @@ function App() {
   usePreloadPetPhotos(pets);
 
   // Helper functions for pet navigation
-  const getCurrentPetIndex = (): number => {
+  const getCurrentPetIndex = useCallback((): number => {
     if (!activePetId) return -1;
     const activePets = pets.filter(p => !p.is_archived);
     return activePets.findIndex(p => p.id === activePetId);
-  };
+  }, [activePetId, pets]);
 
   // Initialize the app
   useEffect(() => {
@@ -290,7 +290,7 @@ function App() {
     setIsActivityFormOpen(true);
   };
 
-  const handleActivitySubmit = async (activityData: any) => {
+  const handleActivitySubmit = async (activityData: Record<string, unknown>) => {
     try {
       setIsActivitySubmitting(true);
       // TODO: Implement activity creation with backend

@@ -201,16 +201,7 @@ export function PetProfileNavigation({
       isHorizontalGesture.current = false;
       gestureStartRef.current = null;
     },
-    [
-      disableGestures,
-      activePetIndex,
-      pets.length,
-      navigateToPrevious,
-      navigateToNext,
-      updateTransform,
-      startTransition,
-      onPetChange,
-    ],
+    [disableGestures, activePetIndex, pets.length, updateTransform, startTransition, onPetChange],
   );
 
   // Handle mouse wheel navigation (desktop)
