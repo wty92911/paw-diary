@@ -9,7 +9,7 @@ interface PetProfileNavigationProps {
   pets: Pet[];
   activePetIndex: number;
   onPetChange: (index: number) => void;
-  children: (pet: Pet, index: number) => React.ReactNode;
+  children: (pet: Pet, index: number, disableVerticalScroll: boolean) => React.ReactNode;
   className?: string;
   disableGestures?: boolean;
 }
@@ -38,6 +38,9 @@ export function PetProfileNavigation({
   const profilesRef = useRef<HTMLDivElement>(null);
   const isTransitioning = useRef(false);
   const gestureStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const currentTranslateX = useRef(0);
+  const isDragging = useRef(false);
+  const isHorizontalGesture = useRef(false);
   const [isPending, startTransition] = useTransition();
 
   // Navigation functions with performance optimization
@@ -58,16 +61,29 @@ export function PetProfileNavigation({
   }, [activePetIndex, pets.length, onPetChange, startTransition]);
 
   // Transform profiles container to show active pet with hardware acceleration
-  const updateTransform = useCallback(() => {
-    if (!profilesRef.current) return;
+  const updateTransform = useCallback(
+    (translateX?: number) => {
+      if (!profilesRef.current) return;
 
-    const containerWidth = containerRef.current?.clientWidth || 0;
-    const translateX = -activePetIndex * containerWidth;
+      const containerWidth = containerRef.current?.clientWidth || 0;
+      const targetTranslateX =
+        translateX !== undefined ? translateX : -activePetIndex * containerWidth;
 
-    // Use transform3d for hardware acceleration and will-change for optimization
-    profilesRef.current.style.transform = `translate3d(${translateX}px, 0, 0)`;
-    profilesRef.current.style.willChange = 'transform';
-  }, [activePetIndex]);
+      currentTranslateX.current = targetTranslateX;
+
+      // Use transform3d for hardware acceleration and will-change for optimization
+      profilesRef.current.style.transform = `translate3d(${targetTranslateX}px, 0, 0)`;
+      profilesRef.current.style.willChange = 'transform';
+
+      // Update transition style based on dragging state
+      if (profilesRef.current) {
+        profilesRef.current.style.transition = isDragging.current
+          ? 'none'
+          : 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      }
+    },
+    [activePetIndex],
+  );
 
   // Handle touch gestures
   const handleTouchStart = useCallback(
@@ -80,8 +96,53 @@ export function PetProfileNavigation({
         y: touch.clientY,
         time: Date.now(),
       };
+      isDragging.current = false;
+      isHorizontalGesture.current = false;
     },
     [disableGestures],
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (disableGestures || !gestureStartRef.current || isTransitioning.current) return;
+
+      const touch = e.touches[0];
+      const gestureStart = gestureStartRef.current;
+      const deltaX = touch.clientX - gestureStart.x;
+      const deltaY = touch.clientY - gestureStart.y;
+
+      // Check if this is a horizontal gesture
+      const isHorizontalGestureCheck = Math.abs(deltaX) > Math.abs(deltaY) * 1.5;
+
+      if (!isHorizontalGestureCheck) return;
+
+      // Set horizontal gesture flag and prevent default scrolling
+      isHorizontalGesture.current = true;
+      e.preventDefault();
+
+      isDragging.current = true;
+
+      // Calculate the new translate position
+      const containerWidth = containerRef.current?.clientWidth || 0;
+      const baseTranslateX = -activePetIndex * containerWidth;
+      const newTranslateX = baseTranslateX + deltaX;
+
+      // Apply the transform with resistance at edges
+      const resistance = 0.3;
+      let finalTranslateX = newTranslateX;
+
+      // Add resistance at the edges
+      if (activePetIndex === 0 && deltaX > 0) {
+        // At first pet, resist right swipe
+        finalTranslateX = baseTranslateX + deltaX * resistance;
+      } else if (activePetIndex === pets.length - 1 && deltaX < 0) {
+        // At last pet, resist left swipe
+        finalTranslateX = baseTranslateX + deltaX * resistance;
+      }
+
+      updateTransform(finalTranslateX);
+    },
+    [disableGestures, activePetIndex, pets.length, updateTransform],
   );
 
   const handleTouchEnd = useCallback(
@@ -99,10 +160,10 @@ export function PetProfileNavigation({
       const angle = Math.abs(Math.atan2(deltaY, deltaX) * (180 / Math.PI));
       const velocity = distance / deltaTime;
 
-      // Swipe detection thresholds - more strict for horizontal swipes
-      const MIN_SWIPE_DISTANCE = 80; // Increased from 50
-      const MIN_SWIPE_VELOCITY = 0.5; // Increased from 0.3
-      const MAX_VERTICAL_ANGLE = 30; // Maximum angle for horizontal swipe (degrees)
+      // Swipe detection thresholds
+      const MIN_SWIPE_DISTANCE = 80;
+      const MIN_SWIPE_VELOCITY = 0.5;
+      const MAX_VERTICAL_ANGLE = 30;
 
       // Check if it's a valid horizontal swipe
       const isHorizontalSwipe = angle < MAX_VERTICAL_ANGLE || angle > 180 - MAX_VERTICAL_ANGLE;
@@ -111,19 +172,45 @@ export function PetProfileNavigation({
 
       const isValidSwipe = isHorizontalSwipe && (hasMinimumDistance || hasMinimumVelocity);
 
-      if (isValidSwipe) {
-        if (deltaX > 0) {
-          // Swipe right - go to previous pet
-          navigateToPrevious();
+      // If we were dragging, animate to final position
+      if (isDragging.current) {
+        if (isValidSwipe) {
+          // Complete the transition
+          if (deltaX > 0 && activePetIndex > 0) {
+            // Swipe right - go to previous pet
+            startTransition(() => {
+              onPetChange(activePetIndex - 1);
+            });
+          } else if (deltaX < 0 && activePetIndex < pets.length - 1) {
+            // Swipe left - go to next pet
+            startTransition(() => {
+              onPetChange(activePetIndex + 1);
+            });
+          } else {
+            // Bounce back to current position
+            updateTransform();
+          }
         } else {
-          // Swipe left - go to next pet
-          navigateToNext();
+          // Bounce back to current position
+          updateTransform();
         }
       }
 
+      // Reset state
+      isDragging.current = false;
+      isHorizontalGesture.current = false;
       gestureStartRef.current = null;
     },
-    [disableGestures, navigateToPrevious, navigateToNext],
+    [
+      disableGestures,
+      activePetIndex,
+      pets.length,
+      navigateToPrevious,
+      navigateToNext,
+      updateTransform,
+      startTransition,
+      onPetChange,
+    ],
   );
 
   // Handle mouse wheel navigation (desktop)
@@ -241,6 +328,7 @@ export function PetProfileNavigation({
           className,
         )}
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onWheel={handleWheel}
         role="region"
@@ -287,10 +375,13 @@ export function PetProfileNavigation({
         {/* Pet Profiles Container */}
         <div
           ref={profilesRef}
-          className="flex h-full transition-transform duration-300 ease-out"
+          className="flex h-full"
           style={{
             width: `${pets.length * 100}%`,
             willChange: 'transform', // Optimize for animations
+            transition: isDragging.current
+              ? 'none'
+              : 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
           }}
         >
           {pets.map((pet, index) => (
@@ -302,7 +393,8 @@ export function PetProfileNavigation({
               }}
             >
               {/* Pre-load content for current and adjacent pets for smooth UX */}
-              {Math.abs(index - activePetIndex) <= 1 && children(pet, index)}
+              {Math.abs(index - activePetIndex) <= 1 &&
+                children(pet, index, isHorizontalGesture.current)}
             </div>
           ))}
         </div>
