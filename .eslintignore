@@ -1,0 +1,18 @@
+# Tauri build artifacts
+src-tauri/target/
+dist/
+build/
+node_modules/
+
+# Generated files
+*.min.js
+*.bundle.js
+
+# IDE and system files
+.DS_Store
+.vscode/
+.idea/
+
+# Other build outputs
+coverage/
+*.log

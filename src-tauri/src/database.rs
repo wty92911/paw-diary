@@ -123,7 +123,7 @@ pub struct PetDatabase {
 }
 
 impl PetDatabase {
-    /// Initialize the database with SQLite
+    /// Initialize the database with SQLite and run migrations
     pub async fn new<P: AsRef<Path>>(db_path: P) -> Result<Self> {
         let db_path = db_path.as_ref();
 
@@ -148,87 +148,35 @@ impl PetDatabase {
             e
         })?;
 
-        // Create tables manually for now (skip migrations)
-        log::info!("Creating database tables...");
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS pets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name VARCHAR(100) NOT NULL,
-                birth_date DATE NOT NULL,
-                species VARCHAR(20) NOT NULL CHECK (species IN ('cat', 'dog')),
-                gender VARCHAR(10) NOT NULL CHECK (gender IN ('male', 'female', 'unknown')),
-                breed VARCHAR(100),
-                color VARCHAR(50),
-                weight_kg REAL,
-                photo_path VARCHAR(255),
-                notes TEXT,
-                display_order INTEGER DEFAULT 0,
-                is_archived BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            "#,
-        )
-        .execute(&pool)
-        .await
-        .map_err(|e| {
-            log::error!("Failed to create pets table: {e}");
-            e
-        })?;
+        // Run database migrations
+        log::info!("Running database migrations...");
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .map_err(|e| {
+                log::error!("Failed to run migrations: {e}");
+                e
+            })?;
 
-        // Create indexes
-        sqlx::query("CREATE INDEX IF NOT EXISTS idx_pets_display_order ON pets(display_order);")
-            .execute(&pool)
-            .await?;
-
-        sqlx::query("CREATE INDEX IF NOT EXISTS idx_pets_is_archived ON pets(is_archived);")
-            .execute(&pool)
-            .await?;
-
-        log::info!("Database initialized and tables created successfully");
+        log::info!("Database initialized and migrations completed successfully");
         Ok(PetDatabase { pool })
     }
 
-    /// Initialize the database for testing (without migrations)
+    /// Initialize the database for testing using migrations
     pub async fn new_for_test<P: AsRef<Path>>(db_path: P) -> Result<Self> {
         let database_url = format!("sqlite:{}", db_path.as_ref().display());
-        let pool = SqlitePool::connect(&database_url).await?;
 
-        // Manually create tables for testing
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS pets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name VARCHAR(100) NOT NULL,
-                birth_date DATE NOT NULL,
-                species VARCHAR(20) NOT NULL CHECK (species IN ('cat', 'dog')),
-                gender VARCHAR(10) NOT NULL CHECK (gender IN ('male', 'female', 'unknown')),
-                breed VARCHAR(100),
-                color VARCHAR(50),
-                weight_kg REAL,
-                photo_path VARCHAR(255),
-                notes TEXT,
-                display_order INTEGER DEFAULT 0,
-                is_archived BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            "#,
-        )
-        .execute(&pool)
-        .await?;
+        let opts = SqliteConnectOptions::from_str(&database_url)?
+            .create_if_missing(true)
+            .journal_mode(SqliteJournalMode::Wal)
+            .synchronous(SqliteSynchronous::Normal)
+            .foreign_keys(true);
+        let pool = SqlitePool::connect_with(opts).await?;
 
-        // Create indexes for better query performance
-        sqlx::query("CREATE INDEX IF NOT EXISTS idx_pets_display_order ON pets(display_order);")
-            .execute(&pool)
-            .await?;
+        // Run migrations for testing
+        sqlx::migrate!("./migrations").run(&pool).await?;
 
-        sqlx::query("CREATE INDEX IF NOT EXISTS idx_pets_is_archived ON pets(is_archived);")
-            .execute(&pool)
-            .await?;
-
-        log::info!("Test database initialized successfully");
+        log::info!("Test database initialized with migrations successfully");
         Ok(PetDatabase { pool })
     }
 
@@ -243,8 +191,8 @@ impl PetDatabase {
         let result = sqlx::query(
             r#"
             INSERT INTO pets (
-                name, birth_date, species, gender, breed, color, 
-                weight_kg, photo_path, notes, display_order, 
+                name, birth_date, species, gender, breed, color,
+                weight_kg, photo_path, notes, display_order,
                 created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#,
@@ -270,19 +218,19 @@ impl PetDatabase {
     /// Get all pets, optionally including archived ones
     pub async fn get_pets(&self, include_archived: bool) -> Result<Vec<Pet>> {
         let sql = if include_archived {
-            "SELECT 
-                id, name, birth_date, species, gender, breed, color, 
-                weight_kg, photo_path, notes, display_order, is_archived, 
-                created_at, updated_at 
-            FROM pets 
+            "SELECT
+                id, name, birth_date, species, gender, breed, color,
+                weight_kg, photo_path, notes, display_order, is_archived,
+                created_at, updated_at
+            FROM pets
             ORDER BY is_archived ASC, display_order ASC, created_at DESC"
         } else {
-            "SELECT 
-                id, name, birth_date, species, gender, breed, color, 
-                weight_kg, photo_path, notes, display_order, is_archived, 
-                created_at, updated_at 
-            FROM pets 
-            WHERE is_archived = FALSE 
+            "SELECT
+                id, name, birth_date, species, gender, breed, color,
+                weight_kg, photo_path, notes, display_order, is_archived,
+                created_at, updated_at
+            FROM pets
+            WHERE is_archived = FALSE
             ORDER BY display_order ASC, created_at DESC"
         };
 
@@ -300,11 +248,11 @@ impl PetDatabase {
     /// Get a specific pet by ID
     pub async fn get_pet_by_id(&self, id: i64) -> Result<Pet> {
         let row = sqlx::query(
-            "SELECT 
-                id, name, birth_date, species, gender, breed, color, 
-                weight_kg, photo_path, notes, display_order, is_archived, 
-                created_at, updated_at 
-            FROM pets 
+            "SELECT
+                id, name, birth_date, species, gender, breed, color,
+                weight_kg, photo_path, notes, display_order, is_archived,
+                created_at, updated_at
+            FROM pets
             WHERE id = ?",
         )
         .bind(id)
