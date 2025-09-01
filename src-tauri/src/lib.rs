@@ -1,5 +1,4 @@
 // Pet Management System modules
-pub mod app_state;
 pub mod commands;
 pub mod database;
 pub mod errors;

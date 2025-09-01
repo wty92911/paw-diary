@@ -1,6 +1,6 @@
 # Tasks Document
 
-- [ ] 1. Create Activity Type Definitions
+- [x] 1. Create Activity Type Definitions
   - File: src/lib/types.ts (extend existing)
   - Add ActivityCategory enum and Activity interfaces
   - Define category-specific data interfaces (HealthActivityData, GrowthActivityData, etc.)
@@ -9,7 +9,7 @@
   - _Leverage: existing Pet interfaces and validation patterns_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
 
-- [ ] 2. Create Activity Database Schema Migration
+- [x] 2. Create Activity Database Schema Migration
   - File: src-tauri/migrations/[timestamp]_create_activities_table.sql
   - Create activities table with foreign key to pets
   - Create activity_attachments table for photos/documents
@@ -19,7 +19,7 @@
   - _Leverage: existing migration patterns and pet table structure_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
 
-- [ ] 3. Create Activity Error Types
+- [x] 3. Create Activity Error Types
   - File: src-tauri/src/errors.rs (extend existing)
   - Add ActivityError enum variants to existing PetError
   - Include category validation, attachment, and search errors
@@ -27,7 +27,7 @@
   - _Leverage: existing PetError patterns and error handling_
   - _Requirements: All (error handling)_
 
-- [ ] 4. Implement Activity Database Operations
+- [x] 4. Implement Activity Database Operations
   - File: src-tauri/src/database.rs (extend existing)
   - Add Activity struct and CRUD operations
   - Implement category-specific data handling with JSON
