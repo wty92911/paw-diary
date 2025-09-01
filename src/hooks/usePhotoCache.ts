@@ -212,18 +212,143 @@ export function usePhotoCache(): UsePhotoCacheReturn {
 }
 
 /**
- * Hook for preloading all pet photos when the app starts
- * This ensures all photos are cached and ready for instant display
+ * Hook for selective photo preloading with memory optimization
+ * Preloads only visible photos and implements priority-based loading
  */
-export function usePreloadPetPhotos(pets: Array<{ photo_path?: string | null }>) {
-  const { preloadAllPhotos } = usePhotoCache();
+export function usePreloadPetPhotos(
+  pets: Array<{ photo_path?: string | null }>,
+  options: {
+    maxPreload?: number;
+    priorityCount?: number;
+    preloadAll?: boolean;
+  } = {},
+) {
+  const { preloadPhoto } = usePhotoCache();
+  const preloadedPaths = useRef(new Set<string>());
+  const { maxPreload = 10, priorityCount = 5, preloadAll = false } = options;
 
   useEffect(() => {
-    const photoPaths = pets.map(pet => pet.photo_path).filter(Boolean);
-    if (photoPaths.length > 0) {
-      preloadAllPhotos(photoPaths);
-    }
-  }, [pets, preloadAllPhotos]);
+    const validPaths = pets
+      .map(pet => pet.photo_path)
+      .filter((path): path is string => Boolean(path));
+
+    if (validPaths.length === 0) return;
+
+    const preloadPhotos = async () => {
+      // If preloadAll is true, use the old behavior for backward compatibility
+      if (preloadAll) {
+        const newPaths = validPaths.filter(path => !preloadedPaths.current.has(path));
+        await Promise.all(newPaths.map(path => preloadPhoto(path)));
+        newPaths.forEach(path => preloadedPaths.current.add(path));
+        return;
+      }
+
+      // Selective preloading strategy
+      const pathsToPreload = validPaths.slice(0, Math.min(maxPreload, validPaths.length));
+
+      // Priority loading - load first few immediately
+      const priorityPaths = pathsToPreload.slice(0, priorityCount);
+      const backgroundPaths = pathsToPreload.slice(priorityCount);
+
+      // Load priority photos immediately
+      for (const path of priorityPaths) {
+        if (!preloadedPaths.current.has(path)) {
+          await preloadPhoto(path);
+          preloadedPaths.current.add(path);
+        }
+      }
+
+      // Load background photos with delay to prevent memory spike
+      if (backgroundPaths.length > 0) {
+        setTimeout(() => {
+          backgroundPaths.forEach(async path => {
+            if (!preloadedPaths.current.has(path)) {
+              await preloadPhoto(path);
+              preloadedPaths.current.add(path);
+            }
+          });
+        }, 1000);
+      }
+    };
+
+    preloadPhotos();
+
+    // Cleanup function to manage memory
+    return () => {
+      // Clear preloaded paths tracking when pets change
+      const currentPaths = new Set(validPaths);
+      preloadedPaths.current = new Set(
+        Array.from(preloadedPaths.current).filter(path => currentPaths.has(path)),
+      );
+    };
+  }, [pets, preloadPhoto, maxPreload, priorityCount, preloadAll]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      preloadedPaths.current.clear();
+    };
+  }, []);
+}
+
+/**
+ * Hook for preloading visible pets with intersection observer optimization
+ * Only preloads photos for pets currently in or near the viewport
+ */
+export function useVisiblePetPhotos(
+  pets: Array<{ id: number; photo_path?: string | null }>,
+  containerRef: React.RefObject<HTMLElement>,
+) {
+  const { preloadPhoto } = usePhotoCache();
+  const [visiblePetIds, setVisiblePetIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        setVisiblePetIds(prev => {
+          const newVisible = new Set(prev);
+
+          entries.forEach(entry => {
+            const petId = parseInt(entry.target.getAttribute('data-pet-id') || '0');
+            if (entry.isIntersecting) {
+              newVisible.add(petId);
+            } else if (!entry.isIntersecting && entry.intersectionRatio === 0) {
+              newVisible.delete(petId);
+            }
+          });
+
+          return newVisible;
+        });
+      },
+      {
+        root: containerRef.current,
+        rootMargin: '50px', // Preload photos 50px before they come into view
+        threshold: 0.1,
+      },
+    );
+
+    // Observe all pet elements
+    const petElements = containerRef.current.querySelectorAll('[data-pet-id]');
+    petElements.forEach(element => observer.observe(element));
+
+    return () => observer.disconnect();
+  }, [containerRef]);
+
+  // Preload visible pet photos
+  useEffect(() => {
+    const visiblePets = pets.filter(pet => visiblePetIds.has(pet.id));
+    const photosToPreload = visiblePets
+      .map(pet => pet.photo_path)
+      .filter((path): path is string => Boolean(path));
+
+    photosToPreload.forEach(photoPath => {
+      preloadPhoto(photoPath);
+    });
+  }, [visiblePetIds, pets, preloadPhoto]);
+
+  return { visiblePetIds };
 }
 
 /**

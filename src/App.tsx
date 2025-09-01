@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Pet, PetCreateRequest, PetUpdateRequest } from './lib/types';
 import { usePets } from './hooks/usePets';
+import { useAppState } from './hooks/useAppState';
 import { PetThumbnailNavigation } from './components/pets/PetThumbnailNavigation';
 import { PetForm } from './components/pets/PetForm';
 import { PetFormPage } from './components/pets/PetFormPage';
@@ -24,45 +25,28 @@ import { Settings, Heart, Loader2 } from 'lucide-react';
 import './App.css';
 
 function App() {
-  // App state - simplified for thumbnail navigation
-  const [autoFocusPetId, setAutoFocusPetId] = useState<number | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [initError, setInitError] = useState<string>();
-
-  // Dialog states
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isManagementOpen, setIsManagementOpen] = useState(false);
-  const [editingPet, setEditingPet] = useState<Pet>();
-  const [pendingDeletePet, setPendingDeletePet] = useState<Pet>();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Activity form states
-  const [isActivityFormOpen, setIsActivityFormOpen] = useState(false);
-  const [selectedPetForActivity, setSelectedPetForActivity] = useState<Pet>();
-  const [isActivitySubmitting, setIsActivitySubmitting] = useState(false);
-
-  // Mobile view state
-  const [showMobileFormPage, setShowMobileFormPage] = useState(false);
-
   // Hooks
   const { pets, isLoading, error, refetch, createPet, updatePet, deletePet, reorderPets } =
     usePets();
   const { isMobile } = useResponsiveNavigation();
+  const { state, actions } = useAppState();
 
-  // Preload all pet photos for instant display
-  usePreloadPetPhotos(pets);
+  // Optimized selective photo preloading - only preload first 5 pets immediately
+  usePreloadPetPhotos(pets, {
+    maxPreload: 8, // Maximum 8 photos to preload
+    priorityCount: 3, // Load first 3 immediately, rest with delay
+    preloadAll: false, // Use intelligent selective preloading
+  });
 
   // Clear auto-focus after timeout
   const handleAutoFocusComplete = useCallback(() => {
-    setAutoFocusPetId(null);
-  }, []);
+    actions.clearAutoFocusPet();
+  }, [actions]);
 
   // Initialize the app
   useEffect(() => {
     // Prevent multiple initialization attempts
-    if (isInitializing || isInitialized) {
+    if (state.initialization.isInitializing || state.initialization.isInitialized) {
       return;
     }
 
@@ -71,152 +55,159 @@ function App() {
 
       try {
         console.log('Setting isInitializing to true');
-        setIsInitializing(true);
-        setInitError(undefined);
+        actions.startInitialization();
 
         console.log('Calling initialize_app command...');
         const result = await invoke('initialize_app');
         console.log('initialize_app result:', result);
 
-        setIsInitialized(true);
+        actions.completeInitialization();
         console.log('Initialization successful, fetching pets...');
         // Fetch pets after initialization
         await refetch();
         console.log('Pets fetched successfully');
       } catch (error) {
         console.error('Failed to initialize app:', error);
-        setInitError(error instanceof Error ? error.message : 'Failed to initialize application');
-      } finally {
-        console.log('Setting isInitializing to false');
-        setIsInitializing(false);
+        actions.setInitializationError(
+          error instanceof Error ? error.message : 'Failed to initialize application',
+        );
       }
     };
 
     initializeApp();
-  }, [isInitialized, isInitializing, refetch]); // Include all dependencies
+  }, [state.initialization.isInitialized, state.initialization.isInitializing, refetch, actions]); // Include all dependencies
 
   // Form handlers
-  const handleAddPet = () => {
-    setEditingPet(undefined);
+  const handleAddPet = useCallback(() => {
     if (isMobile) {
-      setShowMobileFormPage(true);
+      actions.showMobileFormPage();
     } else {
-      setIsFormOpen(true);
+      actions.openForm();
     }
-  };
+  }, [isMobile, actions]);
 
-  const handleEditPet = (pet: Pet) => {
-    setEditingPet(pet);
-    if (isMobile) {
-      setShowMobileFormPage(true);
-    } else {
-      setIsFormOpen(true);
-    }
-  };
-
-  const handleBackFromMobileForm = () => {
-    setShowMobileFormPage(false);
-    setEditingPet(undefined);
-  };
-
-  const handleFormSubmit = async (data: PetCreateRequest | PetUpdateRequest) => {
-    try {
-      setIsSubmitting(true);
-
-      if (editingPet) {
-        // Update existing pet
-        await updatePet(editingPet.id, data as PetUpdateRequest);
-      } else {
-        // Create new pet and auto-focus on it
-        const newPet = await createPet(data as PetCreateRequest);
-        setAutoFocusPetId(newPet.id);
-      }
-
-      // Close appropriate form interface
+  const handleEditPet = useCallback(
+    (pet: Pet) => {
       if (isMobile) {
-        setShowMobileFormPage(false);
+        actions.showMobileFormPage(pet);
       } else {
-        setIsFormOpen(false);
+        actions.openForm(pet);
       }
-      setEditingPet(undefined);
-    } catch (error) {
-      console.error('Failed to save pet:', error);
-      // Error handling is done by the form component
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    [isMobile, actions],
+  );
+
+  const handleBackFromMobileForm = useCallback(() => {
+    actions.hideMobileFormPage();
+  }, [actions]);
+
+  const handleFormSubmit = useCallback(
+    async (data: PetCreateRequest | PetUpdateRequest) => {
+      try {
+        actions.setSubmitting(true);
+
+        if (state.pets.editingPet) {
+          // Update existing pet
+          await updatePet(state.pets.editingPet.id, data as PetUpdateRequest);
+          actions.completePetUpdate();
+        } else {
+          // Create new pet and auto-focus on it
+          const newPet = await createPet(data as PetCreateRequest);
+          actions.completePetCreation(newPet);
+        }
+      } catch (error) {
+        console.error('Failed to save pet:', error);
+        actions.setSubmitting(false);
+        // Error handling is done by the form component
+      }
+    },
+    [state.pets.editingPet, updatePet, createPet, actions],
+  );
 
   // Management handlers
-  const handleArchivePet = async (pet: Pet) => {
-    try {
-      await updatePet(pet.id, { is_archived: true });
-    } catch (error) {
-      console.error('Failed to archive pet:', error);
-    }
-  };
+  const handleArchivePet = useCallback(
+    async (pet: Pet) => {
+      try {
+        await updatePet(pet.id, { is_archived: true });
+      } catch (error) {
+        console.error('Failed to archive pet:', error);
+      }
+    },
+    [updatePet],
+  );
 
-  const handleRestorePet = async (pet: Pet) => {
-    try {
-      await updatePet(pet.id, { is_archived: false });
-    } catch (error) {
-      console.error('Failed to restore pet:', error);
-    }
-  };
+  const handleRestorePet = useCallback(
+    async (pet: Pet) => {
+      try {
+        await updatePet(pet.id, { is_archived: false });
+      } catch (error) {
+        console.error('Failed to restore pet:', error);
+      }
+    },
+    [updatePet],
+  );
 
-  const handleDeletePet = async (pet: Pet) => {
-    try {
-      setIsDeleting(true);
-      await deletePet(pet.id);
-      setPendingDeletePet(undefined);
-    } catch (error) {
-      console.error('Failed to delete pet:', error);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  const handleDeletePet = useCallback(
+    async (pet: Pet) => {
+      try {
+        actions.setDeleting(true);
+        await deletePet(pet.id);
+        actions.completePetDeletion();
+      } catch (error) {
+        console.error('Failed to delete pet:', error);
+        actions.setDeleting(false);
+      }
+    },
+    [deletePet, actions],
+  );
 
-  const handleDeleteConfirm = () => {
-    if (pendingDeletePet) {
-      handleDeletePet(pendingDeletePet);
+  const handleDeleteConfirm = useCallback(() => {
+    if (state.pets.pendingDeletePet) {
+      handleDeletePet(state.pets.pendingDeletePet);
     }
-  };
+  }, [state.pets.pendingDeletePet, handleDeletePet]);
 
   // Activity handlers
+  const handleActivitySubmit = useCallback(
+    async (activityData: Record<string, unknown>) => {
+      try {
+        actions.setActivitySubmitting(true);
+        // TODO: Implement activity creation with backend
+        console.log(
+          'Creating activity for pet:',
+          state.pets.selectedPetForActivity?.name,
+          activityData,
+        );
 
-  const handleActivitySubmit = async (activityData: Record<string, unknown>) => {
-    try {
-      setIsActivitySubmitting(true);
-      // TODO: Implement activity creation with backend
-      console.log('Creating activity for pet:', selectedPetForActivity?.name, activityData);
+        // Mock success - in real implementation, this would call the backend
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Mock success - in real implementation, this would call the backend
-      await new Promise(resolve => setTimeout(resolve, 1000));
+        // Show success feedback
+        console.log('Activity created successfully');
 
-      // Show success feedback
-      console.log('Activity created successfully');
-
-      // Close form and refresh pet data if needed
-      setIsActivityFormOpen(false);
-      setSelectedPetForActivity(undefined);
-    } catch (error) {
-      console.error('Failed to create activity:', error);
-      // Error handling would be done by the form component
-    } finally {
-      setIsActivitySubmitting(false);
-    }
-  };
+        // Close form and refresh pet data if needed
+        actions.closeActivityForm();
+      } catch (error) {
+        console.error('Failed to create activity:', error);
+        actions.setActivitySubmitting(false);
+        // Error handling would be done by the form component
+      }
+    },
+    [state.pets.selectedPetForActivity, actions],
+  );
 
   // Loading and error states
-  if (!isInitialized) {
+  if (!state.initialization.isInitialized) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-600" />
           <p className="text-orange-700">
-            {isInitializing ? 'Initializing Paw Diary...' : 'Starting up...'}
+            {state.initialization.isInitializing ? 'Initializing Paw Diary...' : 'Starting up...'}
           </p>
-          {initError && <p className="text-red-600 text-sm mt-2">{initError}</p>}
+          {state.initialization.error && (
+            <p className="text-red-600 text-sm mt-2">{state.initialization.error}</p>
+          )}
         </div>
       </div>
     );
@@ -256,7 +247,7 @@ function App() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsManagementOpen(true)}
+                  onClick={actions.openManagement}
                   className="text-orange-700 hover:text-orange-800 hover:bg-orange-100"
                 >
                   <Settings className="w-4 h-4 mr-1" />
@@ -292,7 +283,7 @@ function App() {
             onAddPet={handleAddPet}
             onEditPet={handleEditPet}
             onAddActivity={() => console.log('Add activity clicked')}
-            autoFocusPetId={autoFocusPetId}
+            autoFocusPetId={state.pets.autoFocusPetId}
             onAutoFocusComplete={handleAutoFocusComplete}
             className="h-full"
             showAddPetCard={true}
@@ -305,69 +296,74 @@ function App() {
       {/* Responsive form rendering */}
       {!isMobile && (
         <PetForm
-          pet={editingPet}
-          open={isFormOpen}
-          onOpenChange={setIsFormOpen}
+          pet={state.pets.editingPet}
+          open={state.dialogs.isFormOpen}
+          onOpenChange={open => (open ? actions.openForm() : actions.closeForm())}
           onSubmit={handleFormSubmit}
-          isSubmitting={isSubmitting}
+          isSubmitting={state.loading.isSubmitting}
         />
       )}
 
       {/* Activity form */}
-      {selectedPetForActivity && (
+      {state.pets.selectedPetForActivity && (
         <ActivityForm
-          pet={selectedPetForActivity}
-          open={isActivityFormOpen}
-          onOpenChange={setIsActivityFormOpen}
+          pet={state.pets.selectedPetForActivity}
+          open={state.dialogs.isActivityFormOpen}
+          onOpenChange={open =>
+            open
+              ? actions.openActivityForm(state.pets.selectedPetForActivity!)
+              : actions.closeActivityForm()
+          }
           onSubmit={handleActivitySubmit}
-          isSubmitting={isActivitySubmitting}
+          isSubmitting={state.loading.isActivitySubmitting}
         />
       )}
 
       {/* Mobile form page overlay */}
-      {isMobile && showMobileFormPage && (
+      {isMobile && state.dialogs.showMobileFormPage && (
         <div className="fixed inset-0 z-50">
           <PetFormPage
-            pet={editingPet}
+            pet={state.pets.editingPet}
             onSubmit={handleFormSubmit}
             onBack={handleBackFromMobileForm}
-            isSubmitting={isSubmitting}
+            isSubmitting={state.loading.isSubmitting}
           />
         </div>
       )}
 
       <PetManagement
         pets={pets}
-        isOpen={isManagementOpen}
-        onClose={() => setIsManagementOpen(false)}
+        isOpen={state.dialogs.isManagementOpen}
+        onClose={actions.closeManagement}
         onReorder={reorderPets}
         onArchive={handleArchivePet}
         onRestore={handleRestorePet}
-        onDelete={async pet => setPendingDeletePet(pet)}
+        onDelete={async (pet: Pet) => actions.setPendingDeletePet(pet)}
         onView={pet => console.log('View pet:', pet.name)}
       />
 
       {/* Delete confirmation dialog */}
       <AlertDialog
-        open={!!pendingDeletePet}
-        onOpenChange={open => !open && setPendingDeletePet(undefined)}
+        open={!!state.pets.pendingDeletePet}
+        onOpenChange={open => !open && actions.setPendingDeletePet(undefined)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {pendingDeletePet?.name}?</AlertDialogTitle>
+            <AlertDialogTitle>Delete {state.pets.pendingDeletePet?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete {pendingDeletePet?.name}'s
-              profile and all associated data from your device.
+              This action cannot be undone. This will permanently delete{' '}
+              {state.pets.pendingDeletePet?.name}'s profile and all associated data from your
+              device.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={state.loading.isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-red-600 hover:bg-red-700"
-              disabled={isDeleting}
+              disabled={state.loading.isDeleting}
             >
-              {isDeleting ? (
+              {state.loading.isDeleting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   Deleting...
