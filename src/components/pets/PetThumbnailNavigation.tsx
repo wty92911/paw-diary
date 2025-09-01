@@ -364,10 +364,40 @@ export function PetThumbnailNavigation({
     );
   }
 
+  // State for swipe down gesture to return to thumbnails
+  const [swipeDownStart, setSwipeDownStart] = useState<{ x: number; y: number } | null>(null);
+
+  // Handle swipe down to return to thumbnails
+  const handleDetailTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setSwipeDownStart({ x: touch.clientX, y: touch.clientY });
+  }, []);
+
+  const handleDetailTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const touch = e.changedTouches[0];
+      if (swipeDownStart) {
+        const deltaY = touch.clientY - swipeDownStart.y;
+        const deltaX = touch.clientX - swipeDownStart.x;
+
+        // Detect downward swipe (iOS-like dismiss gesture)
+        if (deltaY > 100 && Math.abs(deltaX) < 50) {
+          handleBackToThumbnails();
+        }
+      }
+      setSwipeDownStart(null);
+    },
+    [swipeDownStart, handleBackToThumbnails],
+  );
+
   // Render detail view if active
   if (currentView === 'detail' && detailPet) {
     return (
-      <div className={cn('w-full h-full', className)}>
+      <div
+        className={cn('w-full h-full', className)}
+        onTouchStart={handleDetailTouchStart}
+        onTouchEnd={handleDetailTouchEnd}
+      >
         <PetProfile
           pet={detailPet}
           onEdit={onEditPet}
@@ -402,23 +432,29 @@ export function PetThumbnailNavigation({
           className="h-full"
         />
 
-        {/* Back button overlay */}
+        {/* Enhanced Back button overlay */}
         <button
           onClick={handleBackToThumbnails}
-          className="fixed top-4 left-4 z-50 w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/30 transition-colors"
+          className="fixed top-4 left-4 z-50 w-12 h-12 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/40 active:bg-black/50 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
           aria-label="Back to thumbnails"
         >
           <svg
-            width="20"
-            height="20"
+            width="24"
+            height="24"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.5"
+            className="ml-0.5" // Slight offset for visual balance
           >
             <path d="M19 12H5m7-7-7 7 7 7" />
           </svg>
         </button>
+
+        {/* Back button label for clarity */}
+        <div className="fixed top-4 left-20 z-40 px-3 py-2 bg-black/20 backdrop-blur-sm rounded-full text-white text-sm font-medium opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+          Back to Gallery
+        </div>
       </div>
     );
   }
