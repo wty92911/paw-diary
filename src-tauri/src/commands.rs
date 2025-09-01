@@ -1,4 +1,4 @@
-use crate::database::{Pet, PetCreateRequest, PetDatabase, PetUpdateRequest};
+use crate::database::{CreatePetRequest, Pet, PetDatabase, UpdatePetRequest};
 use crate::errors::{validation, PetError};
 use crate::photo::{PhotoInfo, PhotoService, StorageStats};
 use std::path::PathBuf;
@@ -27,7 +27,7 @@ impl AppState {
 #[tauri::command]
 pub async fn create_pet(
     state: State<'_, AppState>,
-    pet_data: PetCreateRequest,
+    pet_data: CreatePetRequest,
 ) -> Result<Pet, PetError> {
     log::info!("Creating new pet: {}", pet_data.name);
 
@@ -75,7 +75,7 @@ pub async fn get_pet_by_id(state: State<'_, AppState>, id: i64) -> Result<Pet, P
 pub async fn update_pet(
     state: State<'_, AppState>,
     id: i64,
-    pet_data: PetUpdateRequest,
+    pet_data: UpdatePetRequest,
 ) -> Result<Pet, PetError> {
     log::info!("Updating pet with ID: {id}");
 
@@ -374,7 +374,7 @@ mod tests {
     async fn test_create_and_get_pet() {
         let (app_state, _temp_dir) = setup_test_app_state().await;
 
-        let pet_data = PetCreateRequest {
+        let pet_data = CreatePetRequest {
             name: "Test Pet".to_string(),
             birth_date: NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
             species: PetSpecies::Cat,
@@ -384,7 +384,6 @@ mod tests {
             weight_kg: Some(5.0),
             photo_path: None,
             notes: Some("Test notes".to_string()),
-            display_order: None,
         };
 
         // Test business logic directly
@@ -411,7 +410,7 @@ mod tests {
         assert_eq!(pets.len(), 0);
 
         // Create a pet
-        let pet_data = PetCreateRequest {
+        let pet_data = CreatePetRequest {
             name: "Test Pet".to_string(),
             birth_date: NaiveDate::from_ymd_opt(2021, 1, 1).unwrap(),
             species: PetSpecies::Dog,
@@ -421,7 +420,6 @@ mod tests {
             weight_kg: None,
             photo_path: None,
             notes: None,
-            display_order: None,
         };
 
         app_state.database.create_pet(pet_data).await.unwrap();
@@ -437,7 +435,7 @@ mod tests {
         let (app_state, _temp_dir) = setup_test_app_state().await;
 
         // Create a pet
-        let pet_data = PetCreateRequest {
+        let pet_data = CreatePetRequest {
             name: "Original Name".to_string(),
             birth_date: NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
             species: PetSpecies::Cat,
@@ -447,13 +445,12 @@ mod tests {
             weight_kg: Some(3.0),
             photo_path: None,
             notes: None,
-            display_order: None,
         };
 
         let created_pet = app_state.database.create_pet(pet_data).await.unwrap();
 
         // Update the pet
-        let update_data = PetUpdateRequest {
+        let update_data = UpdatePetRequest {
             name: Some("Updated Name".to_string()),
             weight_kg: Some(4.5),
             breed: Some("Siamese".to_string()),
@@ -476,7 +473,7 @@ mod tests {
         let (app_state, _temp_dir) = setup_test_app_state().await;
 
         // Create a pet
-        let pet_data = PetCreateRequest {
+        let pet_data = CreatePetRequest {
             name: "To Delete".to_string(),
             birth_date: NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
             species: PetSpecies::Dog,
@@ -486,7 +483,6 @@ mod tests {
             weight_kg: None,
             photo_path: None,
             notes: None,
-            display_order: None,
         };
 
         let created_pet = app_state.database.create_pet(pet_data).await.unwrap();
@@ -512,7 +508,7 @@ mod tests {
         // Create multiple pets
         let pet1 = app_state
             .database
-            .create_pet(PetCreateRequest {
+            .create_pet(CreatePetRequest {
                 name: "Pet1".to_string(),
                 birth_date: NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
                 species: PetSpecies::Cat,
@@ -522,14 +518,13 @@ mod tests {
                 weight_kg: None,
                 photo_path: None,
                 notes: None,
-                display_order: None,
             })
             .await
             .unwrap();
 
         let pet2 = app_state
             .database
-            .create_pet(PetCreateRequest {
+            .create_pet(CreatePetRequest {
                 name: "Pet2".to_string(),
                 birth_date: NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
                 species: PetSpecies::Dog,
@@ -539,7 +534,6 @@ mod tests {
                 weight_kg: None,
                 photo_path: None,
                 notes: None,
-                display_order: None,
             })
             .await
             .unwrap();
@@ -563,7 +557,7 @@ mod tests {
         let (_app_state, _temp_dir) = setup_test_app_state().await;
 
         // Test empty name validation
-        let invalid_pet_data = PetCreateRequest {
+        let invalid_pet_data = CreatePetRequest {
             name: "".to_string(), // Invalid empty name
             birth_date: NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
             species: PetSpecies::Cat,
@@ -573,7 +567,6 @@ mod tests {
             weight_kg: None,
             photo_path: None,
             notes: None,
-            display_order: None,
         };
 
         let result = validation::validate_pet_create_request(&invalid_pet_data);
