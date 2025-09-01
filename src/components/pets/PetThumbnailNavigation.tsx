@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils';
 import { PetThumbnail, PetThumbnailSkeleton } from './PetThumbnail';
 import { AddPetThumbnail } from './AddPetThumbnail';
 import { PetProfile } from './PetProfile';
+import { AddPetProfile } from './AddPetProfile';
 import {
   useTouchThumbnailNavigation,
   useThumbnailSwipeGestures,
@@ -15,6 +16,7 @@ interface PetThumbnailNavigationProps {
   onAddPet?: () => void;
   onEditPet?: (pet: Pet) => void;
   onAddActivity?: () => void;
+  onSubmit?: (data: any) => Promise<void>; // For creating new pets directly
   className?: string;
   showAddPetCard?: boolean;
   enableElasticFeedback?: boolean;
@@ -44,6 +46,7 @@ export function PetThumbnailNavigation({
   onAddPet,
   onEditPet,
   onAddActivity,
+  onSubmit,
   className,
   showAddPetCard = true,
   enableElasticFeedback = true,
@@ -324,22 +327,30 @@ export function PetThumbnailNavigation({
     }
   }, [onAddPet, clearAutoPlay]);
 
-  // Empty state
+  // Empty state - show AddPetProfile directly when no pets
   if (navigation.totalCards === 0) {
     return (
       <div
-        className={cn(
-          'w-full h-full flex items-center justify-center',
-          'bg-gradient-to-br from-orange-50 to-yellow-50',
-          className,
-        )}
-        role="status"
-        aria-live="polite"
+        className={cn('w-full h-full', 'bg-gradient-to-br from-orange-50 to-yellow-50', className)}
       >
-        <div className="text-center text-orange-600">
-          <p className="text-lg font-medium mb-2">No pets yet</p>
-          <p className="text-sm opacity-75">Add your first pet to get started</p>
-        </div>
+        {onSubmit ? (
+          <AddPetProfile onSubmit={onSubmit} isSubmitting={false} className="h-full" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-center text-orange-600">
+              <p className="text-lg font-medium mb-2">No pets yet</p>
+              <p className="text-sm opacity-75">Add your first pet to get started</p>
+              {onAddPet && (
+                <button
+                  onClick={onAddPet}
+                  className="mt-4 px-6 py-3 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
+                >
+                  Add Your First Pet
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -630,16 +641,19 @@ export function PetThumbnailNavigation({
 export function SimplePetThumbnailNavigation({
   pets,
   onPetSelect,
+  onSubmit,
   className,
 }: {
   pets: Pet[];
   onPetSelect?: (pet: Pet) => void;
+  onSubmit?: (data: any) => Promise<void>;
   className?: string;
 }) {
   return (
     <PetThumbnailNavigation
       pets={pets}
       onPetSelect={onPetSelect}
+      onSubmit={onSubmit}
       className={className}
       showAddPetCard={false}
       enableElasticFeedback={false}

@@ -292,6 +292,7 @@ function App() {
             onAddPet={handleAddPet}
             onEditPet={handleEditPet}
             onAddActivity={() => console.log('Add activity clicked')}
+            onSubmit={handleFormSubmit}
             autoFocusPetId={autoFocusPetId}
             onAutoFocusComplete={handleAutoFocusComplete}
             className="h-full"
