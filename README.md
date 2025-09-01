@@ -15,3 +15,6 @@ This template should help get you started developing with Tauri, React and Types
 ```
 
 ## Dev
+```sh
+TAURI_DEV_HOST=0.0.0.0 yarn tauri ios dev
+```

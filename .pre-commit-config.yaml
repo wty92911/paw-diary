@@ -11,7 +11,6 @@ repos:
       - id: check-merge-conflict
       - id: check-symlinks
       - id: check-yaml
-      - id: end-of-file-fixer
       - id: mixed-line-ending
       - id: trailing-whitespace
   - repo: https://github.com/psf/black
@@ -76,10 +75,10 @@ repos:
         language: system
         files: \.(ts|tsx)$
         pass_filenames: false
-      - id: yarn-lint
-        name: yarn lint
+      - id: yarn-format
+        name: yarn format
         description: lint the project
-        entry: bash -c 'yarn lint'
+        entry: bash -c 'yarn format'
         language: system
         files: \.(ts|tsx)$
         pass_filenames: false
