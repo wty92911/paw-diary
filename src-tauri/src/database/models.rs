@@ -128,7 +128,7 @@ pub struct Activity {
 }
 
 /// Activity category enum
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum ActivityCategory {
     Health,
     Growth,
@@ -225,7 +225,7 @@ pub struct ActivityCreateRequest {
 }
 
 /// Request structure for updating an activity
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ActivityUpdateRequest {
     pub category: Option<ActivityCategory>,
     pub subcategory: Option<String>,
