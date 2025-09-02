@@ -10,6 +10,7 @@ interface PetProfileProps {
   pet: Pet;
   onEdit?: (pet: Pet) => void;
   onAddActivity?: () => void;
+  onViewAllActivities?: (petId: number) => void;
   onPrevious?: () => void;
   onNext?: () => void;
   hasPrevious?: boolean;
@@ -24,6 +25,7 @@ export function PetProfile({
   pet,
   onEdit,
   onAddActivity,
+  onViewAllActivities,
   onPrevious,
   onNext,
   hasPrevious = false,
@@ -182,7 +184,11 @@ export function PetProfile({
         {/* Activity Preview Section */}
         <section aria-labelledby={`pet-name-${pet.id}`}>
           <h2 className="text-xl font-bold text-orange-900 mb-4">Activities & Health</h2>
-          <PetActivityPreview pet={pet} onAddActivity={onAddActivity} />
+          <PetActivityPreview
+            pet={pet}
+            onAddActivity={onAddActivity}
+            onViewAllActivities={onViewAllActivities}
+          />
         </section>
 
         {/* Bottom spacing for safe area */}
