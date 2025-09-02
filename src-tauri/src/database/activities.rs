@@ -425,6 +425,498 @@ impl super::PetDatabase {
             created_at,
         })
     }
+
+    // Data Migration and Backup Utilities
+
+    /// Export all activities for a pet to JSON format for backup/portability
+    pub async fn export_activities_to_json(
+        &self,
+        pet_id: Option<i64>,
+    ) -> Result<serde_json::Value> {
+        let activities = if let Some(pid) = pet_id {
+            self.get_activities(Some(pid), None, None, None).await?
+        } else {
+            self.get_activities(None, None, None, None).await?
+        };
+
+        let mut export_data = serde_json::json!({
+            "export_version": "1.0",
+            "export_timestamp": Utc::now(),
+            "pet_id": pet_id,
+            "total_activities": activities.total_count,
+            "activities": []
+        });
+
+        for activity in activities.activities {
+            // Get attachments for this activity
+            let attachments = self.get_activity_attachments(activity.id).await?;
+
+            let activity_export = serde_json::json!({
+                "id": activity.id,
+                "pet_id": activity.pet_id,
+                "category": activity.category,
+                "subcategory": activity.subcategory,
+                "title": activity.title,
+                "description": activity.description,
+                "activity_date": activity.activity_date,
+                "activity_data": activity.activity_data,
+                "cost": activity.cost,
+                "currency": activity.currency,
+                "location": activity.location,
+                "mood_rating": activity.mood_rating,
+                "created_at": activity.created_at,
+                "updated_at": activity.updated_at,
+                "attachments": attachments
+            });
+
+            export_data["activities"]
+                .as_array_mut()
+                .unwrap()
+                .push(activity_export);
+        }
+
+        Ok(export_data)
+    }
+
+    /// Import activities from JSON format with validation and rollback support
+    pub async fn import_activities_from_json(
+        &self,
+        json_data: serde_json::Value,
+    ) -> Result<ImportResult> {
+        let mut import_result = ImportResult {
+            total_imported: 0,
+            total_failed: 0,
+            errors: Vec::new(),
+            rollback_data: Vec::new(),
+        };
+
+        // Validate import format
+        if !json_data.is_object() {
+            return Err(anyhow::anyhow!("Invalid import format: not an object"));
+        }
+
+        let activities = json_data["activities"]
+            .as_array()
+            .ok_or_else(|| anyhow::anyhow!("Invalid import format: missing activities array"))?;
+
+        // Begin transaction for atomic import
+        let mut transaction = self.pool.begin().await?;
+
+        for (index, activity_json) in activities.iter().enumerate() {
+            match self
+                .import_single_activity(&mut transaction, activity_json)
+                .await
+            {
+                Ok(activity_id) => {
+                    import_result.total_imported += 1;
+                    import_result.rollback_data.push(activity_id);
+                }
+                Err(e) => {
+                    import_result.total_failed += 1;
+                    import_result
+                        .errors
+                        .push(format!("Activity {}: {}", index + 1, e));
+                }
+            }
+        }
+
+        // Commit or rollback based on import success
+        if import_result.total_failed > 0 {
+            transaction.rollback().await?;
+            import_result.rollback_data.clear();
+            return Err(anyhow::anyhow!(
+                "Import failed with {} errors: {:?}",
+                import_result.total_failed,
+                import_result.errors
+            ));
+        }
+
+        transaction.commit().await?;
+        Ok(import_result)
+    }
+
+    /// Validate activity data consistency and integrity
+    pub async fn validate_activity_data(&self, pet_id: Option<i64>) -> Result<ValidationReport> {
+        let mut report = ValidationReport {
+            total_activities: 0,
+            valid_activities: 0,
+            issues: Vec::new(),
+            orphaned_attachments: 0,
+            missing_pets: Vec::new(),
+        };
+
+        // Get all activities or activities for specific pet
+        let activities = if let Some(pid) = pet_id {
+            self.get_activities(Some(pid), None, None, None).await?
+        } else {
+            self.get_activities(None, None, None, None).await?
+        };
+
+        report.total_activities = activities.total_count;
+
+        for activity in activities.activities {
+            let mut activity_valid = true;
+
+            // Validate pet exists
+            if self.get_pet_by_id(activity.pet_id).await.is_err() {
+                report.missing_pets.push(activity.pet_id);
+                report.issues.push(format!(
+                    "Activity {}: Referenced pet {} does not exist",
+                    activity.id, activity.pet_id
+                ));
+                activity_valid = false;
+            }
+
+            // Validate required fields
+            if activity.title.trim().is_empty() {
+                report
+                    .issues
+                    .push(format!("Activity {}: Empty title", activity.id));
+                activity_valid = false;
+            }
+
+            // Validate date is reasonable (not in far future or past)
+            let now = Utc::now();
+            let min_date = now - chrono::Duration::days(365 * 20); // 20 years ago
+            let max_date = now + chrono::Duration::days(365); // 1 year in future
+
+            if activity.activity_date < min_date || activity.activity_date > max_date {
+                report.issues.push(format!(
+                    "Activity {}: Suspicious date {}",
+                    activity.id, activity.activity_date
+                ));
+                activity_valid = false;
+            }
+
+            // Validate mood rating if present
+            if let Some(mood) = activity.mood_rating {
+                if !(1..=5).contains(&mood) {
+                    report.issues.push(format!(
+                        "Activity {}: Invalid mood rating {}",
+                        activity.id, mood
+                    ));
+                    activity_valid = false;
+                }
+            }
+
+            // Validate JSON data if present
+            if let Some(data) = &activity.activity_data {
+                if !data.is_object() {
+                    report.issues.push(format!(
+                        "Activity {}: Invalid activity data format",
+                        activity.id
+                    ));
+                    activity_valid = false;
+                }
+            }
+
+            if activity_valid {
+                report.valid_activities += 1;
+            }
+        }
+
+        // Check for orphaned attachments
+        let all_attachments = sqlx::query("SELECT COUNT(*) as count FROM activity_attachments WHERE activity_id NOT IN (SELECT id FROM activities)")
+            .fetch_one(&self.pool)
+            .await?;
+
+        report.orphaned_attachments = all_attachments.try_get::<i64, _>("count")?;
+
+        if report.orphaned_attachments > 0 {
+            report.issues.push(format!(
+                "Found {} orphaned attachments",
+                report.orphaned_attachments
+            ));
+        }
+
+        Ok(report)
+    }
+
+    /// Clean up orphaned data and fix consistency issues
+    pub async fn cleanup_activity_data(&self) -> Result<CleanupReport> {
+        let mut report = CleanupReport {
+            orphaned_attachments_removed: 0,
+            invalid_activities_fixed: 0,
+            fts_entries_rebuilt: 0,
+        };
+
+        // Remove orphaned attachments
+        let orphaned_result = sqlx::query(
+            "DELETE FROM activity_attachments WHERE activity_id NOT IN (SELECT id FROM activities)",
+        )
+        .execute(&self.pool)
+        .await?;
+
+        report.orphaned_attachments_removed = orphaned_result.rows_affected() as i64;
+
+        // Fix activities with empty titles
+        let fixed_titles = sqlx::query(
+            "UPDATE activities SET title = 'Untitled Activity' WHERE title = '' OR title IS NULL",
+        )
+        .execute(&self.pool)
+        .await?;
+
+        report.invalid_activities_fixed += fixed_titles.rows_affected() as i64;
+
+        // Fix invalid mood ratings
+        let fixed_moods = sqlx::query(
+            "UPDATE activities SET mood_rating = NULL WHERE mood_rating < 1 OR mood_rating > 5",
+        )
+        .execute(&self.pool)
+        .await?;
+
+        report.invalid_activities_fixed += fixed_moods.rows_affected() as i64;
+
+        // Rebuild FTS index
+        let _ = sqlx::query("DELETE FROM activities_fts")
+            .execute(&self.pool)
+            .await;
+
+        let activities =
+            sqlx::query("SELECT id, title, description, category, subcategory FROM activities")
+                .fetch_all(&self.pool)
+                .await?;
+
+        for row in activities {
+            let id: i64 = row.try_get("id")?;
+            let title: String = row.try_get("title")?;
+            let description: Option<String> = row.try_get("description")?;
+            let category: String = row.try_get("category")?;
+            let subcategory: String = row.try_get("subcategory")?;
+
+            sqlx::query("INSERT INTO activities_fts(rowid, title, description, category, subcategory) VALUES (?, ?, ?, ?, ?)")
+                .bind(id)
+                .bind(&title)
+                .bind(description.unwrap_or_default())
+                .bind(&category)
+                .bind(&subcategory)
+                .execute(&self.pool)
+                .await?;
+
+            report.fts_entries_rebuilt += 1;
+        }
+
+        Ok(report)
+    }
+
+    /// Create a backup of all activity data before major operations
+    pub async fn create_activity_backup(&self) -> Result<serde_json::Value> {
+        let backup_data = serde_json::json!({
+            "backup_version": "1.0",
+            "backup_timestamp": Utc::now(),
+            "activities": self.export_activities_to_json(None).await?,
+            "database_info": {
+                "total_activities": sqlx::query("SELECT COUNT(*) as count FROM activities")
+                    .fetch_one(&self.pool)
+                    .await?
+                    .try_get::<i64, _>("count")?,
+                "total_attachments": sqlx::query("SELECT COUNT(*) as count FROM activity_attachments")
+                    .fetch_one(&self.pool)
+                    .await?
+                    .try_get::<i64, _>("count")?
+            }
+        });
+
+        Ok(backup_data)
+    }
+
+    /// Restore activity data from backup with rollback support
+    pub async fn restore_from_backup(
+        &self,
+        backup_data: serde_json::Value,
+    ) -> Result<ImportResult> {
+        // Validate backup format
+        if backup_data.get("backup_version").is_none() {
+            return Err(anyhow::anyhow!("Invalid backup format: missing version"));
+        }
+
+        // Clear existing data in a transaction
+        let mut transaction = self.pool.begin().await?;
+
+        // Store current data for rollback
+        let current_backup = self.create_activity_backup().await?;
+
+        // Clear FTS first to avoid foreign key issues
+        sqlx::query("DELETE FROM activities_fts")
+            .execute(&mut *transaction)
+            .await?;
+
+        // Clear attachments first to avoid foreign key issues
+        sqlx::query("DELETE FROM activity_attachments")
+            .execute(&mut *transaction)
+            .await?;
+
+        // Clear activities
+        sqlx::query("DELETE FROM activities")
+            .execute(&mut *transaction)
+            .await?;
+
+        transaction.commit().await?;
+
+        // Import from backup
+        if let Some(activities_data) = backup_data.get("activities") {
+            match self
+                .import_activities_from_json(activities_data.clone())
+                .await
+            {
+                Ok(result) => Ok(result),
+                Err(_) => {
+                    // Rollback by restoring the current backup
+                    if let Some(current_activities) = current_backup.get("activities") {
+                        self.import_activities_from_json(current_activities.clone())
+                            .await
+                    } else {
+                        Err(anyhow::anyhow!(
+                            "Restore failed and rollback data is corrupted"
+                        ))
+                    }
+                }
+            }
+        } else {
+            Err(anyhow::anyhow!("Backup data does not contain activities"))
+        }
+    }
+
+    /// Helper method for importing a single activity (used in transactions)
+    async fn import_single_activity(
+        &self,
+        transaction: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+        activity_json: &serde_json::Value,
+    ) -> Result<i64> {
+        // Extract and validate fields
+        let pet_id = activity_json["pet_id"]
+            .as_i64()
+            .ok_or_else(|| anyhow::anyhow!("Missing or invalid pet_id"))?;
+
+        let category_str = activity_json["category"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing category"))?;
+        let category = category_str.parse::<ActivityCategory>()?;
+
+        let title = activity_json["title"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing title"))?
+            .to_string();
+
+        let subcategory = activity_json["subcategory"]
+            .as_str()
+            .unwrap_or("")
+            .to_string();
+
+        let description = activity_json["description"].as_str().map(|s| s.to_string());
+
+        let activity_date_str = activity_json["activity_date"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing activity_date"))?;
+        let activity_date =
+            chrono::DateTime::parse_from_rfc3339(activity_date_str)?.with_timezone(&Utc);
+
+        let activity_data = activity_json.get("activity_data").cloned();
+        let activity_data_json = activity_data
+            .map(|data| serde_json::to_string(&data))
+            .transpose()?;
+
+        let cost = activity_json["cost"].as_f64();
+        let currency = activity_json["currency"].as_str().map(|s| s.to_string());
+        let location = activity_json["location"].as_str().map(|s| s.to_string());
+        let mood_rating = activity_json["mood_rating"].as_i64().map(|r| r as i32);
+
+        let now = Utc::now();
+
+        // Insert activity
+        let result = sqlx::query(
+            r#"
+            INSERT INTO activities (pet_id, category, subcategory, title, description, activity_date, 
+                                  activity_data, cost, currency, location, mood_rating, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            "#
+        )
+        .bind(pet_id)
+        .bind(category.to_string())
+        .bind(&subcategory)
+        .bind(&title)
+        .bind(&description)
+        .bind(activity_date)
+        .bind(activity_data_json)
+        .bind(cost)
+        .bind(&currency)
+        .bind(&location)
+        .bind(mood_rating)
+        .bind(now)
+        .bind(now)
+        .execute(&mut **transaction)
+        .await?;
+
+        let activity_id = result.last_insert_rowid();
+
+        // Update FTS table
+        sqlx::query("INSERT INTO activities_fts(rowid, title, description, category, subcategory) VALUES (?, ?, ?, ?, ?)")
+            .bind(activity_id)
+            .bind(&title)
+            .bind(description.unwrap_or_default())
+            .bind(category.to_string())
+            .bind(&subcategory)
+            .execute(&mut **transaction)
+            .await?;
+
+        // Import attachments if present
+        if let Some(attachments) = activity_json["attachments"].as_array() {
+            for attachment_json in attachments {
+                self.import_single_attachment(&mut *transaction, activity_id, attachment_json)
+                    .await?;
+            }
+        }
+
+        Ok(activity_id)
+    }
+
+    /// Helper method for importing a single attachment
+    async fn import_single_attachment(
+        &self,
+        transaction: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+        activity_id: i64,
+        attachment_json: &serde_json::Value,
+    ) -> Result<i64> {
+        let file_path = attachment_json["file_path"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing file_path"))?
+            .to_string();
+
+        let file_type_str = attachment_json["file_type"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing file_type"))?;
+        let file_type = file_type_str.parse::<ActivityAttachmentType>()?;
+
+        let file_size = attachment_json["file_size"].as_i64();
+        let thumbnail_path = attachment_json["thumbnail_path"]
+            .as_str()
+            .map(|s| s.to_string());
+
+        let metadata = attachment_json.get("metadata").cloned();
+        let metadata_json = metadata
+            .map(|data| serde_json::to_string(&data))
+            .transpose()?;
+
+        let now = Utc::now();
+
+        let result = sqlx::query(
+            r#"
+            INSERT INTO activity_attachments (activity_id, file_path, file_type, file_size, thumbnail_path, metadata, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            "#
+        )
+        .bind(activity_id)
+        .bind(&file_path)
+        .bind(file_type.to_string())
+        .bind(file_size)
+        .bind(&thumbnail_path)
+        .bind(metadata_json)
+        .bind(now)
+        .execute(&mut **transaction)
+        .await?;
+
+        Ok(result.last_insert_rowid())
+    }
 }
 
 #[cfg(test)]

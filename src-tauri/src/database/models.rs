@@ -257,3 +257,32 @@ pub struct ActivitySearchResult {
     pub total_count: i64,
     pub has_more: bool,
 }
+
+// Data Migration and Validation Result Types
+
+/// Result structure for activity data import operations
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImportResult {
+    pub total_imported: i64,
+    pub total_failed: i64,
+    pub errors: Vec<String>,
+    pub rollback_data: Vec<i64>, // Activity IDs that can be rolled back
+}
+
+/// Report structure for activity data validation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidationReport {
+    pub total_activities: i64,
+    pub valid_activities: i64,
+    pub issues: Vec<String>,
+    pub orphaned_attachments: i64,
+    pub missing_pets: Vec<i64>,
+}
+
+/// Report structure for activity data cleanup operations
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CleanupReport {
+    pub orphaned_attachments_removed: i64,
+    pub invalid_activities_fixed: i64,
+    pub fts_entries_rebuilt: i64,
+}
