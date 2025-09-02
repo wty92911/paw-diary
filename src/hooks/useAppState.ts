@@ -16,6 +16,7 @@ export interface AppState {
     isManagementOpen: boolean;
     isActivityFormOpen: boolean;
     showMobileFormPage: boolean;
+    showActivityTimeline: boolean;
   };
 
   // Pet management state
@@ -24,6 +25,13 @@ export interface AppState {
     editingPet?: Pet;
     pendingDeletePet?: Pet;
     selectedPetForActivity?: Pet;
+  };
+
+  // Activity navigation state
+  activities: {
+    selectedPetId?: number;
+    selectedActivityId?: number;
+    showFilters: boolean;
   };
 
   // Loading states
@@ -51,6 +59,8 @@ export type AppAction =
   | { type: 'CLOSE_ACTIVITY_FORM' }
   | { type: 'SHOW_MOBILE_FORM_PAGE'; payload?: Pet }
   | { type: 'HIDE_MOBILE_FORM_PAGE' }
+  | { type: 'SHOW_ACTIVITY_TIMELINE'; payload?: { petId?: number; activityId?: number } }
+  | { type: 'HIDE_ACTIVITY_TIMELINE' }
 
   // Pet management actions
   | { type: 'SET_AUTO_FOCUS_PET'; payload: number }
@@ -58,6 +68,13 @@ export type AppAction =
   | { type: 'SET_EDITING_PET'; payload?: Pet }
   | { type: 'SET_PENDING_DELETE_PET'; payload?: Pet }
   | { type: 'SET_SELECTED_PET_FOR_ACTIVITY'; payload?: Pet }
+
+  // Activity navigation actions
+  | { type: 'SET_ACTIVITY_PET_FILTER'; payload: number }
+  | { type: 'CLEAR_ACTIVITY_PET_FILTER' }
+  | { type: 'SET_SELECTED_ACTIVITY'; payload: number }
+  | { type: 'CLEAR_SELECTED_ACTIVITY' }
+  | { type: 'TOGGLE_ACTIVITY_FILTERS' }
 
   // Loading actions
   | { type: 'SET_SUBMITTING'; payload: boolean }
@@ -81,9 +98,13 @@ const initialState: AppState = {
     isManagementOpen: false,
     isActivityFormOpen: false,
     showMobileFormPage: false,
+    showActivityTimeline: false,
   },
   pets: {
     autoFocusPetId: null,
+  },
+  activities: {
+    showFilters: false,
   },
   loading: {
     isSubmitting: false,
@@ -232,6 +253,34 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
+    case 'SHOW_ACTIVITY_TIMELINE':
+      return {
+        ...state,
+        dialogs: {
+          ...state.dialogs,
+          showActivityTimeline: true,
+        },
+        activities: {
+          ...state.activities,
+          selectedPetId: action.payload?.petId,
+          selectedActivityId: action.payload?.activityId,
+        },
+      };
+
+    case 'HIDE_ACTIVITY_TIMELINE':
+      return {
+        ...state,
+        dialogs: {
+          ...state.dialogs,
+          showActivityTimeline: false,
+        },
+        activities: {
+          ...state.activities,
+          selectedPetId: undefined,
+          selectedActivityId: undefined,
+        },
+      };
+
     // Pet management actions
     case 'SET_AUTO_FOCUS_PET':
       return {
@@ -278,6 +327,52 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
+    // Activity navigation actions
+    case 'SET_ACTIVITY_PET_FILTER':
+      return {
+        ...state,
+        activities: {
+          ...state.activities,
+          selectedPetId: action.payload,
+        },
+      };
+
+    case 'CLEAR_ACTIVITY_PET_FILTER':
+      return {
+        ...state,
+        activities: {
+          ...state.activities,
+          selectedPetId: undefined,
+        },
+      };
+
+    case 'SET_SELECTED_ACTIVITY':
+      return {
+        ...state,
+        activities: {
+          ...state.activities,
+          selectedActivityId: action.payload,
+        },
+      };
+
+    case 'CLEAR_SELECTED_ACTIVITY':
+      return {
+        ...state,
+        activities: {
+          ...state.activities,
+          selectedActivityId: undefined,
+        },
+      };
+
+    case 'TOGGLE_ACTIVITY_FILTERS':
+      return {
+        ...state,
+        activities: {
+          ...state.activities,
+          showFilters: !state.activities.showFilters,
+        },
+      };
+
     // Loading actions
     case 'SET_SUBMITTING':
       return {
@@ -315,6 +410,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
           isManagementOpen: false,
           isActivityFormOpen: false,
           showMobileFormPage: false,
+          showActivityTimeline: false,
         },
         pets: {
           ...state.pets,
@@ -416,6 +512,12 @@ export function useAppState() {
       [],
     ),
     hideMobileFormPage: useCallback(() => dispatch({ type: 'HIDE_MOBILE_FORM_PAGE' }), []),
+    showActivityTimeline: useCallback(
+      (options?: { petId?: number; activityId?: number }) =>
+        dispatch({ type: 'SHOW_ACTIVITY_TIMELINE', payload: options }),
+      [],
+    ),
+    hideActivityTimeline: useCallback(() => dispatch({ type: 'HIDE_ACTIVITY_TIMELINE' }), []),
 
     // Pet management
     setAutoFocusPet: useCallback(
@@ -435,6 +537,19 @@ export function useAppState() {
       (pet?: Pet) => dispatch({ type: 'SET_SELECTED_PET_FOR_ACTIVITY', payload: pet }),
       [],
     ),
+
+    // Activity navigation
+    setActivityPetFilter: useCallback(
+      (petId: number) => dispatch({ type: 'SET_ACTIVITY_PET_FILTER', payload: petId }),
+      [],
+    ),
+    clearActivityPetFilter: useCallback(() => dispatch({ type: 'CLEAR_ACTIVITY_PET_FILTER' }), []),
+    setSelectedActivity: useCallback(
+      (activityId: number) => dispatch({ type: 'SET_SELECTED_ACTIVITY', payload: activityId }),
+      [],
+    ),
+    clearSelectedActivity: useCallback(() => dispatch({ type: 'CLEAR_SELECTED_ACTIVITY' }), []),
+    toggleActivityFilters: useCallback(() => dispatch({ type: 'TOGGLE_ACTIVITY_FILTERS' }), []),
 
     // Loading states
     setSubmitting: useCallback(

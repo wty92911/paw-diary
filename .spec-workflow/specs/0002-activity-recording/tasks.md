@@ -192,7 +192,7 @@
   - _Leverage: React Hook Form patterns and form utilities_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
-- [-] 21. Create Activity Search Utilities
+- [x] 21. Create Activity Search Utilities
   - File: src/lib/activityUtils.ts
   - Implement client-side search and filtering logic
   - Add date formatting and time utilities for activities
@@ -202,7 +202,7 @@
   - _Leverage: existing utility patterns and date/time formatting_
   - _Requirements: 1.7 (search functionality)_
 
-- [ ] 22. Integrate Activities with Pet Profile
+- [x] 22. Integrate Activities with Pet Profile
   - File: src/components/pets/PetProfile.tsx (extend existing)
   - Add activity section to pet profile display
   - Include recent activities preview and quick add button
@@ -212,7 +212,7 @@
   - _Leverage: existing PetProfile component and navigation patterns_
   - _Requirements: Integration with existing pet system_
 
-- [ ] 23. Add Activity Navigation to App
+- [x] 23. Add Activity Navigation to App
   - File: src/App.tsx (extend existing)
   - Add activity timeline view to main navigation
   - Include activity creation FAB (Floating Action Button)

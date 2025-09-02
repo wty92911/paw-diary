@@ -8,6 +8,8 @@ import { PetForm } from './components/pets/PetForm';
 import { PetFormPage } from './components/pets/PetFormPage';
 import { PetManagement } from './components/pets/PetManagement';
 import { ActivityForm } from './components/activities/ActivityForm';
+import { ActivityTimelinePage } from './components/activities/ActivityTimelinePage';
+import { ActivityFAB } from './components/activities/ActivityFAB';
 import { useResponsiveNavigation } from './hooks/useResponsiveNavigation';
 import { usePreloadPetPhotos } from './hooks/usePhotoCache';
 import { Button } from './components/ui/button';
@@ -196,6 +198,40 @@ function App() {
     [state.pets.selectedPetForActivity, actions],
   );
 
+  // Activity timeline navigation handlers
+  const handleShowActivityTimeline = useCallback(
+    (options?: { petId?: number; activityId?: number }) => {
+      actions.showActivityTimeline(options);
+    },
+    [actions],
+  );
+
+  const handleHideActivityTimeline = useCallback(() => {
+    actions.hideActivityTimeline();
+  }, [actions]);
+
+  const handleActivityTimelineAddActivity = useCallback(
+    (pet?: Pet) => {
+      if (pet) {
+        actions.openActivityForm(pet);
+      } else {
+        // Show activity form without pre-selected pet
+        actions.openActivityForm(pets[0] || ({} as Pet));
+      }
+    },
+    [actions, pets],
+  );
+
+  const handleViewAllActivities = useCallback(
+    (petId: number) => {
+      const pet = pets.find(p => p.id === petId);
+      if (pet) {
+        handleShowActivityTimeline({ petId });
+      }
+    },
+    [pets, handleShowActivityTimeline],
+  );
+
   // Loading and error states
   if (!state.initialization.isInitialized) {
     return (
@@ -339,7 +375,7 @@ function App() {
         onArchive={handleArchivePet}
         onRestore={handleRestorePet}
         onDelete={async (pet: Pet) => actions.setPendingDeletePet(pet)}
-        onView={pet => console.log('View pet:', pet.name)}
+        onView={pet => handleViewAllActivities(pet.id)}
       />
 
       {/* Delete confirmation dialog */}
@@ -375,6 +411,38 @@ function App() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Activity Timeline Page Overlay */}
+      {state.dialogs.showActivityTimeline && (
+        <div className="fixed inset-0 z-50">
+          <ActivityTimelinePage
+            pets={pets}
+            selectedPetId={state.activities.selectedPetId}
+            selectedActivityId={state.activities.selectedActivityId}
+            showFilters={state.activities.showFilters}
+            onBack={handleHideActivityTimeline}
+            onAddActivity={handleActivityTimelineAddActivity}
+            onPetFilterChange={(petId?: number) => {
+              if (petId) {
+                actions.setActivityPetFilter(petId);
+              } else {
+                actions.clearActivityPetFilter();
+              }
+            }}
+            onToggleFilters={actions.toggleActivityFilters}
+          />
+        </div>
+      )}
+
+      {/* Activity FAB - only show when not in activity timeline */}
+      {!state.dialogs.showActivityTimeline && pets.length > 0 && (
+        <ActivityFAB
+          pets={pets}
+          onAddActivity={actions.openActivityForm}
+          onShowTimeline={() => handleShowActivityTimeline()}
+          position="bottom-right"
+        />
+      )}
     </div>
   );
 }
