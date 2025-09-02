@@ -37,7 +37,7 @@
   - _Leverage: existing PetDatabase patterns and SQLite integration_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
 
-- [ ] 5. Create Activity Tauri Commands
+- [x] 5. Create Activity Tauri Commands
   - File: src-tauri/src/commands.rs (extend existing)
   - Add create_activity, get_activities, update_activity, delete_activity commands
   - Add search_activities and filter_activities commands
@@ -46,7 +46,7 @@
   - _Leverage: existing command patterns, validation, and error handling_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
 
-- [ ] 6. Create Activity Attachment Commands
+- [x] 6. Create Activity Attachment Commands
   - File: src-tauri/src/commands.rs (extend existing)
   - Add upload_activity_attachment and delete_activity_attachment commands
   - Integrate with existing PhotoService for file management
@@ -55,7 +55,7 @@
   - _Leverage: existing photo upload commands and PhotoService_
   - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.6 (photo attachments)_
 
-- [ ] 7. Create Activity Form Schema Validation
+- [x] 7. Create Activity Form Schema Validation
   - File: src/components/activities/ActivityForm.tsx (new)
   - Create Zod schemas for each activity category
   - Add category-specific validation rules and error messages
@@ -64,7 +64,7 @@
   - _Leverage: existing petFormSchema patterns and Zod validation_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
-- [ ] 8. Implement Base Activity Form Component
+- [x] 8. Implement Base Activity Form Component
   - File: src/components/activities/ActivityForm.tsx (continue from task 7)
   - Create main ActivityForm dialog with category selection
   - Add common fields (title, date, time, description, location)
@@ -74,7 +74,7 @@
   - _Leverage: existing form patterns from PetForm, Dialog, and form utilities_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
 
-- [ ] 9. Create Health Activity Form Component
+- [x] 9. Create Health Activity Form Component
   - File: src/components/activities/forms/HealthActivityForm.tsx
   - Implement health-specific fields (vet info, symptoms, medications)
   - Add critical health event flagging and priority indicators
@@ -83,7 +83,7 @@
   - _Leverage: medical subcategories from ActivityForm and input components_
   - _Requirements: 1.2_
 
-- [ ] 10. Create Growth Activity Form Component
+- [x] 10. Create Growth Activity Form Component
   - File: src/components/activities/forms/GrowthActivityForm.tsx
   - Add weight/height entry with unit conversion (kg/lbs, cm/in)
   - Implement milestone tracking and development stage selection
@@ -92,7 +92,7 @@
   - _Leverage: number inputs, photo upload, and measurement utilities_
   - _Requirements: 1.3_
 
-- [ ] 11. Create Diet Activity Form Component
+- [x] 11. Create Diet Activity Form Component
   - File: src/components/activities/forms/DietActivityForm.tsx
   - Implement food brand/product database integration
   - Add portion size tracking with visual serving guides
@@ -102,7 +102,7 @@
   - _Leverage: rating components, search inputs, and number validation_
   - _Requirements: 1.4_
 
-- [ ] 12. Create Lifestyle Activity Form Component
+- [x] 12. Create Lifestyle Activity Form Component
   - File: src/components/activities/forms/LifestyleActivityForm.tsx
   - Add duration tracking with start/stop timer functionality
   - Implement mood and energy level indicators (1-5 scale with emojis)
@@ -112,7 +112,7 @@
   - _Leverage: timer utilities, emoji selectors, and location inputs_
   - _Requirements: 1.5_
 
-- [ ] 13. Create Expense Activity Form Component
+- [x] 13. Create Expense Activity Form Component
   - File: src/components/activities/forms/ExpenseActivityForm.tsx
   - Implement receipt photo upload with OCR placeholder
   - Add expense categorization and vendor tracking
@@ -122,7 +122,7 @@
   - _Leverage: photo upload, currency formatting, and date/recurring inputs_
   - _Requirements: 1.6_
 
-- [ ] 14. Create Activity Card Component
+- [x] 14. Create Activity Card Component
   - File: src/components/activities/ActivityCard.tsx
   - Display activity with category-specific styling and icons
   - Show key information (title, date, category, attachments preview)
@@ -132,7 +132,7 @@
   - _Leverage: Card component, photo display patterns, and button styling_
   - _Requirements: 1.7_
 
-- [ ] 15. Create Activity Timeline Component
+- [x] 15. Create Activity Timeline Component
   - File: src/components/activities/ActivityTimeline.tsx
   - Implement infinite scroll with virtual scrolling for performance
   - Add chronological activity display with date grouping
@@ -142,7 +142,7 @@
   - _Leverage: scroll utilities, loading components, and error boundaries_
   - _Requirements: 1.7_
 
-- [ ] 16. Create Activity Filters Component
+- [x] 16. Create Activity Filters Component
   - File: src/components/activities/ActivityFilters.tsx
   - Add category filtering with checkbox selection
   - Implement date range picker for temporal filtering
@@ -152,7 +152,7 @@
   - _Leverage: input components, date pickers, and filter state management_
   - _Requirements: 1.7_
 
-- [ ] 17. Create Attachment Manager Component
+- [-] 17. Create Attachment Manager Component
   - File: src/components/activities/AttachmentManager.tsx
   - Implement drag-and-drop photo/document upload
   - Add thumbnail grid display with delete functionality
@@ -162,7 +162,7 @@
   - _Leverage: existing photo upload patterns and drag-drop utilities_
   - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.6 (attachment support)_
 
-- [ ] 18. Create Category Selector Component
+- [x] 18. Create Category Selector Component
   - File: src/components/activities/CategorySelector.tsx
   - Add visual category selection with icons and colors
   - Include recent activity suggestions and quick templates
@@ -172,7 +172,7 @@
   - _Leverage: button variants, icon system, and category constants_
   - _Requirements: 1.1_
 
-- [ ] 19. Create useActivities Custom Hook
+- [x] 19. Create useActivities Custom Hook
   - File: src/hooks/useActivities.ts
   - Implement React Query integration for activity data management
   - Add CRUD operations (create, read, update, delete) with optimistic updates
@@ -182,7 +182,7 @@
   - _Leverage: existing usePets patterns and React Query setup_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
 
-- [ ] 20. Create useActivityForm Custom Hook
+- [x] 20. Create useActivityForm Custom Hook
   - File: src/hooks/useActivityForm.ts
   - Handle category-specific form state and validation
   - Implement dynamic schema switching based on category selection
@@ -192,7 +192,7 @@
   - _Leverage: React Hook Form patterns and form utilities_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
-- [ ] 21. Create Activity Search Utilities
+- [-] 21. Create Activity Search Utilities
   - File: src/lib/activityUtils.ts
   - Implement client-side search and filtering logic
   - Add date formatting and time utilities for activities

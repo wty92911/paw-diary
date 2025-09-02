@@ -292,7 +292,7 @@ export interface ActivityAttachment {
   file_type: 'photo' | 'document' | 'video';
   file_size: number;
   thumbnail_path?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
 
@@ -305,7 +305,7 @@ export interface Activity {
   title: string;
   description?: string;
   activity_date: string; // ISO datetime string
-  activity_data?: Record<string, any>; // JSON field for category-specific data
+  activity_data?: Record<string, unknown>; // JSON field for category-specific data
   cost?: number;
   currency?: string;
   location?: string;
@@ -422,7 +422,7 @@ export interface ActivityCreateRequest {
   title: string;
   description?: string;
   activity_date: string;
-  activity_data?: Record<string, any>;
+  activity_data?: Record<string, unknown>;
   cost?: number;
   currency?: string;
   location?: string;
@@ -434,7 +434,7 @@ export interface ActivityUpdateRequest {
   subcategory?: string;
   description?: string;
   activity_date?: string;
-  activity_data?: Record<string, any>;
+  activity_data?: Record<string, unknown>;
   cost?: number;
   currency?: string;
   location?: string;
@@ -471,7 +471,7 @@ export interface ActivityFormData {
   currency?: string;
   location?: string;
   mood_rating?: number;
-  activity_data?: Record<string, any>;
+  activity_data?: Record<string, unknown>;
   attachments?: File[];
 }
 
