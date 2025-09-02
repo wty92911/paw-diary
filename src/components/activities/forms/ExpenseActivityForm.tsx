@@ -143,13 +143,17 @@ export const ExpenseActivityForm: React.FC<ExpenseActivityFormProps> = ({
     }
 
     // Simulate OCR processing (placeholder for future implementation)
-    simulateOcrProcessing(file);
+    // We'll call this asynchronously to avoid dependency issues
+    setTimeout(() => simulateOcrProcessing(file), 0);
   }, []);
 
   // Simulate OCR processing for receipt data extraction
   const simulateOcrProcessing = useCallback(
-    async (_file: File) => {
+    async (file: File) => {
       setIsOcrProcessing(true);
+
+      // In real implementation, the file would be processed by an OCR service
+      console.log('Processing file:', file.name);
 
       // Simulate processing delay
       await new Promise(resolve => setTimeout(resolve, 2000));
