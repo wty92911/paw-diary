@@ -6,30 +6,18 @@ import { useAppState } from './hooks/useAppState';
 import { PetThumbnailNavigation } from './components/pets/PetThumbnailNavigation';
 import { PetForm } from './components/pets/PetForm';
 import { PetFormPage } from './components/pets/PetFormPage';
-import { PetManagement } from './components/pets/PetManagement';
 import { ActivityForm } from './components/activities/ActivityForm';
 import { ActivityTimelinePage } from './components/activities/ActivityTimelinePage';
 import { ActivityFAB } from './components/activities/ActivityFAB';
 import { useResponsiveNavigation } from './hooks/useResponsiveNavigation';
 import { usePreloadPetPhotos } from './hooks/usePhotoCache';
 import { Button } from './components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from './components/ui/alert-dialog';
-import { Settings, Heart, Loader2 } from 'lucide-react';
+import { Heart, Loader2 } from 'lucide-react';
 import './App.css';
 
 function App() {
   // Hooks
-  const { pets, isLoading, error, refetch, createPet, updatePet, deletePet, reorderPets } =
-    usePets();
+  const { pets, isLoading, error, refetch, createPet, updatePet } = usePets();
   const { isMobile } = useResponsiveNavigation();
   const { state, actions } = useAppState();
 
@@ -126,48 +114,6 @@ function App() {
     [state.pets.editingPet, updatePet, createPet, actions],
   );
 
-  // Management handlers
-  const handleArchivePet = useCallback(
-    async (pet: Pet) => {
-      try {
-        await updatePet(pet.id, { is_archived: true });
-      } catch (error) {
-        console.error('Failed to archive pet:', error);
-      }
-    },
-    [updatePet],
-  );
-
-  const handleRestorePet = useCallback(
-    async (pet: Pet) => {
-      try {
-        await updatePet(pet.id, { is_archived: false });
-      } catch (error) {
-        console.error('Failed to restore pet:', error);
-      }
-    },
-    [updatePet],
-  );
-
-  const handleDeletePet = useCallback(
-    async (pet: Pet) => {
-      try {
-        actions.setDeleting(true);
-        await deletePet(pet.id);
-        actions.completePetDeletion();
-      } catch (error) {
-        console.error('Failed to delete pet:', error);
-        actions.setDeleting(false);
-      }
-    },
-    [deletePet, actions],
-  );
-
-  const handleDeleteConfirm = useCallback(() => {
-    if (state.pets.pendingDeletePet) {
-      handleDeletePet(state.pets.pendingDeletePet);
-    }
-  }, [state.pets.pendingDeletePet, handleDeletePet]);
 
   // Activity handlers
   const handleActivitySubmit = useCallback(
@@ -222,15 +168,6 @@ function App() {
     [actions, pets],
   );
 
-  const handleViewAllActivities = useCallback(
-    (petId: number) => {
-      const pet = pets.find(p => p.id === petId);
-      if (pet) {
-        handleShowActivityTimeline({ petId });
-      }
-    },
-    [pets, handleShowActivityTimeline],
-  );
 
   // Loading and error states
   if (!state.initialization.isInitialized) {
@@ -279,17 +216,7 @@ function App() {
 
             {/* Header actions */}
             <div className="flex items-center gap-2">
-              {pets.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={actions.openManagement}
-                  className="text-orange-700 hover:text-orange-800 hover:bg-orange-100"
-                >
-                  <Settings className="w-4 h-4 mr-1" />
-                  Manage Pets
-                </Button>
-              )}
+              {/* Management button removed */}
             </div>
           </div>
         </div>
@@ -367,50 +294,7 @@ function App() {
         </div>
       )}
 
-      <PetManagement
-        pets={pets}
-        isOpen={state.dialogs.isManagementOpen}
-        onClose={actions.closeManagement}
-        onReorder={reorderPets}
-        onArchive={handleArchivePet}
-        onRestore={handleRestorePet}
-        onDelete={async (pet: Pet) => actions.setPendingDeletePet(pet)}
-        onView={pet => handleViewAllActivities(pet.id)}
-      />
 
-      {/* Delete confirmation dialog */}
-      <AlertDialog
-        open={!!state.pets.pendingDeletePet}
-        onOpenChange={open => !open && actions.setPendingDeletePet(undefined)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete {state.pets.pendingDeletePet?.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete{' '}
-              {state.pets.pendingDeletePet?.name}'s profile and all associated data from your
-              device.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={state.loading.isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={state.loading.isDeleting}
-            >
-              {state.loading.isDeleting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Deleting...
-                </>
-              ) : (
-                'Delete Forever'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Activity Timeline Page Overlay */}
       {state.dialogs.showActivityTimeline && (

@@ -180,7 +180,6 @@ export enum ViewType {
   PetList = 'pet-list',
   PetDetail = 'pet-detail',
   PetForm = 'pet-form',
-  PetManagement = 'pet-management',
   PetProfile = 'pet-profile',
 }
 
