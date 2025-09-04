@@ -14,8 +14,6 @@ export interface UsePetsActions {
   refetch: () => Promise<void>;
   createPet: (petData: PetCreateRequest) => Promise<Pet>;
   updatePet: (id: number, petData: PetUpdateRequest) => Promise<Pet>;
-  deletePet: (id: number) => Promise<void>;
-  reorderPets: (petIds: number[]) => Promise<void>;
   setActivePetId: (petId: number | null) => void;
   selectFirstPet: () => void;
   selectPetByIndex: (index: number) => void;
@@ -101,42 +99,6 @@ export function usePets(includeArchived = false): UsePetsState & UsePetsActions 
     }
   };
 
-  const deletePet = async (id: number): Promise<void> => {
-    try {
-      setError(null);
-      await invoke('delete_pet', { id });
-
-      // If deleted pet was active, clear active selection
-      if (activePetId === id) {
-        setActivePetId(null);
-        console.log('Cleared active pet selection after deletion');
-      }
-
-      // Always refetch to ensure UI state is consistent with database after deletion
-      // This guarantees that soft-deleted pets are properly removed from the UI
-      await refetch();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete pet';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    }
-  };
-
-  const reorderPets = async (petIds: number[]): Promise<void> => {
-    try {
-      setError(null);
-      await invoke('reorder_pets', { petIds });
-      // Reorder pets in local state to match new order
-      const reorderedPets = petIds
-        .map(id => pets.find(pet => pet.id === id))
-        .filter(Boolean) as Pet[];
-      setPets(reorderedPets);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to reorder pets';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    }
-  };
 
   // Navigation functions
   const selectFirstPet = () => {
@@ -172,8 +134,6 @@ export function usePets(includeArchived = false): UsePetsState & UsePetsActions 
     refetch,
     createPet,
     updatePet,
-    deletePet,
-    reorderPets,
     setActivePetId,
     selectFirstPet,
     selectPetByIndex,

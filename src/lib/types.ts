@@ -180,7 +180,6 @@ export enum ViewType {
   PetList = 'pet-list',
   PetDetail = 'pet-detail',
   PetForm = 'pet-form',
-  PetManagement = 'pet-management',
   PetProfile = 'pet-profile',
 }
 
@@ -270,3 +269,343 @@ export const COMMON_PET_COLORS = [
   'Striped',
   'Mixed',
 ];
+
+// ============================================================================
+// ACTIVITY RECORDING SYSTEM TYPES
+// ============================================================================
+
+// Activity Categories enum matching Rust backend
+export enum ActivityCategory {
+  Health = 'health',
+  Growth = 'growth',
+  Diet = 'diet',
+  Lifestyle = 'lifestyle',
+  Expense = 'expense',
+}
+
+// Activity attachment types
+export interface ActivityAttachment {
+  id: number;
+  activity_id: number;
+  file_path: string;
+  file_type: 'photo' | 'document' | 'video';
+  file_size: number;
+  thumbnail_path?: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
+// Base Activity interface matching the Rust Activity struct
+export interface Activity {
+  id: number;
+  pet_id: number;
+  category: ActivityCategory;
+  subcategory: string;
+  title: string;
+  description?: string;
+  activity_date: string; // ISO datetime string
+  activity_data?: Record<string, unknown>; // JSON field for category-specific data
+  cost?: number;
+  currency?: string;
+  location?: string;
+  mood_rating?: 1 | 2 | 3 | 4 | 5;
+  attachments: ActivityAttachment[];
+  created_at: string;
+  updated_at: string;
+}
+
+// Category-specific data interfaces
+export interface HealthActivityData {
+  veterinarian_name?: string;
+  clinic_name?: string;
+  symptoms?: string[];
+  diagnosis?: string;
+  treatment?: string;
+  medications?: Medication[];
+  next_appointment?: string; // ISO date
+  is_critical?: boolean;
+  weight_check?: WeightMeasurement;
+}
+
+export interface GrowthActivityData {
+  weight?: { value: number; unit: 'kg' | 'lbs'; context?: string };
+  height?: { value: number; unit: 'cm' | 'in' };
+  milestone_type?: string;
+  milestone_description?: string;
+  comparison_photos?: string[]; // Array of photo filenames
+  development_stage?: string;
+}
+
+export interface DietActivityData {
+  food_brand?: string;
+  food_product?: string;
+  portion_size?: { amount: number; unit: string };
+  feeding_schedule?: string;
+  food_rating?: 1 | 2 | 3 | 4 | 5;
+  allergic_reaction?: boolean;
+  ingredients?: string[];
+  nutritional_info?: NutritionInfo;
+}
+
+export interface LifestyleActivityData {
+  duration_minutes?: number;
+  start_time?: string;
+  end_time?: string;
+  energy_level?: 1 | 2 | 3 | 4 | 5;
+  weather_conditions?: string;
+  activity_type?: string;
+  social_interactions?: SocialInteraction[];
+  training_progress?: TrainingProgress;
+}
+
+export interface ExpenseActivityData {
+  receipt_photo?: string;
+  expense_category?: string;
+  vendor?: string;
+  tax_deductible?: boolean;
+  recurring_schedule?: RecurringSchedule;
+  budget_category?: string;
+  payment_method?: string;
+}
+
+// Supporting interfaces for activity data
+export interface Medication {
+  name: string;
+  dosage?: string;
+  frequency?: string;
+  start_date?: string;
+  end_date?: string;
+  notes?: string;
+}
+
+export interface WeightMeasurement {
+  value: number;
+  unit: 'kg' | 'lbs';
+  measurement_context?: string;
+  body_condition_score?: number;
+}
+
+export interface NutritionInfo {
+  calories_per_serving?: number;
+  protein_percentage?: number;
+  fat_percentage?: number;
+  carb_percentage?: number;
+  ingredients?: string[];
+}
+
+export interface SocialInteraction {
+  type: 'pet' | 'human' | 'stranger';
+  description?: string;
+  duration_minutes?: number;
+  reaction?: string;
+}
+
+export interface TrainingProgress {
+  skill?: string;
+  level?: 'beginner' | 'intermediate' | 'advanced' | 'mastered';
+  success_rate?: number;
+  notes?: string;
+}
+
+export interface RecurringSchedule {
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  interval?: number; // e.g., every 2 weeks = interval: 2, frequency: weekly
+  end_date?: string;
+}
+
+// Activity request interfaces for Tauri commands
+export interface ActivityCreateRequest {
+  pet_id: number;
+  category: ActivityCategory;
+  subcategory: string;
+  title: string;
+  description?: string;
+  activity_date: string;
+  activity_data?: Record<string, unknown>;
+  cost?: number;
+  currency?: string;
+  location?: string;
+  mood_rating?: 1 | 2 | 3 | 4 | 5;
+}
+
+export interface ActivityUpdateRequest {
+  title?: string;
+  subcategory?: string;
+  description?: string;
+  activity_date?: string;
+  activity_data?: Record<string, unknown>;
+  cost?: number;
+  currency?: string;
+  location?: string;
+  mood_rating?: 1 | 2 | 3 | 4 | 5;
+}
+
+// Activity filtering and search interfaces
+export interface ActivityFilters {
+  category?: ActivityCategory[];
+  date_range?: { start: string; end: string };
+  search_query?: string;
+  pet_id?: number;
+  has_attachments?: boolean;
+  cost_range?: { min: number; max: number };
+  subcategory?: string[];
+}
+
+export interface ActivitySearchResult {
+  activities: Activity[];
+  total_count: number;
+  has_more: boolean;
+  next_cursor?: string;
+}
+
+// Activity form data interface
+export interface ActivityFormData {
+  title: string;
+  category: ActivityCategory;
+  subcategory: string;
+  description?: string;
+  date: string;
+  time: string;
+  cost?: number;
+  currency?: string;
+  location?: string;
+  mood_rating?: number;
+  activity_data?: Record<string, unknown>;
+  attachments?: File[];
+}
+
+// Activity UI state interfaces
+export interface ActivityListState {
+  activities: Activity[];
+  isLoading: boolean;
+  error?: string;
+  hasMore: boolean;
+  filters: ActivityFilters;
+}
+
+export interface ActivityFormState extends FormState {
+  selectedCategory?: ActivityCategory;
+  isDraftSaved: boolean;
+  uploadProgress?: Record<string, number>; // filename -> progress percentage
+}
+
+// Activity constants and options
+export const ACTIVITY_CATEGORIES = {
+  [ActivityCategory.Health]: {
+    label: 'Health',
+    color: 'red',
+    subcategories: [
+      'Birth',
+      'Vaccination',
+      'Checkup',
+      'Surgery',
+      'Illness',
+      'Medication',
+      'Dental Care',
+      'Weight Check',
+      'Other',
+    ],
+  },
+  [ActivityCategory.Growth]: {
+    label: 'Growth',
+    color: 'green',
+    subcategories: [
+      'Weight',
+      'Height',
+      'Photos',
+      'Milestones',
+      'Development Stage',
+      'Size Comparison',
+      'Other',
+    ],
+  },
+  [ActivityCategory.Diet]: {
+    label: 'Diet',
+    color: 'orange',
+    subcategories: [
+      'Regular Feeding',
+      'Treats',
+      'Special Diet',
+      'Food Changes',
+      'Water Intake',
+      'Supplements',
+      'Other',
+    ],
+  },
+  [ActivityCategory.Lifestyle]: {
+    label: 'Lifestyle',
+    color: 'blue',
+    subcategories: [
+      'Exercise',
+      'Play',
+      'Training',
+      'Grooming',
+      'Social Activities',
+      'Rest',
+      'Travel',
+      'Other',
+    ],
+  },
+  [ActivityCategory.Expense]: {
+    label: 'Expenses',
+    color: 'purple',
+    subcategories: [
+      'Medical',
+      'Food',
+      'Toys',
+      'Grooming',
+      'Training',
+      'Insurance',
+      'Accessories',
+      'Other',
+    ],
+  },
+} as const;
+
+// Activity category options for forms
+export const ACTIVITY_CATEGORY_OPTIONS = Object.entries(ACTIVITY_CATEGORIES).map(
+  ([value, config]) => ({
+    value: value as ActivityCategory,
+    label: config.label,
+    color: config.color,
+  }),
+);
+
+// Mood rating options
+export const MOOD_RATING_OPTIONS = [
+  { value: 1, label: '😞', description: 'Very Low' },
+  { value: 2, label: '😐', description: 'Low' },
+  { value: 3, label: '🙂', description: 'Normal' },
+  { value: 4, label: '😊', description: 'Good' },
+  { value: 5, label: '🤩', description: 'Excellent' },
+] as const;
+
+// Energy level options for lifestyle activities
+export const ENERGY_LEVEL_OPTIONS = [
+  { value: 1, label: '😴', description: 'Very Low' },
+  { value: 2, label: '😌', description: 'Low' },
+  { value: 3, label: '🙂', description: 'Moderate' },
+  { value: 4, label: '😄', description: 'High' },
+  { value: 5, label: '🤸', description: 'Very High' },
+] as const;
+
+// Common currencies
+export const CURRENCY_OPTIONS = [
+  { value: 'USD', label: '$', symbol: '$' },
+  { value: 'CNY', label: '¥', symbol: '¥' },
+  { value: 'EUR', label: '€', symbol: '€' },
+  { value: 'GBP', label: '£', symbol: '£' },
+] as const;
+
+// Utility types for activities
+export type ActivityId = Activity['id'];
+export type ActivityWithoutTimestamps = Omit<Activity, 'created_at' | 'updated_at'>;
+export type RequiredActivityFields = Required<
+  Pick<Activity, 'pet_id' | 'category' | 'subcategory' | 'title' | 'activity_date'>
+>;
+export type CategorySpecificData =
+  | HealthActivityData
+  | GrowthActivityData
+  | DietActivityData
+  | LifestyleActivityData
+  | ExpenseActivityData;

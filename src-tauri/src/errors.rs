@@ -33,6 +33,25 @@ pub enum PetError {
 
     #[error("Permission denied: {message}")]
     PermissionDenied { message: String },
+
+    // Activity-specific error variants
+    #[error("Activity not found with id: {id}")]
+    ActivityNotFound { id: i64 },
+
+    #[error("Invalid activity category: {category}")]
+    InvalidActivityCategory { category: String },
+
+    #[error("Activity attachment error: {message}")]
+    ActivityAttachment { message: String },
+
+    #[error("Activity search error: {message}")]
+    ActivitySearch { message: String },
+
+    #[error("Activity data validation error: {field} - {message}")]
+    ActivityDataValidation { field: String, message: String },
+
+    #[error("Activity timeline error: {message}")]
+    ActivityTimeline { message: String },
 }
 
 impl PetError {
@@ -105,6 +124,47 @@ impl PetError {
         }
     }
 
+    /// Create a new ActivityNotFound error
+    pub fn activity_not_found(id: i64) -> Self {
+        PetError::ActivityNotFound { id }
+    }
+
+    /// Create a new InvalidActivityCategory error
+    pub fn invalid_activity_category<S: Into<String>>(category: S) -> Self {
+        PetError::InvalidActivityCategory {
+            category: category.into(),
+        }
+    }
+
+    /// Create a new ActivityAttachment error
+    pub fn activity_attachment<S: Into<String>>(message: S) -> Self {
+        PetError::ActivityAttachment {
+            message: message.into(),
+        }
+    }
+
+    /// Create a new ActivitySearch error
+    pub fn activity_search<S: Into<String>>(message: S) -> Self {
+        PetError::ActivitySearch {
+            message: message.into(),
+        }
+    }
+
+    /// Create a new ActivityDataValidation error
+    pub fn activity_data_validation<S: Into<String>>(field: S, message: S) -> Self {
+        PetError::ActivityDataValidation {
+            field: field.into(),
+            message: message.into(),
+        }
+    }
+
+    /// Create a new ActivityTimeline error
+    pub fn activity_timeline<S: Into<String>>(message: S) -> Self {
+        PetError::ActivityTimeline {
+            message: message.into(),
+        }
+    }
+
     /// Get error severity level for logging and handling
     pub fn severity(&self) -> ErrorSeverity {
         match self {
@@ -118,6 +178,13 @@ impl PetError {
             PetError::ConcurrentAccess { .. } => ErrorSeverity::Warning,
             PetError::ResourceLimit { .. } => ErrorSeverity::Error,
             PetError::PermissionDenied { .. } => ErrorSeverity::Error,
+            // Activity-specific error severities
+            PetError::ActivityNotFound { .. } => ErrorSeverity::Info,
+            PetError::InvalidActivityCategory { .. } => ErrorSeverity::Warning,
+            PetError::ActivityAttachment { .. } => ErrorSeverity::Warning,
+            PetError::ActivitySearch { .. } => ErrorSeverity::Warning,
+            PetError::ActivityDataValidation { .. } => ErrorSeverity::Warning,
+            PetError::ActivityTimeline { .. } => ErrorSeverity::Error,
         }
     }
 
@@ -134,6 +201,13 @@ impl PetError {
             PetError::ConcurrentAccess { .. } => true,
             PetError::ResourceLimit { .. } => false,
             PetError::PermissionDenied { .. } => false,
+            // Activity-specific error recoverability
+            PetError::ActivityNotFound { .. } => false,
+            PetError::InvalidActivityCategory { .. } => true,
+            PetError::ActivityAttachment { .. } => true,
+            PetError::ActivitySearch { .. } => true,
+            PetError::ActivityDataValidation { .. } => true,
+            PetError::ActivityTimeline { .. } => true,
         }
     }
 
@@ -150,6 +224,13 @@ impl PetError {
             PetError::ConcurrentAccess { .. } => "CONCURRENT_ACCESS",
             PetError::ResourceLimit { .. } => "RESOURCE_LIMIT",
             PetError::PermissionDenied { .. } => "PERMISSION_DENIED",
+            // Activity-specific error codes
+            PetError::ActivityNotFound { .. } => "ACTIVITY_NOT_FOUND",
+            PetError::InvalidActivityCategory { .. } => "INVALID_ACTIVITY_CATEGORY",
+            PetError::ActivityAttachment { .. } => "ACTIVITY_ATTACHMENT_ERROR",
+            PetError::ActivitySearch { .. } => "ACTIVITY_SEARCH_ERROR",
+            PetError::ActivityDataValidation { .. } => "ACTIVITY_DATA_VALIDATION_ERROR",
+            PetError::ActivityTimeline { .. } => "ACTIVITY_TIMELINE_ERROR",
         }
     }
 }
@@ -191,10 +272,10 @@ impl From<image::ImageError> for PetError {
 /// Validation helper functions
 pub mod validation {
     use super::PetError;
-    use crate::database::{PetCreateRequest, PetUpdateRequest};
+    use crate::database::{CreatePetRequest, UpdatePetRequest};
 
     /// Validate pet create request
-    pub fn validate_pet_create_request(request: &PetCreateRequest) -> Result<(), PetError> {
+    pub fn validate_pet_create_request(request: &CreatePetRequest) -> Result<(), PetError> {
         validate_pet_name(&request.name)?;
 
         if let Some(ref breed) = request.breed {
@@ -217,7 +298,7 @@ pub mod validation {
     }
 
     /// Validate pet update request
-    pub fn validate_pet_update_request(request: &PetUpdateRequest) -> Result<(), PetError> {
+    pub fn validate_pet_update_request(request: &UpdatePetRequest) -> Result<(), PetError> {
         if let Some(ref name) = request.name {
             validate_pet_name(name)?;
         }
@@ -402,12 +483,191 @@ pub mod validation {
 
         Ok(())
     }
+
+    // Activity-specific validation functions
+
+    /// Validate activity title
+    pub fn validate_activity_title(title: &str) -> Result<(), PetError> {
+        let trimmed = title.trim();
+
+        if trimmed.is_empty() {
+            return Err(PetError::activity_data_validation(
+                "title",
+                "Activity title cannot be empty",
+            ));
+        }
+
+        if trimmed.len() > 200 {
+            return Err(PetError::activity_data_validation(
+                "title",
+                "Activity title cannot exceed 200 characters",
+            ));
+        }
+
+        // Check for invalid characters
+        if trimmed.chars().any(|c| c.is_control()) {
+            return Err(PetError::activity_data_validation(
+                "title",
+                "Activity title contains invalid characters",
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Validate activity category
+    pub fn validate_activity_category(category: &str) -> Result<(), PetError> {
+        let valid_categories = ["health", "growth", "diet", "lifestyle", "expense"];
+
+        if !valid_categories.contains(&category) {
+            return Err(PetError::invalid_activity_category(category));
+        }
+
+        Ok(())
+    }
+
+    /// Validate activity subcategory
+    pub fn validate_activity_subcategory(subcategory: &str) -> Result<(), PetError> {
+        let trimmed = subcategory.trim();
+
+        if trimmed.is_empty() {
+            return Err(PetError::activity_data_validation(
+                "subcategory",
+                "Activity subcategory cannot be empty",
+            ));
+        }
+
+        if trimmed.len() > 50 {
+            return Err(PetError::activity_data_validation(
+                "subcategory",
+                "Activity subcategory cannot exceed 50 characters",
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Validate activity description
+    pub fn validate_activity_description(description: &str) -> Result<(), PetError> {
+        if description.len() > 2000 {
+            return Err(PetError::activity_data_validation(
+                "description",
+                "Activity description cannot exceed 2000 characters",
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Validate activity date
+    pub fn validate_activity_date(date_str: &str) -> Result<(), PetError> {
+        // Parse the ISO datetime string
+        if chrono::DateTime::parse_from_rfc3339(date_str).is_err() {
+            return Err(PetError::activity_data_validation(
+                "activity_date",
+                "Invalid activity date format (expected ISO 8601)",
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Validate activity cost
+    pub fn validate_activity_cost(cost: f64) -> Result<(), PetError> {
+        if cost < 0.0 {
+            return Err(PetError::activity_data_validation(
+                "cost",
+                "Activity cost cannot be negative",
+            ));
+        }
+
+        if cost > 999999.99 {
+            return Err(PetError::activity_data_validation(
+                "cost",
+                "Activity cost seems unrealistic (over 999,999.99)",
+            ));
+        }
+
+        // Check for reasonable precision (2 decimal places)
+        let rounded = (cost * 100.0).round() / 100.0;
+        if (cost - rounded).abs() > f64::EPSILON {
+            return Err(PetError::activity_data_validation(
+                "cost",
+                "Activity cost precision should not exceed 2 decimal places",
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Validate mood rating
+    pub fn validate_mood_rating(rating: i32) -> Result<(), PetError> {
+        if !(1..=5).contains(&rating) {
+            return Err(PetError::activity_data_validation(
+                "mood_rating",
+                "Mood rating must be between 1 and 5",
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Validate activity location
+    pub fn validate_activity_location(location: &str) -> Result<(), PetError> {
+        if location.len() > 200 {
+            return Err(PetError::activity_data_validation(
+                "location",
+                "Activity location cannot exceed 200 characters",
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Validate currency code
+    pub fn validate_currency_code(currency: &str) -> Result<(), PetError> {
+        if currency.len() != 3 {
+            return Err(PetError::activity_data_validation(
+                "currency",
+                "Currency code must be exactly 3 characters (ISO 4217)",
+            ));
+        }
+
+        if !currency.chars().all(|c| c.is_ascii_uppercase()) {
+            return Err(PetError::activity_data_validation(
+                "currency",
+                "Currency code must contain only uppercase ASCII letters",
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Validate search query
+    pub fn validate_search_query(query: &str) -> Result<(), PetError> {
+        let trimmed = query.trim();
+
+        if trimmed.len() > 500 {
+            return Err(PetError::activity_search(
+                "Search query cannot exceed 500 characters",
+            ));
+        }
+
+        // Basic SQL injection protection for FTS queries
+        if trimmed.contains("--") || trimmed.contains("/*") || trimmed.contains("*/") {
+            return Err(PetError::activity_search(
+                "Search query contains invalid sequences",
+            ));
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::database::{PetCreateRequest, PetGender, PetSpecies};
+    use crate::database::{CreatePetRequest, PetGender, PetSpecies};
     use chrono::NaiveDate;
 
     #[test]
@@ -451,7 +711,7 @@ mod tests {
     fn test_validation_create_request() {
         use validation::validate_pet_create_request;
 
-        let valid_request = PetCreateRequest {
+        let valid_request = CreatePetRequest {
             name: "Test Pet".to_string(),
             birth_date: NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
             species: PetSpecies::Cat,
@@ -461,12 +721,11 @@ mod tests {
             weight_kg: Some(5.0),
             photo_path: None,
             notes: Some("A lovely pet".to_string()),
-            display_order: None,
         };
 
         assert!(validate_pet_create_request(&valid_request).is_ok());
 
-        let invalid_request = PetCreateRequest {
+        let invalid_request = CreatePetRequest {
             name: "".to_string(), // Invalid empty name
             birth_date: NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
             species: PetSpecies::Cat,
@@ -476,7 +735,6 @@ mod tests {
             weight_kg: None,
             photo_path: None,
             notes: None,
-            display_order: None,
         };
 
         assert!(validate_pet_create_request(&invalid_request).is_err());
