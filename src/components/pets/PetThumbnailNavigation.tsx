@@ -3,7 +3,6 @@ import { Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
 import { PetThumbnail, PetThumbnailSkeleton } from './PetThumbnail';
 import { AddPetThumbnail } from './AddPetThumbnail';
-import { PetProfile } from './PetProfile';
 import {
   useTouchThumbnailNavigation,
   useThumbnailSwipeGestures,
@@ -42,8 +41,6 @@ export function PetThumbnailNavigation({
   pets,
   onPetSelect,
   onAddPet,
-  onEditPet,
-  onAddActivity,
   className,
   showAddPetCard = true,
   enableElasticFeedback = true,
@@ -56,9 +53,8 @@ export function PetThumbnailNavigation({
   const thumbnailsRef = useRef<HTMLDivElement>(null);
   const autoPlayTimerRef = useRef<number | null>(null);
 
-  // View state management
-  const [currentView, setCurrentView] = useState<'thumbnails' | 'detail'>('thumbnails');
-  const [detailPetId, setDetailPetId] = useState<number | null>(null);
+  // View state management - simplified to only thumbnails view
+  // Detail view removed as all navigation now goes through onPetSelect to router
 
   // Navigation state
   const navigation = useTouchThumbnailNavigation(pets, {
@@ -294,53 +290,19 @@ export function PetThumbnailNavigation({
     [onPetSelect, clearAutoPlay],
   );
 
-  // Handle tap to detail transition
+  // Handle tap to detail transition - now unified to use onPetSelect
   const handleTapToDetail = useCallback(
     (pet: Pet) => {
       clearAutoPlay();
-      setDetailPetId(pet.id);
-      setCurrentView('detail');
-
-      // Sync navigation index to the selected pet
-      navigation.goToPet(pet.id);
-    },
-    [clearAutoPlay, navigation],
-  );
-
-  // State for swipe down gesture to return to thumbnails
-  const [swipeDownStart, setSwipeDownStart] = useState<{ x: number; y: number } | null>(null);
-
-  // Handle back to thumbnails
-  const handleBackToThumbnails = useCallback(() => {
-    setCurrentView('thumbnails');
-    setDetailPetId(null);
-  }, []);
-
-  // Handle swipe down to return to thumbnails
-  const handleDetailTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    setSwipeDownStart({ x: touch.clientX, y: touch.clientY });
-  }, []);
-
-  const handleDetailTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
-      const touch = e.changedTouches[0];
-      if (swipeDownStart) {
-        const deltaY = touch.clientY - swipeDownStart.y;
-        const deltaX = touch.clientX - swipeDownStart.x;
-
-        // Detect downward swipe (iOS-like dismiss gesture)
-        if (deltaY > 100 && Math.abs(deltaX) < 50) {
-          handleBackToThumbnails();
-        }
+      // Unified behavior: both info button and image click use onPetSelect
+      if (onPetSelect) {
+        onPetSelect(pet);
       }
-      setSwipeDownStart(null);
     },
-    [swipeDownStart, handleBackToThumbnails],
+    [onPetSelect, clearAutoPlay],
   );
 
-  // Get current detail pet
-  const detailPet = detailPetId ? pets.find(pet => pet.id === detailPetId) : null;
+  // Removed detail view state and handlers as all navigation is now unified
 
   // Handle add pet click
   const handleAddPetClick = useCallback(() => {
@@ -381,74 +343,7 @@ export function PetThumbnailNavigation({
     );
   }
 
-  // Render detail view if active
-  if (currentView === 'detail' && detailPet) {
-    return (
-      <div
-        className={cn('w-full h-full', className)}
-        onTouchStart={handleDetailTouchStart}
-        onTouchEnd={handleDetailTouchEnd}
-      >
-        <PetProfile
-          pet={detailPet}
-          onEdit={onEditPet}
-          onAddActivity={onAddActivity}
-          onPrevious={() => {
-            if (navigation.canNavigatePrevious) {
-              navigation.goToPrevious();
-              const newActivePet = pets[navigation.activePetIndex - 1];
-              if (newActivePet) {
-                setDetailPetId(newActivePet.id);
-              }
-            }
-          }}
-          onNext={() => {
-            if (
-              navigation.canNavigateNext &&
-              navigation.activePetIndex < navigation.totalPets - 1
-            ) {
-              navigation.goToNext();
-              const newActivePet = pets[navigation.activePetIndex + 1];
-              if (newActivePet) {
-                setDetailPetId(newActivePet.id);
-              }
-            }
-          }}
-          hasPrevious={navigation.canNavigatePrevious}
-          hasNext={
-            navigation.canNavigateNext && navigation.activePetIndex < navigation.totalPets - 1
-          }
-          currentIndex={navigation.activePetIndex}
-          totalPets={navigation.totalPets}
-          className="h-full"
-        />
-
-        {/* Enhanced Back button overlay */}
-        <button
-          onClick={handleBackToThumbnails}
-          className="fixed top-4 left-4 z-50 w-12 h-12 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/40 active:bg-black/50 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
-          aria-label="Back to thumbnails"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            className="ml-0.5" // Slight offset for visual balance
-          >
-            <path d="M19 12H5m7-7-7 7 7 7" />
-          </svg>
-        </button>
-
-        {/* Back button label for clarity */}
-        <div className="fixed top-4 left-20 z-40 px-3 py-2 bg-black/20 backdrop-blur-sm rounded-full text-white text-sm font-medium opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-          Back to Gallery
-        </div>
-      </div>
-    );
-  }
+  // Detail view removed - all navigation now goes to PetProfilePage via router
 
   return (
     <div

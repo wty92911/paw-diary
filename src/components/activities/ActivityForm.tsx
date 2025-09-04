@@ -13,7 +13,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '../ui/dialog';
@@ -48,29 +47,32 @@ const ACTIVITY_CATEGORIES = {
       'Surgery',
       'Dental Care',
       'Grooming',
+      'Weight Check',
       'Other',
     ],
   },
   growth: {
     label: 'Growth',
     subcategories: [
-      'Weight Check',
+      'Weight Measurement',
       'Height Measurement',
-      'Growth Milestone',
-      'Development Stage',
-      'Size Comparison',
+      'Milestone',
+      'Development',
+      'First Time',
+      'Behavior Change',
+      'Training Progress',
       'Other',
     ],
   },
   diet: {
     label: 'Diet',
     subcategories: [
-      'Meal',
-      'Treat',
-      'Water Intake',
+      'Feeding',
+      'Treats',
       'Food Change',
-      'Supplements',
+      'Water Intake',
       'Special Diet',
+      'Appetite Change',
       'Other',
     ],
   },
@@ -78,12 +80,13 @@ const ACTIVITY_CATEGORIES = {
     label: 'Lifestyle',
     subcategories: [
       'Walk',
-      'Play Time',
+      'Play',
+      'Exercise',
       'Training',
       'Socialization',
-      'Exercise',
-      'Rest',
       'Travel',
+      'Rest',
+      'Behavior',
       'Other',
     ],
   },
@@ -99,6 +102,7 @@ interface ActivityFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: ActivityFormData) => Promise<void>;
   isSubmitting?: boolean;
+  inlineMode?: boolean; // New prop for inline rendering
 }
 
 export function ActivityForm({
@@ -107,6 +111,7 @@ export function ActivityForm({
   onOpenChange,
   onSubmit,
   isSubmitting = false,
+  inlineMode = false,
 }: ActivityFormProps) {
   const [selectedCategory, setSelectedCategory] = useState<keyof typeof ACTIVITY_CATEGORIES>();
 
@@ -116,7 +121,6 @@ export function ActivityForm({
     formState: { errors },
     setValue,
     watch,
-    reset,
   } = useForm<ActivityFormData>({
     resolver: zodResolver(activityFormSchema),
     defaultValues: {
@@ -124,38 +128,204 @@ export function ActivityForm({
       category: 'lifestyle',
       subcategory: '',
       description: '',
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toTimeString().slice(0, 5),
+      date: new Date().toISOString().split('T')[0], // Today's date
+      time: new Date().toTimeString().slice(0, 5), // Current time
       cost: undefined,
       location: '',
     },
   });
 
+  // Watch form values for dynamic updates
   const watchedCategory = watch('category');
+  const watchedSubcategory = watch('subcategory');
 
-  // Update selected category when form value changes
+  // Update selected category when category changes
   React.useEffect(() => {
-    setSelectedCategory(watchedCategory as keyof typeof ACTIVITY_CATEGORIES);
-    // Reset subcategory when category changes
-    setValue('subcategory', '');
-  }, [watchedCategory, setValue]);
-
-  // Reset form when dialog opens/closes
-  React.useEffect(() => {
-    if (!open) {
-      reset();
-      setSelectedCategory(undefined);
+    if (watchedCategory !== selectedCategory) {
+      setSelectedCategory(watchedCategory);
+      setValue('subcategory', ''); // Reset subcategory when category changes
     }
-  }, [open, reset]);
+  }, [watchedCategory, selectedCategory, setValue]);
 
+  // Handle form submission
   const handleFormSubmit = async (data: ActivityFormData) => {
     try {
-      await onSubmit(data);
+      // Ensure activity is bound to the specific pet
+      const activityData = {
+        ...data,
+        petId: pet.id,
+      };
+      await onSubmit(activityData);
       onOpenChange(false);
     } catch (error) {
       console.error('Failed to submit activity:', error);
     }
   };
+
+  // Form content component
+  const formContent = (
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      {/* Title */}
+      <div className="space-y-2">
+        <Label htmlFor="title">Activity Title *</Label>
+        <Input
+          id="title"
+          placeholder="e.g., Morning walk, Vet checkup, Weight check"
+          {...register('title')}
+          className={cn(errors.title && 'border-red-300 focus:border-red-500')}
+        />
+        {errors.title && <p className="text-sm text-red-600">{errors.title.message}</p>}
+      </div>
+
+      {/* Category */}
+      <div className="space-y-2">
+        <Label htmlFor="category">Category *</Label>
+        <Select
+          value={watchedCategory}
+          onValueChange={value => setValue('category', value as ActivityFormData['category'])}
+        >
+          <SelectTrigger id="category" className={cn(errors.category && 'border-red-300')}>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(ACTIVITY_CATEGORIES).map(([key, category]) => (
+              <SelectItem key={key} value={key}>
+                {category.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.category && <p className="text-sm text-red-600">{errors.category.message}</p>}
+      </div>
+
+      {/* Subcategory */}
+      {watchedCategory && (
+        <div className="space-y-2">
+          <Label htmlFor="subcategory">Subcategory *</Label>
+          <Select
+            value={watchedSubcategory}
+            onValueChange={value => setValue('subcategory', value)}
+          >
+            <SelectTrigger id="subcategory" className={cn(errors.subcategory && 'border-red-300')}>
+              <SelectValue placeholder="Select subcategory" />
+            </SelectTrigger>
+            <SelectContent>
+              {ACTIVITY_CATEGORIES[watchedCategory].subcategories.map((subcategory: string) => (
+                <SelectItem key={subcategory} value={subcategory}>
+                  {subcategory}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.subcategory && <p className="text-sm text-red-600">{errors.subcategory.message}</p>}
+        </div>
+      )}
+
+      {/* Date and Time */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="date" className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
+            Date *
+          </Label>
+          <Input
+            id="date"
+            type="date"
+            {...register('date')}
+            className={cn(errors.date && 'border-red-300 focus:border-red-500')}
+          />
+          {errors.date && <p className="text-sm text-red-600">{errors.date.message}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="time" className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            Time *
+          </Label>
+          <Input
+            id="time"
+            type="time"
+            {...register('time')}
+            className={cn(errors.time && 'border-red-300 focus:border-red-500')}
+          />
+          {errors.time && <p className="text-sm text-red-600">{errors.time.message}</p>}
+        </div>
+      </div>
+
+      {/* Description */}
+      <div className="space-y-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          placeholder="Optional details about this activity..."
+          rows={3}
+          {...register('description')}
+          className={cn(errors.description && 'border-red-300 focus:border-red-500')}
+        />
+        {errors.description && <p className="text-sm text-red-600">{errors.description.message}</p>}
+      </div>
+
+      {/* Additional fields based on category */}
+      {(watchedCategory === 'expense' || watchedCategory === 'health') && (
+        <div className="space-y-2">
+          <Label htmlFor="cost">
+            {watchedCategory === 'expense' ? 'Amount' : 'Cost'} ($)
+          </Label>
+          <Input
+            id="cost"
+            type="number"
+            step="0.01"
+            placeholder="0.00"
+            {...register('cost', { valueAsNumber: true })}
+            className={cn(errors.cost && 'border-red-300 focus:border-red-500')}
+          />
+          {errors.cost && <p className="text-sm text-red-600">{errors.cost.message}</p>}
+        </div>
+      )}
+
+      {/* Location */}
+      <div className="space-y-2">
+        <Label htmlFor="location">Location</Label>
+        <Input
+          id="location"
+          placeholder="e.g., Home, Park, Vet Clinic"
+          {...register('location')}
+          className={cn(errors.location && 'border-red-300 focus:border-red-500')}
+        />
+        {errors.location && <p className="text-sm text-red-600">{errors.location.message}</p>}
+      </div>
+
+      {/* Form Actions */}
+      <div className="flex gap-3 pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+          disabled={isSubmitting}
+          className="flex-1"
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isSubmitting} className="flex-1">
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Activity
+            </>
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+
+  // Return inline mode or dialog mode
+  if (inlineMode) {
+    return formContent;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -169,159 +339,7 @@ export function ActivityForm({
             Record a new activity, health check, or milestone for {pet.name}.
           </DialogDescription>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Activity Title *</Label>
-            <Input
-              id="title"
-              placeholder="e.g., Morning walk, Vet checkup, Weight check"
-              {...register('title')}
-              className={cn(errors.title && 'border-red-300 focus:border-red-500')}
-            />
-            {errors.title && <p className="text-sm text-red-600">{errors.title.message}</p>}
-          </div>
-
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category">Category *</Label>
-            <Select
-              value={watchedCategory}
-              onValueChange={value => setValue('category', value as ActivityFormData['category'])}
-            >
-              <SelectTrigger id="category" className={cn(errors.category && 'border-red-300')}>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(ACTIVITY_CATEGORIES).map(([key, category]) => (
-                  <SelectItem key={key} value={key}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.category && <p className="text-sm text-red-600">{errors.category.message}</p>}
-          </div>
-
-          {/* Subcategory */}
-          {selectedCategory && (
-            <div className="space-y-2">
-              <Label htmlFor="subcategory">Type *</Label>
-              <Select
-                value={watch('subcategory')}
-                onValueChange={value => setValue('subcategory', value)}
-              >
-                <SelectTrigger
-                  id="subcategory"
-                  className={cn(errors.subcategory && 'border-red-300')}
-                >
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ACTIVITY_CATEGORIES[selectedCategory].subcategories.map(subcategory => (
-                    <SelectItem key={subcategory} value={subcategory}>
-                      {subcategory}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.subcategory && (
-                <p className="text-sm text-red-600">{errors.subcategory.message}</p>
-              )}
-            </div>
-          )}
-
-          {/* Date and Time */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date" className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                Date *
-              </Label>
-              <Input
-                id="date"
-                type="date"
-                {...register('date')}
-                className={cn(errors.date && 'border-red-300 focus:border-red-500')}
-              />
-              {errors.date && <p className="text-sm text-red-600">{errors.date.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="time" className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                Time *
-              </Label>
-              <Input
-                id="time"
-                type="time"
-                {...register('time')}
-                className={cn(errors.time && 'border-red-300 focus:border-red-500')}
-              />
-              {errors.time && <p className="text-sm text-red-600">{errors.time.message}</p>}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Add details about this activity..."
-              rows={3}
-              {...register('description')}
-            />
-          </div>
-
-          {/* Cost and Location */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cost">Cost (¥)</Label>
-              <Input
-                id="cost"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                {...register('cost', { valueAsNumber: true })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                placeholder="e.g., Home, Vet clinic, Park"
-                {...register('location')}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Activity
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
+        {formContent}
       </DialogContent>
     </Dialog>
   );

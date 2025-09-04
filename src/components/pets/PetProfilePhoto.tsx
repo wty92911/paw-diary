@@ -6,7 +6,7 @@ import { usePhotoState } from '../../hooks/usePhotoCache';
 
 interface PetProfilePhotoProps {
   pet: Pet;
-  size?: 'large' | 'hero';
+  size?: 'medium' | 'large' | 'hero';
   className?: string;
   showPlaceholder?: boolean;
 }
@@ -33,6 +33,10 @@ export function PetProfilePhoto({
   }, [isLoading]);
 
   const sizeClasses = {
+    medium: {
+      container: 'w-24 h-24',
+      image: 'w-20 h-20',
+    },
     large: {
       container: 'w-80 h-80',
       image: 'w-72 h-72',
@@ -143,10 +147,11 @@ export function PetProfilePhotoSkeleton({
   size = 'large',
   className,
 }: {
-  size?: 'large' | 'hero';
+  size?: 'medium' | 'large' | 'hero';
   className?: string;
 }) {
   const sizeClasses = {
+    medium: 'w-24 h-24',
     large: 'w-80 h-80',
     hero: 'w-full h-96 md:h-[28rem]',
   };
