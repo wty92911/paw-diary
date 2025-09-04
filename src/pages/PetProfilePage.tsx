@@ -178,7 +178,10 @@ export function PetProfilePage() {
 
                   {/* Edit Button */}
                   <Button
-                    onClick={() => console.log('Edit pet:', currentPet.name)}
+                    onClick={() => {
+                      // Navigate to EditPetPage
+                      navigate(`/pets/${currentPet.id}/edit`);
+                    }}
                     variant="outline"
                     className="mt-4 border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
                   >
