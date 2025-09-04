@@ -4,19 +4,13 @@ import { Card, CardContent } from '../ui/card';
 import { PetProfilePhoto } from './PetProfilePhoto';
 import { PetActivityPreview } from './PetActivityPreview';
 import { cn, calculateAge } from '../../lib/utils';
-import { ArrowLeft, ArrowRight, Edit, Heart, Calendar } from 'lucide-react';
+import { Edit, Heart, Calendar } from 'lucide-react';
 
 interface PetProfileProps {
   pet: Pet;
   onEdit?: (pet: Pet) => void;
   onAddActivity?: () => void;
   onViewAllActivities?: (petId: number) => void;
-  onPrevious?: () => void;
-  onNext?: () => void;
-  hasPrevious?: boolean;
-  hasNext?: boolean;
-  currentIndex?: number;
-  totalPets?: number;
   className?: string;
   disableVerticalScroll?: boolean;
 }
@@ -26,12 +20,6 @@ export function PetProfile({
   onEdit,
   onAddActivity,
   onViewAllActivities,
-  onPrevious,
-  onNext,
-  hasPrevious = false,
-  hasNext = false,
-  currentIndex,
-  totalPets,
   className,
   disableVerticalScroll = false,
 }: PetProfileProps) {
@@ -45,58 +33,7 @@ export function PetProfile({
         className,
       )}
     >
-      {/* Navigation Header */}
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-orange-200">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Previous button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onPrevious}
-            disabled={!hasPrevious}
-            className="text-orange-700 hover:text-orange-800 hover:bg-orange-100 disabled:opacity-50"
-            aria-label="Previous pet"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-
-          {/* Pet counter */}
-          {typeof currentIndex === 'number' && typeof totalPets === 'number' && (
-            <div className="text-center" role="status" aria-live="polite">
-              <p className="text-sm font-medium text-orange-900">
-                {currentIndex + 1} of {totalPets}
-              </p>
-              <div
-                className="flex gap-1 mt-1"
-                aria-label={`Pet ${currentIndex + 1} of ${totalPets}`}
-              >
-                {Array.from({ length: totalPets }, (_, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      'w-2 h-2 rounded-full transition-colors',
-                      i === currentIndex ? 'bg-orange-500' : 'bg-orange-200',
-                    )}
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Next button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onNext}
-            disabled={!hasNext}
-            className="text-orange-700 hover:text-orange-800 hover:bg-orange-100 disabled:opacity-50"
-            aria-label="Next pet"
-          >
-            <ArrowRight className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
+      {/* Removed navigation header - no pet switching in individual profile pages */}
 
       {/* Main Profile Content */}
       <div className="max-w-md mx-auto px-4 py-6 space-y-6">
