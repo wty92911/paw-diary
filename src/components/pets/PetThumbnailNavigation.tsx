@@ -307,11 +307,37 @@ export function PetThumbnailNavigation({
     [clearAutoPlay, navigation],
   );
 
+  // State for swipe down gesture to return to thumbnails
+  const [swipeDownStart, setSwipeDownStart] = useState<{ x: number; y: number } | null>(null);
+
   // Handle back to thumbnails
   const handleBackToThumbnails = useCallback(() => {
     setCurrentView('thumbnails');
     setDetailPetId(null);
   }, []);
+
+  // Handle swipe down to return to thumbnails
+  const handleDetailTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setSwipeDownStart({ x: touch.clientX, y: touch.clientY });
+  }, []);
+
+  const handleDetailTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const touch = e.changedTouches[0];
+      if (swipeDownStart) {
+        const deltaY = touch.clientY - swipeDownStart.y;
+        const deltaX = touch.clientX - swipeDownStart.x;
+
+        // Detect downward swipe (iOS-like dismiss gesture)
+        if (deltaY > 100 && Math.abs(deltaX) < 50) {
+          handleBackToThumbnails();
+        }
+      }
+      setSwipeDownStart(null);
+    },
+    [swipeDownStart, handleBackToThumbnails],
+  );
 
   // Get current detail pet
   const detailPet = detailPetId ? pets.find(pet => pet.id === detailPetId) : null;
@@ -354,32 +380,6 @@ export function PetThumbnailNavigation({
       </div>
     );
   }
-
-  // State for swipe down gesture to return to thumbnails
-  const [swipeDownStart, setSwipeDownStart] = useState<{ x: number; y: number } | null>(null);
-
-  // Handle swipe down to return to thumbnails
-  const handleDetailTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    setSwipeDownStart({ x: touch.clientX, y: touch.clientY });
-  }, []);
-
-  const handleDetailTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
-      const touch = e.changedTouches[0];
-      if (swipeDownStart) {
-        const deltaY = touch.clientY - swipeDownStart.y;
-        const deltaX = touch.clientX - swipeDownStart.x;
-
-        // Detect downward swipe (iOS-like dismiss gesture)
-        if (deltaY > 100 && Math.abs(deltaX) < 50) {
-          handleBackToThumbnails();
-        }
-      }
-      setSwipeDownStart(null);
-    },
-    [swipeDownStart, handleBackToThumbnails],
-  );
 
   // Render detail view if active
   if (currentView === 'detail' && detailPet) {

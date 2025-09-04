@@ -12,7 +12,6 @@ repos:
       - id: check-symlinks
       - id: check-yaml
       - id: mixed-line-ending
-      - id: trailing-whitespace
   - repo: https://github.com/psf/black
     rev: 25.1.0
     hooks:

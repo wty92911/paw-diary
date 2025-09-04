@@ -1,5 +1,4 @@
 // Pet Management System modules
-pub mod app_state;
 pub mod commands;
 pub mod database;
 pub mod errors;
@@ -25,7 +24,7 @@ pub fn run() {
             greet,
             // Application initialization
             initialize_app,
-            get_app_info,
+            get_app_statistics,
             // Pet management commands
             create_pet,
             get_pets,
@@ -33,6 +32,19 @@ pub fn run() {
             update_pet,
             delete_pet,
             reorder_pets,
+            // Activity management commands
+            create_activity,
+            get_activities,
+            get_activity_by_id,
+            update_activity,
+            delete_activity,
+            search_activities,
+            // Activity attachment commands
+            upload_activity_attachment,
+            upload_activity_attachment_from_path,
+            get_activity_attachments,
+            get_activity_attachment_by_id,
+            delete_activity_attachment,
             // Photo management commands
             upload_pet_photo,
             upload_pet_photo_from_path,
