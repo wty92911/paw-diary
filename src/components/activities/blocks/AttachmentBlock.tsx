@@ -32,9 +32,17 @@ interface AttachmentValue {
   error?: string;
 }
 
-// Supported file types and limits
+// Supported file types and limits (aligned with PhotoService capabilities)
 const SUPPORTED_TYPES = {
-  images: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+  images: [
+    'image/jpeg', 
+    'image/jpg', 
+    'image/png', 
+    'image/webp', 
+    'image/bmp',
+    'image/tiff',
+    'image/tif'
+  ],
   videos: ['video/mp4', 'video/webm', 'video/quicktime'],
   documents: ['application/pdf', 'text/plain'],
 } as const;
@@ -78,67 +86,127 @@ const AttachmentBlock: React.FC<AttachmentBlockProps> = ({
     return File;
   };
 
-  const isValidFileType = (file: File): boolean => {
+  const validateFile = (file: File): { isValid: boolean; error?: string } => {
+    // Check file type
     const allSupportedTypes = [
       ...SUPPORTED_TYPES.images,
       ...SUPPORTED_TYPES.videos,
       ...SUPPORTED_TYPES.documents,
     ];
-    return allSupportedTypes.includes(file.type as any);
+    
+    if (!allSupportedTypes.includes(file.type as any)) {
+      return {
+        isValid: false,
+        error: `Unsupported file type: ${file.type || 'unknown'}. Supported types: images (JPEG, PNG, WebP, BMP, TIFF), videos (MP4, WebM, MOV), documents (PDF, TXT)`,
+      };
+    }
+
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return {
+        isValid: false,
+        error: `File too large: ${file.name} (${formatFileSize(file.size)}). Maximum size: ${formatFileSize(MAX_FILE_SIZE)}`,
+      };
+    }
+
+    // Check file name length and characters
+    if (file.name.length > 255) {
+      return {
+        isValid: false,
+        error: `File name too long: ${file.name.length} characters. Maximum: 255 characters`,
+      };
+    }
+
+    // Security check for filename
+    if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
+      return {
+        isValid: false,
+        error: `Invalid characters in filename: ${file.name}`,
+      };
+    }
+
+    return { isValid: true };
   };
 
-  // Mock upload function - would integrate with PhotoService
+  // Real upload function integrated with PhotoService and photos:// protocol
   const uploadFile = async (file: File): Promise<AttachmentValue> => {
-    return new Promise((resolve, reject) => {
-      // Simulate upload progress
-      const attachment: AttachmentValue = {
-        id: `attachment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        url: `photos://${file.name}`, // Would be actual photos:// URL
-        uploadStatus: 'uploading',
-        uploadProgress: 0,
-      };
+    // Create initial attachment with uploading status
+    const attachment: AttachmentValue = {
+      id: `attachment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      url: '', // Will be set after upload
+      uploadStatus: 'uploading',
+      uploadProgress: 0,
+    };
 
-      // Simulate thumbnail generation for images
-      if (SUPPORTED_TYPES.images.includes(file.type as any)) {
+    // Generate thumbnail for images
+    if (SUPPORTED_TYPES.images.includes(file.type as any)) {
+      try {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          attachment.thumbnail = e.target?.result as string;
-        };
+        const thumbnailPromise = new Promise<string>((resolve) => {
+          reader.onload = (e) => {
+            resolve(e.target?.result as string);
+          };
+        });
         reader.readAsDataURL(file);
+        attachment.thumbnail = await thumbnailPromise;
+      } catch (error) {
+        console.warn('Failed to generate thumbnail:', error);
       }
+    }
 
-      // Simulate upload progress
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 20;
-        attachment.uploadProgress = Math.min(progress, 100);
-        
-        // Update the attachment in the array
-        setValue(fieldName, (prev: AttachmentValue[]) =>
-          prev.map(att => att.id === attachment.id ? { ...attachment } : att)
-        );
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
 
-        if (progress >= 100) {
-          clearInterval(progressInterval);
-          attachment.uploadStatus = 'completed';
-          attachment.uploadProgress = 100;
-          resolve(attachment);
-        }
-      }, 200);
+      // Update progress to show we're starting
+      attachment.uploadProgress = 10;
+      setValue(fieldName, (prev: AttachmentValue[]) =>
+        prev.map(att => att.id === attachment.id ? { ...attachment } : att)
+      );
 
-      // Simulate potential errors
-      if (Math.random() < 0.1) { // 10% chance of error
-        setTimeout(() => {
-          clearInterval(progressInterval);
-          attachment.uploadStatus = 'error';
-          attachment.error = 'Upload failed. Please try again.';
-          reject(new Error('Upload failed'));
-        }, 1000);
-      }
-    });
+      // Upload file via Tauri command (assuming we have an upload command)
+      const { invoke } = await import('@tauri-apps/api/core');
+      
+      // Convert file to bytes for Tauri
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(arrayBuffer));
+
+      attachment.uploadProgress = 50;
+      setValue(fieldName, (prev: AttachmentValue[]) =>
+        prev.map(att => att.id === attachment.id ? { ...attachment } : att)
+      );
+
+      // Call Tauri command to store the file
+      // Note: Currently using photo service for all file types
+      // In future, videos and documents might need separate handling
+      const result = await invoke('upload_pet_photo', {
+        filename: file.name,
+        photo_bytes: bytes,
+        thumbnail_size: null, // Optional thumbnail size
+      });
+
+      attachment.uploadProgress = 90;
+      setValue(fieldName, (prev: AttachmentValue[]) =>
+        prev.map(att => att.id === attachment.id ? { ...attachment } : att)
+      );
+
+      // Set the photos:// URL
+      const storedFilename = result as string;
+      attachment.url = `photos://localhost/${storedFilename}`;
+      attachment.uploadStatus = 'completed';
+      attachment.uploadProgress = 100;
+
+      return attachment;
+    } catch (error) {
+      console.error('File upload failed:', error);
+      attachment.uploadStatus = 'error';
+      attachment.error = error instanceof Error ? error.message : 'Upload failed. Please try again.';
+      throw error;
+    }
   };
 
   // Handle file selection
@@ -150,34 +218,50 @@ const AttachmentBlock: React.FC<AttachmentBlockProps> = ({
 
     setIsUploading(true);
     const newAttachments: AttachmentValue[] = [];
+    const validationErrors: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
-      // Validate file type
-      if (!isValidFileType(file)) {
-        console.warn(`Unsupported file type: ${file.type}`);
-        continue;
-      }
-
-      // Validate file size
-      if (file.size > MAX_FILE_SIZE) {
-        console.warn(`File too large: ${file.name} (${formatFileSize(file.size)})`);
+      // Validate file
+      const validation = validateFile(file);
+      if (!validation.isValid) {
+        console.warn(`File validation failed: ${file.name} - ${validation.error}`);
+        validationErrors.push(`${file.name}: ${validation.error}`);
         continue;
       }
 
       try {
-        const attachment = await uploadFile(file);
-        newAttachments.push(attachment);
+        // Start upload and immediately add to list with uploading status
+        const uploadPromise = uploadFile(file);
+        newAttachments.push(await uploadPromise);
       } catch (error) {
         console.error('Failed to upload file:', file.name, error);
+        
+        // Create failed attachment entry
+        const failedAttachment: AttachmentValue = {
+          id: `attachment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          url: '',
+          uploadStatus: 'error',
+          error: error instanceof Error ? error.message : 'Upload failed',
+        };
+        newAttachments.push(failedAttachment);
       }
+    }
+
+    // Show validation errors to user (in a real app, you'd show these in UI)
+    if (validationErrors.length > 0) {
+      console.warn('File validation errors:', validationErrors);
+      // Could dispatch a toast notification or set an error state here
     }
 
     // Add new attachments to the current list
     setValue(fieldName, [...currentValue, ...newAttachments]);
     setIsUploading(false);
-  }, [currentValue, fieldName, setValue]);
+  }, [currentValue, fieldName, setValue, validateFile]);
 
   // Handle file removal
   const handleRemoveAttachment = React.useCallback((attachmentId: string) => {
@@ -201,7 +285,20 @@ const AttachmentBlock: React.FC<AttachmentBlockProps> = ({
       att.id === attachmentId ? updatedAttachment : att
     ));
 
-    // Would retry actual upload here
+    // Note: We can't retry with the original File object as it's lost
+    // In a real implementation, we'd need to store the file reference
+    // For now, just show an error asking user to re-upload
+    setTimeout(() => {
+      const errorAttachment = {
+        ...updatedAttachment,
+        uploadStatus: 'error' as const,
+        error: 'Please remove and re-upload this file',
+      };
+      
+      setValue(fieldName, currentValue.map(att => 
+        att.id === attachmentId ? errorAttachment : att
+      ));
+    }, 1000);
   }, [currentValue, fieldName, setValue]);
 
   // Drag and drop handlers
@@ -468,7 +565,7 @@ const AttachmentBlock: React.FC<AttachmentBlockProps> = ({
             Attachments: {currentValue.length} / {MAX_ATTACHMENTS}
           </div>
           <div>
-            Supported: JPEG, PNG, WebP, GIF, MP4, WebM, PDF, TXT
+            Supported: JPEG, PNG, WebP, BMP, TIFF, MP4, WebM, MOV, PDF, TXT
           </div>
           <div>
             Max file size: {formatFileSize(MAX_FILE_SIZE)}

@@ -285,7 +285,6 @@ impl PetDatabase {
             });
         }
 
-        let mut removed_orphans = 0;
         let mut added_missing = 0;
 
         // Start a transaction
@@ -307,7 +306,7 @@ impl PetDatabase {
             message: format!("Remove orphans error: {e}"),
         })?;
 
-        removed_orphans = orphaned_result.rows_affected() as i64;
+        let removed_orphans = orphaned_result.rows_affected() as i64;
 
         // Add missing FTS entries
         let missing_activities = sqlx::query(

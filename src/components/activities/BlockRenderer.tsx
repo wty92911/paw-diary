@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Control, FieldErrors, UseFormWatch, UseFormSetValue } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -134,22 +135,62 @@ const BlockWrapper: React.FC<BlockWrapperProps> = ({
   const wrapperClassName = `space-y-2 ${hasError ? 'ring-2 ring-destructive ring-offset-2' : ''}`;
   
   return (
-    <div className={wrapperClassName} data-block-id={block.id} data-block-type={block.type}>
-      {block.label && (
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-            {block.label}
-            {showRequired && block.required && (
-              <span className="text-destructive ml-1">*</span>
-            )}
-          </label>
-          <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-            {block.type}
-          </Badge>
-        </div>
-      )}
-      {children}
-    </div>
+    <motion.div 
+      className={wrapperClassName} 
+      data-block-id={block.id} 
+      data-block-type={block.type}
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{
+        layout: { type: "spring", bounce: 0.15 },
+        opacity: { duration: 0.2 },
+        y: { duration: 0.3 }
+      }}
+    >
+      <AnimatePresence>
+        {block.label && (
+          <motion.div 
+            className="flex items-center gap-2"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.2, delay: 0.1 }}
+          >
+            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              {block.label}
+              {showRequired && block.required && (
+                <motion.span 
+                  className="text-destructive ml-1"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.2, delay: 0.3 }}
+                >
+                  *
+                </motion.span>
+              )}
+            </label>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2, delay: 0.2 }}
+            >
+              <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                {block.type}
+              </Badge>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2, delay: 0.2 }}
+      >
+        {children}
+      </motion.div>
+    </motion.div>
   );
 };
 

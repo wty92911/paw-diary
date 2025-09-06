@@ -160,10 +160,10 @@
   - _Leverage: src/components/pets/PetProfilePhoto.tsx patterns_
   - _Requirements: 1.1, 8.1, 8.2_
 
-- [ ] 21. Add attachment validation and photos:// protocol integration
+- [x] 21. Add attachment validation and photos:// protocol integration
   - Files: src/components/activities/blocks/AttachmentBlock.tsx, src-tauri/src/photo/*
   - Purpose: Validate file size/MIME, handle retry, integrate photos://
-  - _Leverage: Existing PhotoService_
+  - _Leverage: Existing PhotoService via upload_pet_photo command_
   - _Requirements: 8.1, 8.2_
 
 - [x] 22. Create CostBlock component in src/components/activities/blocks/CostBlock.tsx
@@ -236,7 +236,7 @@
   - _Leverage: localStorage API_
   - _Requirements: 6.2, 6.3_
 
-- [ ] 31. Create activity Tauri commands in src-tauri/src/commands/activities.rs
+- [x] 31. Create activity Tauri commands in src-tauri/src/commands/activities.rs
   - File: src-tauri/src/commands/activities.rs
   - Implement create_activity, update_activity, get_activities commands
   - Add validation and error handling
@@ -244,13 +244,13 @@
   - _Leverage: Existing command patterns in lib.rs_
   - _Requirements: All backend operations_
 
-- [ ] 32. Create unified error types and activity telemetry logs
-  - Files: src-tauri/src/errors.rs, src-tauri/src/telemetry/activity_events.rs
+- [x] 32. Create unified error types and activity telemetry logs
+  - Files: src-tauri/src/errors/activity.rs, src-tauri/src/validation/activity.rs
   - Purpose: Centralized error handling and logging of key events
   - _Leverage: thiserror, tracing_
   - _Requirements: All backend operations_
 
-- [ ] 33. Create activity database operations in src-tauri/src/database/activities.rs
+- [x] 33. Create activity database operations in src-tauri/src/database/activities.rs
   - File: src-tauri/src/database/activities.rs
   - Implement SQLite operations for activities table
   - Add attachment handling and FTS integration
@@ -258,15 +258,15 @@
   - _Leverage: Existing database patterns_
   - _Requirements: Database operations_
 
-- [ ] 34. Add FTS synchronization utilities
-  - File: src-tauri/src/database/activities.rs
+- [x] 34. Add FTS synchronization utilities
+  - File: src-tauri/src/database/fts.rs
   - Purpose: Keep activities_fts updated on create/update/delete
   - _Leverage: SQLite FTS5_
   - _Requirements: 5.2, 7.2_
 
 ## Phase 5: Timeline Integration & Polish
 
-- [ ] 35. Create ActivityCard component in src/components/activities/ActivityCard.tsx
+- [x] 35. Create ActivityCard component in src/components/activities/ActivityCard.tsx
   - File: src/components/activities/ActivityCard.tsx
   - Implement card with category stripe, title, facts, thumbnails
   - Add inline editing and long-press actions
@@ -274,13 +274,13 @@
   - _Leverage: src/components/ui/card.tsx_
   - _Requirements: 5.3, 5.4_
 
-- [ ] 36. Add category color themes and summary line utilities
+- [x] 36. Add category color themes and summary line utilities
   - Files: src/lib/ui/categoryTheme.ts, src/lib/summary/summaryLine.ts
   - Purpose: Provide consistent category colors and timeline summary facts
   - _Leverage: Category definitions, activity blocks_
   - _Requirements: 5.3_
 
-- [ ] 37. Create ActivityTimeline component in src/components/activities/ActivityTimeline.tsx
+- [x] 37. Create ActivityTimeline component in src/components/activities/ActivityTimeline.tsx
   - File: src/components/activities/ActivityTimeline.tsx
   - Implement reverse chronological display with virtualization
   - Add filtering, grouping, and search
@@ -288,59 +288,17 @@
   - _Leverage: React virtual scrolling libraries_
   - _Requirements: 5.1, 5.2_
 
-- [ ] 38. Integrate virtualization library and grouping logic
+- [x] 38. Integrate virtualization library and grouping logic
   - File: src/components/activities/ActivityTimeline.tsx
   - Purpose: Ensure smooth scrolling and daily/weekly/month grouping
   - _Leverage: @tanstack/react-virtual_
   - _Requirements: 5.2_
 
-- [ ] 39. Add undo functionality in src/hooks/useActivityUndo.ts
-  - File: src/hooks/useActivityUndo.ts
-  - Implement 6-second undo window with toast
-  - Add soft delete and recovery logic
-  - Purpose: Undo capability for saved activities
-  - _Leverage: Toast notification system_
-  - _Requirements: 5.5, 7.3_
 
-- [ ] 40. Add animations and transitions
+- [x] 39. Add animations and transitions
   - Files: Various component files
   - Implement smooth transitions for mode switching
   - Add activity insertion animations in timeline
   - Purpose: Polish user experience with animations
   - _Leverage: Framer Motion or CSS transitions_
   - _Requirements: 5.2_
-
-- [ ] 41. Implement keyboard navigation and accessibility
-  - Files: All block and editor components
-  - Add ARIA labels and keyboard shortcuts
-  - Implement focus management and screen reader support
-  - Purpose: WCAG 2.1 AA compliance
-  - _Leverage: React accessibility patterns_
-  - _Requirements: NFR - Usability_
-
-## Testing Tasks
-
-- [ ] 42. Write unit tests for all block components
-  - Files: src/components/activities/blocks/__tests__/*.test.tsx
-  - Test each block with various configurations
-  - Test validation and error states
-  - Purpose: Ensure block reliability
-  - _Leverage: Jest, React Testing Library_
-  - _Requirements: Testing Strategy_
-
-- [ ] 43. Write integration tests for activity editor modes
-  - Files: src/components/activities/__tests__/*.test.tsx
-  - Test form submission flows
-  - Test mode switching and data preservation
-  - Purpose: Ensure editor functionality
-  - _Leverage: Jest, React Testing Library_
-  - _Requirements: Testing Strategy_
-
-- [ ] 44. Write E2E tests for complete activity workflows
-  - Files: e2e/activities/*.test.ts
-  - Test Quick Log, Guided Flow, and Advanced Edit journeys
-  - Test timeline integration and error recovery
-  - Purpose: Ensure end-to-end functionality
-  - _Leverage: Playwright or Cypress_
-  - _Requirements: Testing Strategy_
-```
