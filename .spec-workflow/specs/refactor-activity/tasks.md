@@ -81,7 +81,7 @@
 
 ## Phase 2: Activity Editor Modes
 
-- [ ] 11. Create ActivityEditor component in src/components/activities/ActivityEditor.tsx
+- [x] 11. Create ActivityEditor component in src/components/activities/ActivityEditor.tsx
   - File: src/components/activities/ActivityEditor.tsx
   - Implement main controller with mode switching
   - Add React Hook Form setup and pet context management
@@ -89,14 +89,14 @@
   - _Leverage: React Hook Form, Zod validation_
   - _Requirements: 2.1, 4.1_
 
-- [ ] 12. Create mapper utilities for serialization/deserialization
+- [x] 12. Create mapper utilities for serialization/deserialization
   - File: src/lib/activities/mapper.ts
   - Functions: toActivityRecord(formData), toFormData(activityRecord)
   - Purpose: Ensure editor can handle both create and edit modes consistently
   - _Leverage: Activity types, templates_
   - _Requirements: 2.1_
 
-- [ ] 13. Create QuickLogSheet component in src/components/activities/QuickLogSheet.tsx
+- [x] 13. Create QuickLogSheet component in src/components/activities/QuickLogSheet.tsx
   - File: src/components/activities/QuickLogSheet.tsx
   - Implement bottom sheet with 1-2 blocks maximum
   - Add save in ≤3 interactions logic
@@ -104,7 +104,7 @@
   - _Leverage: src/components/ui/dialog.tsx (Sheet variant)_
   - _Requirements: 2.1, 2.4_
 
-- [ ] 14. Create GuidedFlowWizard component in src/components/activities/GuidedFlowWizard.tsx
+- [x] 14. Create GuidedFlowWizard component in src/components/activities/GuidedFlowWizard.tsx
   - File: src/components/activities/GuidedFlowWizard.tsx
   - Implement step-by-step wizard with progress indicator
   - Add navigation between blocks and validation
@@ -112,7 +112,7 @@
   - _Leverage: src/components/ui/card.tsx, src/components/ui/button.tsx_
   - _Requirements: 2.2_
 
-- [ ] 15. Create AdvancedEditTabs component in src/components/activities/AdvancedEditTabs.tsx
+- [x] 15. Create AdvancedEditTabs component in src/components/activities/AdvancedEditTabs.tsx
   - File: src/components/activities/AdvancedEditTabs.tsx
   - Implement tabbed interface (Summary, Details, Attachments, etc.)
   - Add tab visibility based on block presence
@@ -120,13 +120,13 @@
   - _Leverage: Shadcn Tabs component (to be added)_
   - _Requirements: 2.3_
 
-- [ ] 16. Implement lazy-loading in Tabs component
+- [x] 16. Implement lazy-loading in Tabs component
   - File: src/components/ui/tabs.tsx
   - Purpose: Prevent performance issues in Advanced Edit
   - _Leverage: Shadcn Tabs component_
   - _Requirements: 2.3_
 
-- [ ] 17. Create CategoryPicker component in src/components/activities/CategoryPicker.tsx
+- [x] 17. Create CategoryPicker component in src/components/activities/CategoryPicker.tsx
   - File: src/components/activities/CategoryPicker.tsx
   - Implement 5-category chip selector
   - Add recent templates row per pet
