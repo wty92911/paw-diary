@@ -1,8 +1,9 @@
+```markdown
 # Activity System Refactor - Tasks Document
 
 ## Phase 1: Core Block Infrastructure
 
-- [ ] 1. Create activity type definitions in src/lib/types/activities.ts
+- [x] 1. Create activity type definitions in src/lib/types/activities.ts
   - File: src/lib/types/activities.ts
   - Define ActivityBlockDef, ActivityBlockType, ActivityFormData interfaces
   - Add block configuration types for each block type
@@ -10,20 +11,19 @@
   - _Leverage: src/lib/types.ts (existing Pet types)_
   - _Requirements: 1.1, 3.1_
 
-- [ ] 1A. Create common form field wrapper and form context
+- [x] 2. Create common form field wrapper and form context
   - File: src/components/activities/blocks/Field.tsx, FormContext.tsx
   - Purpose: Standardize label, help, error presentation across all blocks
   - _Leverage: React Hook Form, Shadcn/ui_
   - _Requirements: 1.1_
 
-- [ ] 1B. Create Zod validation schemas for core blocks
+- [x] 3. Create Zod validation schemas for core blocks
   - File: src/lib/validation/activityBlocks.ts
   - Purpose: Provide block-level validation, ensure consistent typing
   - _Leverage: Zod_
   - _Requirements: 1.1_
 
-
-- [ ] 2. Create template registry in src/lib/activityTemplates.ts
+- [x] 4. Create template registry in src/lib/activityTemplates.ts
   - File: src/lib/activityTemplates.ts
   - Define ActivityTemplate interface and template configurations
   - Create 5 initial templates (diet.feeding, growth.weight, health.checkup, lifestyle.walk, expense.purchase)
@@ -31,8 +31,7 @@
   - _Leverage: None (pure configuration)_
   - _Requirements: 3.1, 3.2_
 
-
-- [ ] 3. Create BlockRenderer component in src/components/activities/BlockRenderer.tsx
+- [x] 5. Create BlockRenderer component in src/components/activities/BlockRenderer.tsx
   - File: src/components/activities/BlockRenderer.tsx
   - Implement dynamic block rendering based on block type
   - Add props interface and error boundary
@@ -40,7 +39,7 @@
   - _Leverage: src/components/ui/* (Shadcn components)_
   - _Requirements: 1.2, 1.3_
 
-- [ ] 4. Create TitleBlock component in src/components/activities/blocks/TitleBlock.tsx
+- [x] 6. Create TitleBlock component in src/components/activities/blocks/TitleBlock.tsx
   - File: src/components/activities/blocks/TitleBlock.tsx
   - Implement title input with React Hook Form integration
   - Add validation and error display
@@ -48,7 +47,7 @@
   - _Leverage: src/components/ui/input.tsx, src/components/ui/label.tsx_
   - _Requirements: 1.1_
 
-- [ ] 5. Create TimeBlock component in src/components/activities/blocks/TimeBlock.tsx
+- [x] 7. Create TimeBlock component in src/components/activities/blocks/TimeBlock.tsx
   - File: src/components/activities/blocks/TimeBlock.tsx
   - Implement date/time picker with default to current time
   - Add timezone handling and formatting
@@ -56,7 +55,7 @@
   - _Leverage: src/components/ui/input.tsx_
   - _Requirements: 1.1, 6.1_
 
-- [ ] 6. Create NotesBlock component in src/components/activities/blocks/NotesBlock.tsx
+- [x] 8. Create NotesBlock component in src/components/activities/blocks/NotesBlock.tsx
   - File: src/components/activities/blocks/NotesBlock.tsx
   - Implement rich text input with textarea
   - Add character counter and formatting options
@@ -64,7 +63,7 @@
   - _Leverage: src/components/ui/textarea.tsx_
   - _Requirements: 1.1_
 
-- [ ] 7. Create MeasurementBlock component in src/components/activities/blocks/MeasurementBlock.tsx
+- [x] 9. Create MeasurementBlock component in src/components/activities/blocks/MeasurementBlock.tsx
   - File: src/components/activities/blocks/MeasurementBlock.tsx
   - Implement value input with unit selector
   - Add unit conversion and validation
@@ -72,7 +71,7 @@
   - _Leverage: src/components/ui/input.tsx, src/components/ui/select.tsx_
   - _Requirements: 1.1, 6.3_
 
-- [ ] 8. Create SubcategoryBlock component in src/components/activities/blocks/SubcategoryBlock.tsx
+- [x] 10. Create SubcategoryBlock component in src/components/activities/blocks/SubcategoryBlock.tsx
   - File: src/components/activities/blocks/SubcategoryBlock.tsx
   - Implement chip-based subcategory selection
   - Add category-specific options and validation
@@ -82,22 +81,22 @@
 
 ## Phase 2: Activity Editor Modes
 
-- [ ] 9. Create ActivityEditor component in src/components/activities/ActivityEditor.tsx
+- [ ] 11. Create ActivityEditor component in src/components/activities/ActivityEditor.tsx
   - File: src/components/activities/ActivityEditor.tsx
   - Implement main controller with mode switching
   - Add React Hook Form setup and pet context management
   - Purpose: Main orchestrator for activity creation/editing
   - _Leverage: React Hook Form, Zod validation_
   - _Requirements: 2.1, 4.1_
-- [ ] 9A. Create mapper utilities for serialization/deserialization
+
+- [ ] 12. Create mapper utilities for serialization/deserialization
   - File: src/lib/activities/mapper.ts
   - Functions: toActivityRecord(formData), toFormData(activityRecord)
   - Purpose: Ensure editor can handle both create and edit modes consistently
   - _Leverage: Activity types, templates_
   - _Requirements: 2.1_
 
-
-- [ ] 10. Create QuickLogSheet component in src/components/activities/QuickLogSheet.tsx
+- [ ] 13. Create QuickLogSheet component in src/components/activities/QuickLogSheet.tsx
   - File: src/components/activities/QuickLogSheet.tsx
   - Implement bottom sheet with 1-2 blocks maximum
   - Add save in ≤3 interactions logic
@@ -105,7 +104,7 @@
   - _Leverage: src/components/ui/dialog.tsx (Sheet variant)_
   - _Requirements: 2.1, 2.4_
 
-- [ ] 11. Create GuidedFlowWizard component in src/components/activities/GuidedFlowWizard.tsx
+- [ ] 14. Create GuidedFlowWizard component in src/components/activities/GuidedFlowWizard.tsx
   - File: src/components/activities/GuidedFlowWizard.tsx
   - Implement step-by-step wizard with progress indicator
   - Add navigation between blocks and validation
@@ -113,7 +112,7 @@
   - _Leverage: src/components/ui/card.tsx, src/components/ui/button.tsx_
   - _Requirements: 2.2_
 
-- [ ] 12. Create AdvancedEditTabs component in src/components/activities/AdvancedEditTabs.tsx
+- [ ] 15. Create AdvancedEditTabs component in src/components/activities/AdvancedEditTabs.tsx
   - File: src/components/activities/AdvancedEditTabs.tsx
   - Implement tabbed interface (Summary, Details, Attachments, etc.)
   - Add tab visibility based on block presence
@@ -121,13 +120,13 @@
   - _Leverage: Shadcn Tabs component (to be added)_
   - _Requirements: 2.3_
 
-- [ ] 12A. Implement lazy-loading in Tabs component
+- [ ] 16. Implement lazy-loading in Tabs component
   - File: src/components/ui/tabs.tsx
   - Purpose: Prevent performance issues in Advanced Edit
   - _Leverage: Shadcn Tabs component_
   - _Requirements: 2.3_
 
-- [ ] 13. Create CategoryPicker component in src/components/activities/CategoryPicker.tsx
+- [ ] 17. Create CategoryPicker component in src/components/activities/CategoryPicker.tsx
   - File: src/components/activities/CategoryPicker.tsx
   - Implement 5-category chip selector
   - Add recent templates row per pet
@@ -137,7 +136,7 @@
 
 ## Phase 3: Extended Blocks
 
-- [ ] 14. Create RatingBlock component in src/components/activities/blocks/RatingBlock.tsx
+- [ ] 18. Create RatingBlock component in src/components/activities/blocks/RatingBlock.tsx
   - File: src/components/activities/blocks/RatingBlock.tsx
   - Implement 1-5 star rating with emoji support
   - Add accessibility labels and keyboard navigation
@@ -145,7 +144,7 @@
   - _Leverage: src/components/ui/button.tsx_
   - _Requirements: 1.1_
 
-- [ ] 15. Create PortionBlock component in src/components/activities/blocks/PortionBlock.tsx
+- [ ] 19. Create PortionBlock component in src/components/activities/blocks/PortionBlock.tsx
   - File: src/components/activities/blocks/PortionBlock.tsx
   - Implement amount input with unit selector
   - Add brand/product memory per pet
@@ -153,7 +152,7 @@
   - _Leverage: src/components/ui/input.tsx, src/components/ui/select.tsx_
   - _Requirements: 1.1, 6.2_
 
-- [ ] 16. Create AttachmentBlock component in src/components/activities/blocks/AttachmentBlock.tsx
+- [ ] 20. Create AttachmentBlock component in src/components/activities/blocks/AttachmentBlock.tsx
   - File: src/components/activities/blocks/AttachmentBlock.tsx
   - Implement drag-and-drop file upload
   - Add thumbnail generation and preview
@@ -161,14 +160,13 @@
   - _Leverage: src/components/pets/PetProfilePhoto.tsx patterns_
   - _Requirements: 1.1, 8.1, 8.2_
 
-- [ ] 16A. Add attachment validation and photos:// protocol integration
+- [ ] 21. Add attachment validation and photos:// protocol integration
   - Files: src/components/activities/blocks/AttachmentBlock.tsx, src-tauri/src/photo/*
   - Purpose: Validate file size/MIME, handle retry, integrate photos://
   - _Leverage: Existing PhotoService_
   - _Requirements: 8.1, 8.2_
 
-
-- [ ] 17. Create CostBlock component in src/components/activities/blocks/CostBlock.tsx
+- [ ] 22. Create CostBlock component in src/components/activities/blocks/CostBlock.tsx
   - File: src/components/activities/blocks/CostBlock.tsx
   - Implement amount input with currency selector
   - Add expense category selection
@@ -176,7 +174,7 @@
   - _Leverage: src/components/ui/input.tsx, src/components/ui/select.tsx_
   - _Requirements: 1.1_
 
-- [ ] 18. Create ReminderBlock component in src/components/activities/blocks/ReminderBlock.tsx
+- [ ] 23. Create ReminderBlock component in src/components/activities/blocks/ReminderBlock.tsx
   - File: src/components/activities/blocks/ReminderBlock.tsx
   - Implement date/time picker for reminders
   - Add recurrence pattern selection
@@ -184,7 +182,7 @@
   - _Leverage: src/components/ui/input.tsx_
   - _Requirements: 1.1_
 
-- [ ] 19. Create remaining blocks (Timer, Location, Weather, Checklist, People, Recurrence)
+- [ ] 24. Create remaining blocks (Timer, Location, Weather, Checklist, People, Recurrence)
   - Files: src/components/activities/blocks/[BlockName].tsx
   - Implement each block following established patterns
   - Add block-specific configurations and validations
@@ -192,23 +190,21 @@
   - _Leverage: Existing block patterns and UI components_
   - _Requirements: 1.1_
 
-- [ ] 19A. Add centralized subcategory options and caching per pet
+- [ ] 25. Add centralized subcategory options and caching per pet
   - File: src/lib/catalogs/subcategories.ts
   - Purpose: Provide per-category subcategory options, cache recent selections
   - _Leverage: useQuickDefaults_
   - _Requirements: 3.2_
 
-- [ ] 19B. Add unit conversion and brand memory utilities
-
+- [ ] 26. Add unit conversion and brand memory utilities
   - Files: src/lib/utils/units.ts, src/lib/utils/brandMemory.ts
-
   - Purpose: Support Measurement/Portion conversions, remember last brand/product
   - _Leverage: localStorage, useQuickDefaults_  
   - _Requirements: 6.2, 6.3_
 
 ## Phase 4: Smart Features & Data Management
 
-- [ ] 20. Create useActivities hook in src/hooks/useActivities.ts
+- [ ] 27. Create useActivities hook in src/hooks/useActivities.ts
   - File: src/hooks/useActivities.ts
   - Implement activity CRUD operations with React Query
   - Add filtering, pagination, and search
@@ -216,7 +212,7 @@
   - _Leverage: src/hooks/usePets.ts patterns_
   - _Requirements: 5.1, 5.2_
 
-- [ ] 21. Create useActivityDraft hook in src/hooks/useActivityDraft.ts
+- [ ] 28. Create useActivityDraft hook in src/hooks/useActivityDraft.ts
   - File: src/hooks/useActivityDraft.ts
   - Implement auto-save with 2-second debounce
   - Add draft recovery and management
@@ -224,7 +220,7 @@
   - _Leverage: React Hook Form, localStorage_
   - _Requirements: 7.1, 7.2_
 
-- [ ] 22. Create useRecentTemplates hook in src/hooks/useRecentTemplates.ts
+- [ ] 29. Create useRecentTemplates hook in src/hooks/useRecentTemplates.ts
   - File: src/hooks/useRecentTemplates.ts
   - Implement template usage tracking per pet
   - Add localStorage persistence for recent templates
@@ -232,7 +228,7 @@
   - _Leverage: localStorage API_
   - _Requirements: 6.4_
 
-- [ ] 23. Create useQuickDefaults hook in src/hooks/useQuickDefaults.ts
+- [ ] 30. Create useQuickDefaults hook in src/hooks/useQuickDefaults.ts
   - File: src/hooks/useQuickDefaults.ts
   - Implement intelligent default values per pet/category
   - Add unit/brand/subcategory memory
@@ -240,7 +236,7 @@
   - _Leverage: localStorage API_
   - _Requirements: 6.2, 6.3_
 
-- [ ] 24. Create activity Tauri commands in src-tauri/src/commands/activities.rs
+- [ ] 31. Create activity Tauri commands in src-tauri/src/commands/activities.rs
   - File: src-tauri/src/commands/activities.rs
   - Implement create_activity, update_activity, get_activities commands
   - Add validation and error handling
@@ -248,13 +244,13 @@
   - _Leverage: Existing command patterns in lib.rs_
   - _Requirements: All backend operations_
 
-- [ ] 24A. Create unified error types and activity telemetry logs
+- [ ] 32. Create unified error types and activity telemetry logs
   - Files: src-tauri/src/errors.rs, src-tauri/src/telemetry/activity_events.rs
   - Purpose: Centralized error handling and logging of key events
   - _Leverage: thiserror, tracing_
   - _Requirements: All backend operations_
 
-- [ ] 25. Create activity database operations in src-tauri/src/database/activities.rs
+- [ ] 33. Create activity database operations in src-tauri/src/database/activities.rs
   - File: src-tauri/src/database/activities.rs
   - Implement SQLite operations for activities table
   - Add attachment handling and FTS integration
@@ -262,7 +258,7 @@
   - _Leverage: Existing database patterns_
   - _Requirements: Database operations_
 
-- [ ] 25A. Add FTS synchronization utilities
+- [ ] 34. Add FTS synchronization utilities
   - File: src-tauri/src/database/activities.rs
   - Purpose: Keep activities_fts updated on create/update/delete
   - _Leverage: SQLite FTS5_
@@ -270,7 +266,7 @@
 
 ## Phase 5: Timeline Integration & Polish
 
-- [ ] 26. Create ActivityCard component in src/components/activities/ActivityCard.tsx
+- [ ] 35. Create ActivityCard component in src/components/activities/ActivityCard.tsx
   - File: src/components/activities/ActivityCard.tsx
   - Implement card with category stripe, title, facts, thumbnails
   - Add inline editing and long-press actions
@@ -278,13 +274,13 @@
   - _Leverage: src/components/ui/card.tsx_
   - _Requirements: 5.3, 5.4_
 
-- [ ] 26A. Add category color themes and summary line utilities
+- [ ] 36. Add category color themes and summary line utilities
   - Files: src/lib/ui/categoryTheme.ts, src/lib/summary/summaryLine.ts
   - Purpose: Provide consistent category colors and timeline summary facts
   - _Leverage: Category definitions, activity blocks_
   - _Requirements: 5.3_
 
-- [ ] 27. Create ActivityTimeline component in src/components/activities/ActivityTimeline.tsx
+- [ ] 37. Create ActivityTimeline component in src/components/activities/ActivityTimeline.tsx
   - File: src/components/activities/ActivityTimeline.tsx
   - Implement reverse chronological display with virtualization
   - Add filtering, grouping, and search
@@ -292,13 +288,13 @@
   - _Leverage: React virtual scrolling libraries_
   - _Requirements: 5.1, 5.2_
 
-- [ ] 27A. Integrate virtualization library and grouping logic
+- [ ] 38. Integrate virtualization library and grouping logic
   - File: src/components/activities/ActivityTimeline.tsx
   - Purpose: Ensure smooth scrolling and daily/weekly/month grouping
   - _Leverage: @tanstack/react-virtual_
   - _Requirements: 5.2_
 
-- [ ] 28. Add undo functionality in src/hooks/useActivityUndo.ts
+- [ ] 39. Add undo functionality in src/hooks/useActivityUndo.ts
   - File: src/hooks/useActivityUndo.ts
   - Implement 6-second undo window with toast
   - Add soft delete and recovery logic
@@ -306,7 +302,7 @@
   - _Leverage: Toast notification system_
   - _Requirements: 5.5, 7.3_
 
-- [ ] 29. Add animations and transitions
+- [ ] 40. Add animations and transitions
   - Files: Various component files
   - Implement smooth transitions for mode switching
   - Add activity insertion animations in timeline
@@ -314,7 +310,7 @@
   - _Leverage: Framer Motion or CSS transitions_
   - _Requirements: 5.2_
 
-- [ ] 30. Implement keyboard navigation and accessibility
+- [ ] 41. Implement keyboard navigation and accessibility
   - Files: All block and editor components
   - Add ARIA labels and keyboard shortcuts
   - Implement focus management and screen reader support
@@ -324,7 +320,7 @@
 
 ## Testing Tasks
 
-- [ ] 31. Write unit tests for all block components
+- [ ] 42. Write unit tests for all block components
   - Files: src/components/activities/blocks/__tests__/*.test.tsx
   - Test each block with various configurations
   - Test validation and error states
@@ -332,7 +328,7 @@
   - _Leverage: Jest, React Testing Library_
   - _Requirements: Testing Strategy_
 
-- [ ] 32. Write integration tests for activity editor modes
+- [ ] 43. Write integration tests for activity editor modes
   - Files: src/components/activities/__tests__/*.test.tsx
   - Test form submission flows
   - Test mode switching and data preservation
@@ -340,10 +336,11 @@
   - _Leverage: Jest, React Testing Library_
   - _Requirements: Testing Strategy_
 
-- [ ] 33. Write E2E tests for complete activity workflows
+- [ ] 44. Write E2E tests for complete activity workflows
   - Files: e2e/activities/*.test.ts
   - Test Quick Log, Guided Flow, and Advanced Edit journeys
   - Test timeline integration and error recovery
   - Purpose: Ensure end-to-end functionality
   - _Leverage: Playwright or Cypress_
   - _Requirements: Testing Strategy_
+```
