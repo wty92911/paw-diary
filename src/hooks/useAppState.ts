@@ -14,8 +14,6 @@ export interface AppState {
   dialogs: {
     isFormOpen: boolean;
     isActivityFormOpen: boolean;
-    showMobileFormPage: boolean;
-    showActivityTimeline: boolean;
   };
 
   // Pet management state
@@ -27,8 +25,6 @@ export interface AppState {
 
   // Activity navigation state
   activities: {
-    selectedPetId?: number;
-    selectedActivityId?: number;
     showFilters: boolean;
   };
 
@@ -52,10 +48,6 @@ export type AppAction =
   | { type: 'CLOSE_FORM' }
   | { type: 'OPEN_ACTIVITY_FORM'; payload: Pet }
   | { type: 'CLOSE_ACTIVITY_FORM' }
-  | { type: 'SHOW_MOBILE_FORM_PAGE'; payload?: Pet }
-  | { type: 'HIDE_MOBILE_FORM_PAGE' }
-  | { type: 'SHOW_ACTIVITY_TIMELINE'; payload?: { petId?: number; activityId?: number } }
-  | { type: 'HIDE_ACTIVITY_TIMELINE' }
 
   // Pet management actions
   | { type: 'SET_AUTO_FOCUS_PET'; payload: number }
@@ -64,10 +56,6 @@ export type AppAction =
   | { type: 'SET_SELECTED_PET_FOR_ACTIVITY'; payload?: Pet }
 
   // Activity navigation actions
-  | { type: 'SET_ACTIVITY_PET_FILTER'; payload: number }
-  | { type: 'CLEAR_ACTIVITY_PET_FILTER' }
-  | { type: 'SET_SELECTED_ACTIVITY'; payload: number }
-  | { type: 'CLEAR_SELECTED_ACTIVITY' }
   | { type: 'TOGGLE_ACTIVITY_FILTERS' }
 
   // Loading actions
@@ -88,8 +76,6 @@ const initialState: AppState = {
   dialogs: {
     isFormOpen: false,
     isActivityFormOpen: false,
-    showMobileFormPage: false,
-    showActivityTimeline: false,
   },
   pets: {
     autoFocusPetId: null,
@@ -173,7 +159,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-
     case 'OPEN_ACTIVITY_FORM':
       return {
         ...state,
@@ -197,60 +182,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
         pets: {
           ...state.pets,
           selectedPetForActivity: undefined,
-        },
-      };
-
-    case 'SHOW_MOBILE_FORM_PAGE':
-      return {
-        ...state,
-        dialogs: {
-          ...state.dialogs,
-          showMobileFormPage: true,
-        },
-        pets: {
-          ...state.pets,
-          editingPet: action.payload,
-        },
-      };
-
-    case 'HIDE_MOBILE_FORM_PAGE':
-      return {
-        ...state,
-        dialogs: {
-          ...state.dialogs,
-          showMobileFormPage: false,
-        },
-        pets: {
-          ...state.pets,
-          editingPet: undefined,
-        },
-      };
-
-    case 'SHOW_ACTIVITY_TIMELINE':
-      return {
-        ...state,
-        dialogs: {
-          ...state.dialogs,
-          showActivityTimeline: true,
-        },
-        activities: {
-          ...state.activities,
-          selectedPetId: action.payload?.petId,
-          selectedActivityId: action.payload?.activityId,
-        },
-      };
-
-    case 'HIDE_ACTIVITY_TIMELINE':
-      return {
-        ...state,
-        dialogs: {
-          ...state.dialogs,
-          showActivityTimeline: false,
-        },
-        activities: {
-          ...state.activities,
-          selectedPetId: undefined,
-          selectedActivityId: undefined,
         },
       };
 
@@ -282,7 +213,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-
     case 'SET_SELECTED_PET_FOR_ACTIVITY':
       return {
         ...state,
@@ -293,41 +223,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
       };
 
     // Activity navigation actions
-    case 'SET_ACTIVITY_PET_FILTER':
-      return {
-        ...state,
-        activities: {
-          ...state.activities,
-          selectedPetId: action.payload,
-        },
-      };
-
-    case 'CLEAR_ACTIVITY_PET_FILTER':
-      return {
-        ...state,
-        activities: {
-          ...state.activities,
-          selectedPetId: undefined,
-        },
-      };
-
-    case 'SET_SELECTED_ACTIVITY':
-      return {
-        ...state,
-        activities: {
-          ...state.activities,
-          selectedActivityId: action.payload,
-        },
-      };
-
-    case 'CLEAR_SELECTED_ACTIVITY':
-      return {
-        ...state,
-        activities: {
-          ...state.activities,
-          selectedActivityId: undefined,
-        },
-      };
 
     case 'TOGGLE_ACTIVITY_FILTERS':
       return {
@@ -348,7 +243,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-
     case 'SET_ACTIVITY_SUBMITTING':
       return {
         ...state,
@@ -365,8 +259,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
         dialogs: {
           isFormOpen: false,
           isActivityFormOpen: false,
-          showMobileFormPage: false,
-          showActivityTimeline: false,
         },
         pets: {
           ...state.pets,
@@ -385,7 +277,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
         dialogs: {
           ...state.dialogs,
           isFormOpen: false,
-          showMobileFormPage: false,
         },
         pets: {
           ...state.pets,
@@ -404,7 +295,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
         dialogs: {
           ...state.dialogs,
           isFormOpen: false,
-          showMobileFormPage: false,
         },
         pets: {
           ...state.pets,
@@ -415,7 +305,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
           isSubmitting: false,
         },
       };
-
 
     default:
       return state;
@@ -448,17 +337,6 @@ export function useAppState() {
       [],
     ),
     closeActivityForm: useCallback(() => dispatch({ type: 'CLOSE_ACTIVITY_FORM' }), []),
-    showMobileFormPage: useCallback(
-      (pet?: Pet) => dispatch({ type: 'SHOW_MOBILE_FORM_PAGE', payload: pet }),
-      [],
-    ),
-    hideMobileFormPage: useCallback(() => dispatch({ type: 'HIDE_MOBILE_FORM_PAGE' }), []),
-    showActivityTimeline: useCallback(
-      (options?: { petId?: number; activityId?: number }) =>
-        dispatch({ type: 'SHOW_ACTIVITY_TIMELINE', payload: options }),
-      [],
-    ),
-    hideActivityTimeline: useCallback(() => dispatch({ type: 'HIDE_ACTIVITY_TIMELINE' }), []),
 
     // Pet management
     setAutoFocusPet: useCallback(
@@ -476,16 +354,6 @@ export function useAppState() {
     ),
 
     // Activity navigation
-    setActivityPetFilter: useCallback(
-      (petId: number) => dispatch({ type: 'SET_ACTIVITY_PET_FILTER', payload: petId }),
-      [],
-    ),
-    clearActivityPetFilter: useCallback(() => dispatch({ type: 'CLEAR_ACTIVITY_PET_FILTER' }), []),
-    setSelectedActivity: useCallback(
-      (activityId: number) => dispatch({ type: 'SET_SELECTED_ACTIVITY', payload: activityId }),
-      [],
-    ),
-    clearSelectedActivity: useCallback(() => dispatch({ type: 'CLEAR_SELECTED_ACTIVITY' }), []),
     toggleActivityFilters: useCallback(() => dispatch({ type: 'TOGGLE_ACTIVITY_FILTERS' }), []),
 
     // Loading states
