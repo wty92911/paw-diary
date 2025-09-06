@@ -1,6 +1,7 @@
 use super::AppState;
 use crate::database::{CreatePetRequest, Pet, UpdatePetRequest};
-use crate::errors::{validation, PetError};
+use crate::errors::PetError;
+use crate::validation;
 use tauri::State;
 
 /// Create a new pet
