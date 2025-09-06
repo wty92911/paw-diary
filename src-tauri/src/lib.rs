@@ -39,7 +39,24 @@ pub fn run() {
             delete_pet_photo,
             get_pet_photo_info,
             list_pet_photos,
-            get_photo_storage_stats
+            get_photo_storage_stats,
+            // Activity management commands
+            create_activity,
+            update_activity,
+            get_activity,
+            get_activities,
+            search_activities,
+            delete_activity,
+            get_activity_stats,
+            get_recent_activities,
+            get_activities_by_category,
+            export_activities,
+            // Full-Text Search commands
+            fts_search_activities,
+            rebuild_fts_index,
+            get_fts_index_stats,
+            verify_fts_integrity,
+            repair_fts_index
         ])
         .register_asynchronous_uri_scheme_protocol("photos", move |app, request, responder| {
             let app_handle = app.app_handle().clone();
