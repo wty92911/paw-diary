@@ -1,8 +1,10 @@
+pub mod activities;
 pub mod app;
 pub mod pets;
 pub mod photos;
 
 // Re-export all commands for easy access
+pub use activities::*;
 pub use app::*;
 pub use pets::*;
 pub use photos::*;

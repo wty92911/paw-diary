@@ -136,7 +136,7 @@
 
 ## Phase 3: Extended Blocks
 
-- [ ] 18. Create RatingBlock component in src/components/activities/blocks/RatingBlock.tsx
+- [x] 18. Create RatingBlock component in src/components/activities/blocks/RatingBlock.tsx
   - File: src/components/activities/blocks/RatingBlock.tsx
   - Implement 1-5 star rating with emoji support
   - Add accessibility labels and keyboard navigation
@@ -144,7 +144,7 @@
   - _Leverage: src/components/ui/button.tsx_
   - _Requirements: 1.1_
 
-- [ ] 19. Create PortionBlock component in src/components/activities/blocks/PortionBlock.tsx
+- [x] 19. Create PortionBlock component in src/components/activities/blocks/PortionBlock.tsx
   - File: src/components/activities/blocks/PortionBlock.tsx
   - Implement amount input with unit selector
   - Add brand/product memory per pet
@@ -152,7 +152,7 @@
   - _Leverage: src/components/ui/input.tsx, src/components/ui/select.tsx_
   - _Requirements: 1.1, 6.2_
 
-- [ ] 20. Create AttachmentBlock component in src/components/activities/blocks/AttachmentBlock.tsx
+- [x] 20. Create AttachmentBlock component in src/components/activities/blocks/AttachmentBlock.tsx
   - File: src/components/activities/blocks/AttachmentBlock.tsx
   - Implement drag-and-drop file upload
   - Add thumbnail generation and preview
@@ -166,7 +166,7 @@
   - _Leverage: Existing PhotoService_
   - _Requirements: 8.1, 8.2_
 
-- [ ] 22. Create CostBlock component in src/components/activities/blocks/CostBlock.tsx
+- [x] 22. Create CostBlock component in src/components/activities/blocks/CostBlock.tsx
   - File: src/components/activities/blocks/CostBlock.tsx
   - Implement amount input with currency selector
   - Add expense category selection
@@ -174,7 +174,7 @@
   - _Leverage: src/components/ui/input.tsx, src/components/ui/select.tsx_
   - _Requirements: 1.1_
 
-- [ ] 23. Create ReminderBlock component in src/components/activities/blocks/ReminderBlock.tsx
+- [x] 23. Create ReminderBlock component in src/components/activities/blocks/ReminderBlock.tsx
   - File: src/components/activities/blocks/ReminderBlock.tsx
   - Implement date/time picker for reminders
   - Add recurrence pattern selection
@@ -182,7 +182,7 @@
   - _Leverage: src/components/ui/input.tsx_
   - _Requirements: 1.1_
 
-- [ ] 24. Create remaining blocks (Timer, Location, Weather, Checklist, People, Recurrence)
+- [x] 24. Create remaining blocks (Timer, Location, Weather, Checklist, People, Recurrence)
   - Files: src/components/activities/blocks/[BlockName].tsx
   - Implement each block following established patterns
   - Add block-specific configurations and validations
@@ -190,13 +190,13 @@
   - _Leverage: Existing block patterns and UI components_
   - _Requirements: 1.1_
 
-- [ ] 25. Add centralized subcategory options and caching per pet
+- [x] 25. Add centralized subcategory options and caching per pet
   - File: src/lib/catalogs/subcategories.ts
   - Purpose: Provide per-category subcategory options, cache recent selections
   - _Leverage: useQuickDefaults_
   - _Requirements: 3.2_
 
-- [ ] 26. Add unit conversion and brand memory utilities
+- [x] 26. Add unit conversion and brand memory utilities
   - Files: src/lib/utils/units.ts, src/lib/utils/brandMemory.ts
   - Purpose: Support Measurement/Portion conversions, remember last brand/product
   - _Leverage: localStorage, useQuickDefaults_  
@@ -204,7 +204,7 @@
 
 ## Phase 4: Smart Features & Data Management
 
-- [ ] 27. Create useActivities hook in src/hooks/useActivities.ts
+- [x] 27. Create useActivities hook in src/hooks/useActivities.ts
   - File: src/hooks/useActivities.ts
   - Implement activity CRUD operations with React Query
   - Add filtering, pagination, and search
@@ -212,7 +212,7 @@
   - _Leverage: src/hooks/usePets.ts patterns_
   - _Requirements: 5.1, 5.2_
 
-- [ ] 28. Create useActivityDraft hook in src/hooks/useActivityDraft.ts
+- [x] 28. Create useActivityDraft hook in src/hooks/useActivityDraft.ts
   - File: src/hooks/useActivityDraft.ts
   - Implement auto-save with 2-second debounce
   - Add draft recovery and management
@@ -220,7 +220,7 @@
   - _Leverage: React Hook Form, localStorage_
   - _Requirements: 7.1, 7.2_
 
-- [ ] 29. Create useRecentTemplates hook in src/hooks/useRecentTemplates.ts
+- [x] 29. Create useRecentTemplates hook in src/hooks/useRecentTemplates.ts
   - File: src/hooks/useRecentTemplates.ts
   - Implement template usage tracking per pet
   - Add localStorage persistence for recent templates
@@ -228,7 +228,7 @@
   - _Leverage: localStorage API_
   - _Requirements: 6.4_
 
-- [ ] 30. Create useQuickDefaults hook in src/hooks/useQuickDefaults.ts
+- [x] 30. Create useQuickDefaults hook in src/hooks/useQuickDefaults.ts
   - File: src/hooks/useQuickDefaults.ts
   - Implement intelligent default values per pet/category
   - Add unit/brand/subcategory memory
