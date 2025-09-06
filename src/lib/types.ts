@@ -191,6 +191,52 @@ export interface NavigationState {
   totalPets?: number; // Total number of pets for navigation
 }
 
+// Router-based navigation state (React Router integration)
+export interface RouterNavigationState {
+  currentPath: string;
+  params: Record<string, string>;
+  searchParams: URLSearchParams;
+  canGoBack: boolean;
+  isLoading?: boolean;
+}
+
+// Route parameters for pet profile pages
+export interface PetProfileParams {
+  petId: string;
+}
+
+// Page state interfaces for router-based pages
+export interface HomePageState {
+  pets: Pet[];
+  isLoading: boolean;
+  hasEmptyState: boolean;
+}
+
+export interface PetProfilePageState {
+  pet: Pet | null;
+  activities: Activity[];
+  isLoadingPet: boolean;
+  isLoadingActivities: boolean;
+  showActivityForm: boolean;
+  error?: string;
+}
+
+export interface AddPetPageState {
+  isSubmitting: boolean;
+  error?: string;
+  redirectToPetId?: number;
+}
+
+// Pet-centric activity state for timeline components
+export interface PetActivityState {
+  petId: number;
+  activities: Activity[];
+  isLoading: boolean;
+  filters: ActivityFilters;
+  hasMore: boolean;
+  error?: string;
+}
+
 // Utility types for common operations
 export type PetId = Pet['id'];
 export type PetWithoutTimestamps = Omit<Pet, 'created_at' | 'updated_at'>;

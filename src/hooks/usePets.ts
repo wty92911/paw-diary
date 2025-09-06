@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Pet, PetCreateRequest, PetUpdateRequest } from '../lib/types';
 
@@ -28,7 +28,7 @@ export function usePets(includeArchived = false): UsePetsState & UsePetsActions 
   // Computed state
   const activePet = activePetId ? pets.find(pet => pet.id === activePetId) || null : null;
 
-  const refetch = async () => {
+  const refetch = useCallback(async () => {
     console.log('=== REFETCH PETS START ===');
     console.log('includeArchived:', includeArchived);
 
@@ -64,7 +64,7 @@ export function usePets(includeArchived = false): UsePetsState & UsePetsActions 
       setIsLoading(false);
       console.log('=== REFETCH PETS END ===');
     }
-  };
+  }, [includeArchived, activePetId]);
 
   const createPet = async (petData: PetCreateRequest): Promise<Pet> => {
     try {
@@ -99,7 +99,6 @@ export function usePets(includeArchived = false): UsePetsState & UsePetsActions 
     }
   };
 
-
   // Navigation functions
   const selectFirstPet = () => {
     const firstActivePet = pets.find(pet => !pet.is_archived);
@@ -120,10 +119,10 @@ export function usePets(includeArchived = false): UsePetsState & UsePetsActions 
     }
   };
 
-  // Don't auto-fetch - let the app initialize first
-  // useEffect(() => {
-  //   refetch()
-  // }, [includeArchived])
+  // Auto-fetch pets on mount and when includeArchived changes
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   return {
     pets,

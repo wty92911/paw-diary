@@ -41,13 +41,14 @@ export function usePhotos(): UsePhotosState & UsePhotosActions {
 
       // Upload to Tauri backend
       const filename = await invoke<string>('upload_pet_photo', {
-        imageData,
-        originalFilename: file.name,
+        filename: file.name,
+        photoBytes: imageData,
       });
 
       setUploadProgress(100);
       return filename;
     } catch (err) {
+      console.error(err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload photo';
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -63,7 +64,7 @@ export function usePhotos(): UsePhotosState & UsePhotosActions {
       setError(null);
 
       const filename = await invoke<string>('upload_pet_photo_from_path', {
-        filePath,
+        filePath: filePath,
       });
 
       return filename;
@@ -80,7 +81,7 @@ export function usePhotos(): UsePhotosState & UsePhotosActions {
     try {
       setError(null);
       await invoke('delete_pet_photo', {
-        photoFilename: filename,
+        photoId: filename,
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete photo';
@@ -93,7 +94,7 @@ export function usePhotos(): UsePhotosState & UsePhotosActions {
     try {
       setError(null);
       const info = await invoke<PhotoInfo>('get_pet_photo_info', {
-        photoFilename: filename,
+        photoId: filename,
       });
       return info;
     } catch (err) {

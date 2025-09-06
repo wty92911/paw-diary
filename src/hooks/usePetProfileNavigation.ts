@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Pet } from '../lib/types';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Pet, RouterNavigationState } from '../lib/types';
 import { useResponsiveNavigation } from './useResponsiveNavigation';
 
 /**
@@ -25,6 +26,17 @@ export interface PetProfileNavigationActions {
   goToPrevious: () => void;
   setActivePetId: (petId: number | null) => void;
   resetToFirst: () => void;
+}
+
+/**
+ * Router-aware navigation actions for page-level navigation
+ */
+export interface RouterNavigationActions {
+  navigateToHome: () => void;
+  navigateToPetProfile: (petId: number) => void;
+  navigateToAddPet: () => void;
+  navigateBack: () => void;
+  getCurrentPetIdFromUrl: () => number | null;
 }
 
 /**
@@ -288,4 +300,86 @@ export function useTouchPetNavigation(pets: Pet[], options: PetProfileNavigation
     preloadAdjacent: true, // Always preload for smooth swiping
     transitionDuration: responsiveNav.isMobile ? 250 : 300, // Faster on mobile
   });
+}
+
+/**
+ * Router-aware navigation hook for page-level navigation
+ * Integrates React Router with pet navigation for full-page transitions
+ */
+export function useRouterNavigation(): RouterNavigationState & RouterNavigationActions {
+  const navigate = useNavigate();
+  const params = useParams();
+  const location = useLocation();
+
+  const getCurrentPetIdFromUrl = useCallback((): number | null => {
+    if (params.petId) {
+      const id = parseInt(params.petId, 10);
+      return isNaN(id) ? null : id;
+    }
+    return null;
+  }, [params.petId]);
+
+  const navigateToHome = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
+
+  const navigateToPetProfile = useCallback(
+    (petId: number) => {
+      navigate(`/pets/${petId}`);
+    },
+    [navigate],
+  );
+
+  const navigateToAddPet = useCallback(() => {
+    navigate('/pets/new');
+  }, [navigate]);
+
+  const navigateBack = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
+
+  // Router navigation state
+  const routerState: RouterNavigationState = {
+    currentPath: location.pathname,
+    params: params as Record<string, string>,
+    searchParams: new URLSearchParams(location.search),
+    canGoBack: window.history.length > 1,
+    isLoading: false, // Could be enhanced with transition states
+  };
+
+  return {
+    ...routerState,
+    navigateToHome,
+    navigateToPetProfile,
+    navigateToAddPet,
+    navigateBack,
+    getCurrentPetIdFromUrl,
+  };
+}
+
+/**
+ * Combined hook that provides both pet navigation and router navigation
+ * Useful for components that need both local pet switching and page navigation
+ */
+export function useIntegratedNavigation(pets: Pet[], options: PetProfileNavigationOptions = {}) {
+  const petNavigation = usePetProfileNavigation(pets, options);
+  const routerNavigation = useRouterNavigation();
+
+  // Enhanced goToPet that can optionally navigate to pet profile page
+  const goToPetWithRouter = useCallback(
+    (petId: number, navigateToPage = false) => {
+      if (navigateToPage) {
+        routerNavigation.navigateToPetProfile(petId);
+      } else {
+        petNavigation.goToPet(petId);
+      }
+    },
+    [petNavigation, routerNavigation],
+  );
+
+  return {
+    ...petNavigation,
+    ...routerNavigation,
+    goToPetWithRouter,
+  };
 }

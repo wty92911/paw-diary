@@ -436,3 +436,87 @@ export function useActivities(petId?: number): UseActivitiesState & UseActivitie
     removeActivityOptimistic,
   };
 }
+
+/**
+ * Pet-specific activities hook with enhanced pet context management
+ * Ensures all operations are bound to the specified pet
+ */
+export function usePetActivities(petId: number) {
+  const baseHook = useActivities(petId);
+
+  // Enhanced create activity that auto-assigns pet ID
+  const createActivityForPet = useCallback(
+    async (activityData: Omit<ActivityCreateRequest, 'pet_id'>): Promise<Activity> => {
+      return baseHook.createActivity({
+        ...activityData,
+        pet_id: petId,
+      });
+    },
+    [baseHook, petId],
+  );
+
+  // Fetch activities with explicit pet ID enforcement
+  const fetchPetActivities = useCallback(
+    async (limit?: number, offset?: number) => {
+      return baseHook.fetchActivities(petId, limit, offset);
+    },
+    [baseHook, petId],
+  );
+
+  // Set filters with pet ID automatically included
+  const setPetFilters = useCallback(
+    (filters: Omit<ActivityFilters, 'pet_id'>) => {
+      baseHook.setFilters({
+        ...filters,
+        pet_id: petId,
+      });
+    },
+    [baseHook, petId],
+  );
+
+  return {
+    ...baseHook,
+    // Override with pet-specific versions
+    createActivity: createActivityForPet,
+    fetchActivities: fetchPetActivities,
+    setFilters: setPetFilters,
+    // Add pet context information
+    petId,
+    isPetSpecific: true,
+  };
+}
+
+/**
+ * Hook for managing activities across all pets (for global views)
+ * Maintains backward compatibility with existing usage patterns
+ */
+export function useAllPetActivities() {
+  return useActivities(); // No pet ID filter
+}
+
+/**
+ * Hook for managing activities with optional pet filtering
+ * Useful for components that need to switch between pet-specific and global views
+ */
+export function useFlexibleActivities(petId?: number, enabled = true) {
+  const activitiesHook = useActivities(enabled ? petId : undefined);
+
+  // Toggle pet filtering
+  const togglePetFilter = useCallback(
+    (newPetId?: number) => {
+      if (newPetId) {
+        activitiesHook.fetchActivities(newPetId);
+      } else {
+        activitiesHook.fetchActivities(); // Fetch all
+      }
+    },
+    [activitiesHook],
+  );
+
+  return {
+    ...activitiesHook,
+    togglePetFilter,
+    currentPetId: petId,
+    isFiltered: !!petId,
+  };
+}
