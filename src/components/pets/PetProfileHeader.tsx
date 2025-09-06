@@ -6,7 +6,6 @@ import { calculateAge, cn } from '../../lib/utils';
 import { 
   Edit, 
   Calendar, 
-  Heart, 
   Scale, 
   Palette,
   Info
@@ -15,10 +14,8 @@ import {
 interface PetProfileHeaderProps {
   pet: Pet;
   onEdit?: () => void;
-  onAddActivity?: () => void;
   className?: string;
   showEditButton?: boolean;
-  showAddActivityButton?: boolean;
   size?: 'compact' | 'full';
 }
 
@@ -29,17 +26,15 @@ interface PetProfileHeaderProps {
  * - Pet photo with loading states
  * - Pet basic information display
  * - Age calculation
- * - Action buttons (edit, add activity)
+ * - Action buttons (edit)
  * - Species and gender badges
  * - Responsive design
  */
 export function PetProfileHeader({
   pet,
   onEdit,
-  onAddActivity,
   className,
   showEditButton = true,
-  showAddActivityButton = true,
   size = 'full',
 }: PetProfileHeaderProps) {
   const age = calculateAge(pet.birth_date);
@@ -105,16 +100,6 @@ export function PetProfileHeader({
                 >
                   <Edit className="w-4 h-4 mr-1" />
                   {!isCompact && "Edit"}
-                </Button>
-              )}
-              {showAddActivityButton && onAddActivity && (
-                <Button
-                  onClick={onAddActivity}
-                  size={isCompact ? "sm" : "default"}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  <Heart className="w-4 h-4 mr-1" />
-                  {!isCompact && "Add Activity"}
                 </Button>
               )}
             </div>
