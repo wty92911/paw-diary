@@ -28,11 +28,6 @@ export function HomePage() {
     navigateToAddPet();
   };
 
-  // Handle pet edit - navigate to pet profile page (edit can be done there)
-  const handleEditPet = (pet: Pet) => {
-    navigateToPetProfile(pet.id);
-  };
-
   // Loading state
   if (isLoading && pets.length === 0) {
     return (
@@ -113,14 +108,6 @@ export function HomePage() {
           pets={pets.filter(p => !p.is_archived)}
           onPetSelect={handlePetSelect}
           onAddPet={handleAddPet}
-          onEditPet={handleEditPet}
-          onAddActivity={() => {
-            // For homepage, we can't add activity without selecting a pet first
-            // This could navigate to the first pet's profile or show a pet selection dialog
-            if (pets.length > 0) {
-              navigateToPetProfile(pets[0].id);
-            }
-          }}
           className="h-full"
           showAddPetCard={true}
           enableElasticFeedback={true}

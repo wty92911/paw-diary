@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { invoke } from '@tauri-apps/api/core';
 import { Loader2 } from 'lucide-react';
 import { useAppState } from './hooks/useAppState';
-import { HomePage, AddPetPage, PetProfilePage, AddActivityPage, EditPetPage } from './pages';
+import { HomePage, AddPetPage, PetProfilePage, EditPetPage } from './pages';
 import './App.css';
 
 /**
@@ -19,7 +19,6 @@ import './App.css';
  * - / → HomePage (pet selection)
  * - /pets/new → AddPetPage (pet creation)
  * - /pets/:petId → PetProfilePage (pet profile with activities)
- * - /pets/:petId/activities/new → AddActivityPage (add activity for specific pet)
  * - /pets/:petId/edit → EditPetPage (edit pet information)
  */
 function App() {
@@ -85,9 +84,6 @@ function App() {
         
         {/* Pet profile route - pet details with activities */}
         <Route path="/pets/:petId" element={<PetProfilePage />} />
-        
-        {/* Add activity route - add new activity for specific pet */}
-        <Route path="/pets/:petId/activities/new" element={<AddActivityPage />} />
         
         {/* Edit pet route - edit pet information */}
         <Route path="/pets/:petId/edit" element={<EditPetPage />} />
