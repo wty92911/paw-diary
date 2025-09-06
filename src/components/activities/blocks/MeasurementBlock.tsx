@@ -1,0 +1,374 @@
+import React from 'react';
+import { Controller } from 'react-hook-form';
+import { Input } from '../../ui/input';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../ui/select';
+import { Button } from '../../ui/button';
+import { Card } from '../../ui/card';
+import { Badge } from '../../ui/badge';
+import { Field } from './Field';
+import { BlockProps, MeasurementConfig, MeasurementData } from '../../../lib/types/activities';
+import { measurementBlockSchema } from '../../../lib/validation/activityBlocks';
+
+// Extended config interface for MeasurementBlock
+interface MeasurementBlockConfig extends MeasurementConfig {
+  showTypeSelector?: boolean;
+  showConversion?: boolean;
+  showNotes?: boolean;
+  showPresets?: boolean;
+  presetValues?: Array<{ value: number; label: string; unit: string }>;
+}
+
+// Common preset values for different measurement types
+const MEASUREMENT_PRESETS = {
+  weight: [
+    { value: 0.5, label: '500g', unit: 'g' },
+    { value: 1, label: '1 kg', unit: 'kg' },
+    { value: 2, label: '2 kg', unit: 'kg' },
+    { value: 5, label: '5 kg', unit: 'kg' },
+    { value: 10, label: '10 kg', unit: 'kg' },
+  ],
+  height: [
+    { value: 10, label: '10 cm', unit: 'cm' },
+    { value: 20, label: '20 cm', unit: 'cm' },
+    { value: 30, label: '30 cm', unit: 'cm' },
+    { value: 50, label: '50 cm', unit: 'cm' },
+    { value: 100, label: '1 m', unit: 'cm' },
+  ],
+  temperature: [
+    { value: 35, label: '35°C', unit: '°C' },
+    { value: 36, label: '36°C', unit: '°C' },
+    { value: 37, label: '37°C', unit: '°C' },
+    { value: 38, label: '38°C', unit: '°C' },
+    { value: 39, label: '39°C', unit: '°C' },
+  ],
+};
+
+// Unit conversion functions
+const convertUnits = (value: number, fromUnit: string, toUnit: string): number => {
+  // Weight conversions
+  if ((fromUnit === 'kg' && toUnit === 'g') || (fromUnit === 'g' && toUnit === 'kg')) {
+    return fromUnit === 'kg' ? value * 1000 : value / 1000;
+  }
+  if ((fromUnit === 'kg' && toUnit === 'lbs') || (fromUnit === 'lbs' && toUnit === 'kg')) {
+    return fromUnit === 'kg' ? value * 2.205 : value / 2.205;
+  }
+  if ((fromUnit === 'g' && toUnit === 'lbs') || (fromUnit === 'lbs' && toUnit === 'g')) {
+    return fromUnit === 'g' ? value / 453.592 : value * 453.592;
+  }
+  
+  // Height conversions
+  if ((fromUnit === 'cm' && toUnit === 'm') || (fromUnit === 'm' && toUnit === 'cm')) {
+    return fromUnit === 'cm' ? value / 100 : value * 100;
+  }
+  if ((fromUnit === 'cm' && toUnit === 'in') || (fromUnit === 'in' && toUnit === 'cm')) {
+    return fromUnit === 'cm' ? value / 2.54 : value * 2.54;
+  }
+  
+  // Temperature conversions
+  if ((fromUnit === '°C' && toUnit === '°F') || (fromUnit === '°F' && toUnit === '°C')) {
+    return fromUnit === '°C' ? (value * 9/5) + 32 : (value - 32) * 5/9;
+  }
+  
+  // No conversion needed
+  return value;
+};
+
+// Get unit display name
+const getUnitDisplay = (unit: string): string => {
+  const unitMap: Record<string, string> = {
+    'kg': 'kg',
+    'g': 'grams',
+    'lbs': 'pounds',
+    'cm': 'cm',
+    'm': 'meters',
+    'in': 'inches',
+    '°C': '°C',
+    '°F': '°F',
+  };
+  return unitMap[unit] || unit;
+};
+
+// MeasurementBlock component for handling numeric measurements with units
+const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
+  control,
+  name,
+  label = 'Measurement',
+  required = false,
+  config = {},
+}) => {
+  const {
+    measurementType = 'weight',
+    units = ['kg', 'g', 'lbs'],
+    defaultUnit = units[0],
+    min = 0.1,
+    max = 1000,
+    precision = 1,
+    showTypeSelector = false,
+    showConversion = false,
+    showNotes = false,
+    showPresets = false,
+    presetValues,
+  } = config;
+
+  const [convertedValue, setConvertedValue] = React.useState<string>('');
+  const [conversionUnit, setConversionUnit] = React.useState<string>(units[1] || units[0]);
+  
+  const availablePresets = presetValues || 
+    (MEASUREMENT_PRESETS as any)[measurementType] || [];
+
+  const handlePresetSelect = (
+    preset: { value: number; label: string; unit: string },
+    onChange: (value: MeasurementData) => void,
+    currentValue: MeasurementData
+  ) => {
+    onChange({
+      ...currentValue,
+      value: preset.value,
+      unit: preset.unit,
+      measurementType: measurementType,
+    });
+  };
+
+  const handleConversion = (value: number, fromUnit: string) => {
+    if (showConversion && value && fromUnit && conversionUnit && fromUnit !== conversionUnit) {
+      const converted = convertUnits(value, fromUnit, conversionUnit);
+      setConvertedValue(converted.toFixed(precision));
+    } else {
+      setConvertedValue('');
+    }
+  };
+
+  const formatValue = (value: number): string => {
+    if (precision === 0) return Math.round(value).toString();
+    return value.toFixed(precision);
+  };
+
+  return (
+    <Controller
+      control={control}
+      name={name}
+      defaultValue={{
+        value: 0,
+        unit: defaultUnit,
+        measurementType: measurementType,
+        notes: '',
+      }}
+      rules={{
+        required: required ? `${label} is required` : false,
+        validate: (value: MeasurementData) => {
+          // Use Zod validation
+          const result = measurementBlockSchema.safeParse(value);
+          if (!result.success && (required || (value && value.value > 0))) {
+            return result.error.errors[0]?.message || 'Invalid measurement';
+          }
+          
+          // Additional validation
+          if (value && value.value !== undefined) {
+            if (value.value < min) {
+              return `Value must be at least ${min}`;
+            }
+            if (value.value > max) {
+              return `Value must not exceed ${max}`;
+            }
+          }
+          
+          return true;
+        },
+      }}
+      render={({ field, fieldState }) => {
+        const currentValue: MeasurementData = field.value || {
+          value: 0,
+          unit: defaultUnit,
+          measurementType: measurementType,
+          notes: '',
+        };
+
+        const handleValueChange = (newValue: string) => {
+          const numericValue = parseFloat(newValue) || 0;
+          const updatedValue = {
+            ...currentValue,
+            value: numericValue,
+          };
+          field.onChange(updatedValue);
+          handleConversion(numericValue, updatedValue.unit);
+        };
+
+        const handleUnitChange = (newUnit: string) => {
+          const updatedValue = {
+            ...currentValue,
+            unit: newUnit,
+          };
+          field.onChange(updatedValue);
+          handleConversion(currentValue.value, newUnit);
+        };
+
+        const handleTypeChange = (newType: string) => {
+          const updatedValue = {
+            ...currentValue,
+            measurementType: newType,
+          };
+          field.onChange(updatedValue);
+        };
+
+        const handleNotesChange = (notes: string) => {
+          const updatedValue = {
+            ...currentValue,
+            notes: notes,
+          };
+          field.onChange(updatedValue);
+        };
+
+        return (
+          <Field
+            label={label}
+            required={required}
+            error={fieldState.error?.message}
+            blockType="measurement"
+          >
+            <div className="space-y-3">
+              {/* Measurement Type Selector */}
+              {showTypeSelector && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Type
+                  </label>
+                  <Select value={currentValue.measurementType} onValueChange={handleTypeChange}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="weight">Weight</SelectItem>
+                      <SelectItem value="height">Height</SelectItem>
+                      <SelectItem value="temperature">Temperature</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Value and Unit Input */}
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    placeholder={`Enter ${measurementType}...`}
+                    value={currentValue.value || ''}
+                    onChange={(e) => handleValueChange(e.target.value)}
+                    min={min}
+                    max={max}
+                    step={precision === 0 ? 1 : 1 / Math.pow(10, precision)}
+                  />
+                </div>
+                <div className="w-24">
+                  <Select value={currentValue.unit} onValueChange={handleUnitChange}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {units.map((unit) => (
+                        <SelectItem key={unit} value={unit}>
+                          {getUnitDisplay(unit)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Range indicator */}
+              <div className="text-xs text-muted-foreground">
+                Range: {min} - {max} {currentValue.unit}
+              </div>
+
+              {/* Preset values */}
+              {showPresets && availablePresets.length > 0 && (
+                <Card className="p-3">
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground">Quick values:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {availablePresets.map((preset: { value: number; label: string; unit: string }, index: number) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          className="text-xs h-7 px-2"
+                          onClick={() => handlePresetSelect(preset, field.onChange, currentValue)}
+                        >
+                          {preset.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {/* Unit conversion */}
+              {showConversion && units.length > 1 && (
+                <Card className="p-3 bg-muted/20">
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground">Convert to:</div>
+                    <div className="flex items-center gap-2">
+                      <Select value={conversionUnit} onValueChange={setConversionUnit}>
+                        <SelectTrigger className="w-24 h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {units.filter(u => u !== currentValue.unit).map((unit) => (
+                            <SelectItem key={unit} value={unit}>
+                              {getUnitDisplay(unit)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {convertedValue && (
+                        <Badge variant="secondary" className="text-xs">
+                          ≈ {convertedValue} {conversionUnit}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {/* Notes field */}
+              {showNotes && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Notes
+                  </label>
+                  <Input
+                    placeholder="Additional notes..."
+                    value={currentValue.notes || ''}
+                    onChange={(e) => handleNotesChange(e.target.value)}
+                    maxLength={200}
+                  />
+                </div>
+              )}
+
+              {/* Current value display */}
+              {currentValue.value > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  Current: <span className="font-medium">
+                    {formatValue(currentValue.value)} {currentValue.unit}
+                  </span>
+                  {currentValue.notes && (
+                    <span className="ml-2 italic">"{currentValue.notes}"</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </Field>
+        );
+      }}
+    />
+  );
+};
+
+export default MeasurementBlock;
