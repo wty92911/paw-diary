@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Plus, Minus, Package } from 'lucide-react';
 import { BlockProps } from '../../../lib/types/activities';
 import { Field } from './Field';
+import { useBrandSuggestions } from '../../../hooks/useBrandMemory';
 
 // Portion value interface
 interface PortionValue {
@@ -67,12 +68,6 @@ const ALL_UNITS: UnitItem[] = [
   ...UNIT_CATEGORIES.serving.units,
 ] as UnitItem[];
 
-// Mock brand memory - would be replaced with actual brand memory hook
-const getMockBrandMemory = (_petId?: number): Array<{ brand: string; product: string; lastUsed: Date }> => [
-  { brand: 'Hill\'s Science Diet', product: 'Adult Dry Food', lastUsed: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
-  { brand: 'Royal Canin', product: 'Small Breed Adult', lastUsed: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
-  { brand: 'Blue Buffalo', product: 'Life Protection Formula', lastUsed: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-];
 
 // Portion block configuration
 interface PortionBlockConfig {
@@ -85,9 +80,10 @@ interface PortionBlockConfig {
   hint?: string;
   presetAmounts?: number[];
   showNotes?: boolean;
+  category?: 'food' | 'treats' | 'medication' | 'grooming' | 'toys'; // Brand memory category
 }
 
-// PortionBlock component for food portion tracking with units and brand memory
+// PortionBlock component for portion tracking with units and brand memory (supports food, treats, medication, etc.)
 const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
   control,
   name,
@@ -100,6 +96,7 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
     defaultUnit = 'cup',
     showBrandSelector = true,
     petId,
+    category = 'food', // Default to 'food' if not specified
   } = config;
 
   return (
@@ -115,8 +112,11 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
         const [customBrand, setCustomBrand] = React.useState('');
         const [customProduct, setCustomProduct] = React.useState('');
         
-        // Mock brand memory
-        const brandMemory = React.useMemo(() => getMockBrandMemory(petId), [petId]);
+        // Brand memory integration
+        const { suggestions: brandSuggestions, recordUsage } = useBrandSuggestions(
+          petId || 0, 
+          category // Use configurable category (food, treats, medication, grooming, toys)
+        );
 
         // Initialize default value
         React.useEffect(() => {
@@ -159,7 +159,9 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
           };
           field.onChange(updatedValue);
           setShowBrandSelectorState(false);
-        }, [currentValue, field, defaultUnit]);
+          // Record usage for learning
+          recordUsage(brand, product);
+        }, [currentValue, field, defaultUnit, recordUsage]);
 
         // Handle custom brand/product
         const handleCustomBrandSubmit = React.useCallback(() => {
@@ -327,24 +329,33 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
             <div className="space-y-3 p-3 border rounded-md bg-muted/30">
               <div className="text-sm font-medium">Recent Brands</div>
               
-              {/* Brand memory list */}
-              {brandMemory.length > 0 && (
+              {/* Brand memory suggestions */}
+              {brandSuggestions.length > 0 && (
                 <div className="space-y-2">
-                  {brandMemory.slice(0, 3).map((item, index) => (
+                  {brandSuggestions.slice(0, 5).map((suggestion) => (
                     <Button
-                      key={index}
+                      key={suggestion.id}
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleBrandSelect(item.brand, item.product)}
-                      className="w-full justify-start text-left"
+                      onClick={() => handleBrandSelect(suggestion.brand, suggestion.product || 'Generic Product')}
+                      className={`w-full justify-start text-left ${
+                        suggestion.isFrequent ? 'border-blue-300 bg-blue-50 hover:bg-blue-100' : ''
+                      } ${
+                        suggestion.isRecent ? 'border-green-300 bg-green-50 hover:bg-green-100' : ''
+                      }`}
+                      title={`Used ${suggestion.usageCount} times, last used ${suggestion.lastUsed.toLocaleDateString()}`}
                     >
                       <div className="flex-1">
-                        <div className="font-medium text-sm">{item.brand}</div>
-                        <div className="text-xs text-muted-foreground">{item.product}</div>
+                        <div className="flex items-center gap-1">
+                          <div className="font-medium text-sm">{suggestion.brand}</div>
+                          {suggestion.isFrequent && <span className="text-blue-600 text-xs">★</span>}
+                          {suggestion.isRecent && <span className="text-green-600 text-xs">●</span>}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{suggestion.product || 'Generic Product'}</div>
                       </div>
                       <Badge variant="secondary" className="text-xs">
-                        {Math.floor((Date.now() - item.lastUsed.getTime()) / (24 * 60 * 60 * 1000))}d ago
+                        {Math.floor((Date.now() - suggestion.lastUsed.getTime()) / (24 * 60 * 60 * 1000))}d ago
                       </Badge>
                     </Button>
                   ))}
