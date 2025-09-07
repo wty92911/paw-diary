@@ -2,101 +2,20 @@ import { Activity } from '../../hooks/useActivities';
 import { ActivityTimelineItem } from '../types/activities';
 
 /**
- * Converts Activity objects to ActivityTimelineItem format for timeline display
+ * Helper function to add fact if value exists
  */
-export function convertActivitiesToTimelineItems(activities: Activity[]): ActivityTimelineItem[] {
-  return activities.map((activity): ActivityTimelineItem => {
-    // Extract key facts from blocks
-    const keyFacts: string[] = [];
-    
-    // Extract measurement facts
-    if (activity.activity_data.blocks.measurements) {
-      Object.entries(activity.activity_data.blocks.measurements).forEach(([key, measurement]: [string, any]) => {
-        if (measurement?.value && measurement?.unit) {
-          keyFacts.push(`${key}: ${measurement.value} ${measurement.unit}`);
-        }
-      });
-    }
-
-    // Extract portion facts
-    if (activity.activity_data.blocks.portion) {
-      const portion = activity.activity_data.blocks.portion;
-      if (portion?.amount && portion?.unit) {
-        keyFacts.push(`Amount: ${portion.amount} ${portion.unit}`);
-      }
-      if (portion?.brand) {
-        keyFacts.push(`Brand: ${portion.brand}`);
-      }
-    }
-
-    // Extract cost facts
-    if (activity.activity_data.blocks.cost) {
-      const cost = activity.activity_data.blocks.cost;
-      if (cost?.amount && cost?.currency) {
-        keyFacts.push(`Cost: ${cost.currency}${cost.amount}`);
-      }
-    }
-
-    // Extract rating facts
-    if (activity.activity_data.blocks.rating) {
-      const rating = activity.activity_data.blocks.rating;
-      if (rating?.value && rating?.scale) {
-        keyFacts.push(`Rating: ${rating.value}/${rating.scale}`);
-      }
-    }
-
-    // Extract location facts
-    if (activity.activity_data.blocks.location) {
-      const location = activity.activity_data.blocks.location;
-      if (location?.name) {
-        keyFacts.push(`Location: ${location.name}`);
-      }
-    }
-
-    // Extract attachments info
-    const attachments = activity.activity_data.blocks.attachments || [];
-    const attachmentCount = Array.isArray(attachments) ? attachments.length : 0;
-    const thumbnails = Array.isArray(attachments) 
-      ? attachments.slice(0, 3).map((att: any) => att.thumbnail || att.url || '').filter(Boolean)
-      : [];
-
-    // Check for health flags
-    const hasHealthFlag = activity.category === 'Health' || 
-      activity.activity_data.blocks.health?.flag === true;
-
-    // Check if pinned (not implemented in current data structure)
-    const isPinned = false;
-
-    return {
-      id: activity.id,
-      petId: activity.pet_id,
-      category: activity.category as any,
-      subcategory: activity.subcategory,
-      title: activity.title,
-      description: activity.description || '',
-      activityDate: new Date(activity.activity_date),
-      keyFacts,
-      attachmentCount,
-      thumbnails,
-      hasHealthFlag,
-      isPinned,
-    };
-  });
+function addFact(facts: string[], label: string, value: any, unit?: string) {
+  if (value !== undefined && value !== null && value !== '') {
+    const factText = unit ? `${label}: ${value} ${unit}` : `${label}: ${value}`;
+    facts.push(factText);
+  }
 }
 
 /**
  * Extracts key facts from activity blocks for timeline display
  */
-export function extractKeyFacts(blocks: Record<string, any>): string[] {
+function extractKeyFacts(blocks: Record<string, any>): string[] {
   const facts: string[] = [];
-
-  // Helper function to add fact if value exists
-  const addFact = (label: string, value: any, unit?: string) => {
-    if (value !== undefined && value !== null && value !== '') {
-      const factText = unit ? `${label}: ${value} ${unit}` : `${label}: ${value}`;
-      facts.push(factText);
-    }
-  };
 
   // Extract facts from different block types
   Object.entries(blocks).forEach(([blockType, blockData]) => {
@@ -107,28 +26,32 @@ export function extractKeyFacts(blocks: Record<string, any>): string[] {
       case 'measurements':
         if (Array.isArray(blockData)) {
           blockData.forEach((measurement: any) => {
-            addFact(measurement.measurementType || 'Measurement', measurement.value, measurement.unit);
+            addFact(facts, measurement.measurementType || 'Measurement', measurement.value, measurement.unit);
           });
-        } else if (blockData.value) {
-          addFact('Measurement', blockData.value, blockData.unit);
+        } else if (typeof blockData === 'object') {
+          Object.entries(blockData).forEach(([key, measurement]: [string, any]) => {
+            if (measurement?.value && measurement?.unit) {
+              addFact(facts, key, measurement.value, measurement.unit);
+            }
+          });
         }
         break;
 
       case 'portion':
-        addFact('Amount', blockData.amount, blockData.unit);
-        if (blockData.brand) addFact('Brand', blockData.brand);
+        addFact(facts, 'Amount', blockData.amount, blockData.unit);
+        if (blockData.brand) addFact(facts, 'Brand', blockData.brand);
         break;
 
       case 'cost':
-        addFact('Cost', blockData.amount ? `${blockData.currency || '$'}${blockData.amount}` : undefined);
+        addFact(facts, 'Cost', blockData.amount ? `${blockData.currency || '$'}${blockData.amount}` : undefined);
         break;
 
       case 'rating':
-        addFact('Rating', blockData.value ? `${blockData.value}/${blockData.scale || 5}` : undefined);
+        addFact(facts, 'Rating', blockData.value ? `${blockData.value}/${blockData.scale || 5}` : undefined);
         break;
 
       case 'location':
-        addFact('Location', blockData.name || blockData.address);
+        addFact(facts, 'Location', blockData.name || blockData.address);
         break;
 
       case 'timer':
@@ -136,13 +59,13 @@ export function extractKeyFacts(blocks: Record<string, any>): string[] {
           const hours = Math.floor(blockData.duration / 60);
           const minutes = blockData.duration % 60;
           const timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-          addFact('Duration', timeStr);
+          addFact(facts, 'Duration', timeStr);
         }
         break;
 
       case 'weather':
-        if (blockData.condition) addFact('Weather', blockData.condition);
-        if (blockData.temperature) addFact('Temperature', blockData.temperature, '°C');
+        if (blockData.condition) addFact(facts, 'Weather', blockData.condition);
+        if (blockData.temperature) addFact(facts, 'Temperature', blockData.temperature, '°C');
         break;
     }
   });
@@ -153,7 +76,7 @@ export function extractKeyFacts(blocks: Record<string, any>): string[] {
 /**
  * Counts attachments from activity blocks
  */
-export function countAttachments(blocks: Record<string, any>): number {
+function countAttachments(blocks: Record<string, any>): number {
   const attachments = blocks.attachments || blocks.attachment;
   if (!attachments) return 0;
   if (Array.isArray(attachments)) return attachments.length;
@@ -163,7 +86,7 @@ export function countAttachments(blocks: Record<string, any>): number {
 /**
  * Extracts thumbnail URLs from activity blocks
  */
-export function extractThumbnails(blocks: Record<string, any>, limit = 3): string[] {
+function extractThumbnails(blocks: Record<string, any>, limit = 3): string[] {
   const attachments = blocks.attachments || blocks.attachment || [];
   if (!Array.isArray(attachments)) return [];
 
@@ -176,7 +99,7 @@ export function extractThumbnails(blocks: Record<string, any>, limit = 3): strin
 /**
  * Determines if activity has health-related flags
  */
-export function hasHealthFlag(activity: Activity): boolean {
+function hasHealthFlag(activity: Activity): boolean {
   return (
     activity.category === 'Health' ||
     activity.activity_data.blocks.health?.urgent === true ||
@@ -188,6 +111,31 @@ export function hasHealthFlag(activity: Activity): boolean {
 /**
  * Determines if activity is pinned
  */
-export function isPinned(activity: Activity): boolean {
+function isPinned(activity: Activity): boolean {
   return activity.activity_data.blocks.pinned === true || false;
 }
+
+/**
+ * Converts Activity objects to ActivityTimelineItem format for timeline display
+ */
+export function convertActivitiesToTimelineItems(activities: Activity[]): ActivityTimelineItem[] {
+  return activities.map((activity): ActivityTimelineItem => {
+    const blocks = activity.activity_data.blocks;
+    
+    return {
+      id: activity.id,
+      petId: activity.pet_id,
+      category: activity.category as any,
+      subcategory: activity.subcategory,
+      title: activity.title,
+      description: activity.description || '',
+      activityDate: new Date(activity.activity_date),
+      keyFacts: extractKeyFacts(blocks),
+      attachmentCount: countAttachments(blocks),
+      thumbnails: extractThumbnails(blocks),
+      hasHealthFlag: hasHealthFlag(activity),
+      isPinned: isPinned(activity),
+    };
+  });
+}
+
