@@ -1,11 +1,24 @@
 import { useNavigate } from 'react-router-dom';
-import { Heart, Loader2, AlertTriangle, ArrowLeft, Plus, Calendar, Edit } from 'lucide-react';
+import {
+  Heart,
+  Loader2,
+  AlertTriangle,
+  ArrowLeft,
+  Plus,
+  Calendar,
+  Edit,
+  Activity,
+} from 'lucide-react';
 import { usePets } from '../hooks/usePets';
 import { useRouterNavigation } from '../hooks/usePetProfileNavigation';
 import { PetProfilePhoto } from '../components/pets/PetProfilePhoto';
+import ActivityTimeline from '../components/activities/ActivityTimeline';
+import QuickLogSheet from '../components/activities/QuickLogSheet';
 import { calculateAge } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { useState } from 'react';
 
 /**
  * PetProfilePage - Comprehensive pet profile
@@ -19,6 +32,7 @@ export function PetProfilePage() {
   const { getCurrentPetIdFromUrl, navigateToHome, navigateToAddPet } = useRouterNavigation();
   const { pets, isLoading: petsLoading, error: petsError, refetch: refetchPets } = usePets();
   const navigate = useNavigate();
+  const [showQuickLog, setShowQuickLog] = useState(false);
 
   // Get pet ID from URL
   const petId = getCurrentPetIdFromUrl();
@@ -137,18 +151,24 @@ export function PetProfilePage() {
                   </div>
                   <p className="text-lg text-orange-600">{calculateAge(currentPet.birth_date)}</p>
 
-                  {/* Edit Button */}
-                  <Button
-                    onClick={() => {
-                      // Navigate to EditPetPage
-                      navigate(`/pets/${currentPet.id}/edit`);
-                    }}
-                    variant="outline"
-                    className="mt-4 border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </Button>
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 justify-center mt-4">
+                    <Button
+                      onClick={() => setShowQuickLog(true)}
+                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Log Activity
+                    </Button>
+                    <Button
+                      onClick={() => navigate(`/pets/${currentPet.id}/edit`)}
+                      variant="outline"
+                      className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Pet Details */}
@@ -204,7 +224,79 @@ export function PetProfilePage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Activities Section */}
+          <div className="lg:col-span-2">
+            <Card className="bg-white shadow-lg h-full">
+              <CardContent className="p-0 h-full">
+                <Tabs defaultValue="timeline" className="h-full flex flex-col">
+                  <div className="px-6 pt-6 pb-0">
+                    <TabsList className="grid grid-cols-3 w-full">
+                      <TabsTrigger value="timeline" className="flex items-center gap-2">
+                        <Activity className="w-4 h-4" />
+                        Timeline
+                      </TabsTrigger>
+                      <TabsTrigger value="stats" className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Statistics
+                      </TabsTrigger>
+                      <TabsTrigger value="health" className="flex items-center gap-2">
+                        <Heart className="w-4 h-4" />
+                        Health
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <TabsContent value="timeline" className="flex-1 px-6 pb-6 mt-4">
+                    <div className="h-full">
+                      <ActivityTimeline
+                        activities={[]} // TODO: Implement activities loading
+                        petId={currentPet.id}
+                        className="h-full"
+                      />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="stats" className="flex-1 px-6 pb-6 mt-4">
+                    <div className="flex items-center justify-center h-64 text-gray-500">
+                      <div className="text-center">
+                        <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                        <p className="text-lg font-medium">Statistics Coming Soon</p>
+                        <p className="text-sm">Growth charts, health trends, and insights</p>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="health" className="flex-1 px-6 pb-6 mt-4">
+                    <div className="flex items-center justify-center h-64 text-gray-500">
+                      <div className="text-center">
+                        <Heart className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                        <p className="text-lg font-medium">Health Dashboard Coming Soon</p>
+                        <p className="text-sm">
+                          Vaccination schedules, medical records, and reminders
+                        </p>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
         </div>
+
+        {/* Quick Log Sheet */}
+        {showQuickLog && (
+          <QuickLogSheet
+            isOpen={showQuickLog}
+            petId={currentPet.id}
+            onClose={() => setShowQuickLog(false)}
+            onSave={async activity => {
+              // TODO: Implement activity saving
+              console.log('Saving activity:', activity);
+              setShowQuickLog(false);
+            }}
+          />
+        )}
       </main>
     </div>
   );

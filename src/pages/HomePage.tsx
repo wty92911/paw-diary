@@ -102,8 +102,40 @@ export function HomePage() {
   // Main state with pets
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
-      {/* Fixed immersive pet navigation */}
-      <div className="fixed inset-0 z-30 bg-gradient-to-br from-orange-50 to-yellow-50 overflow-hidden">
+      {/* Top Navigation Bar */}
+      <div className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-sm border-b border-orange-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                <Heart className="w-5 h-5 text-white fill-current" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-orange-900">Paw Diary</h1>
+                <p className="text-xs text-orange-600 -mt-1">
+                  {pets.length === 1 ? '1 Pet' : `${pets.length} Pets`}
+                </p>
+              </div>
+            </div>
+
+            {/* Navigation Actions */}
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleAddPet}
+                size="sm"
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Pet
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Fixed immersive pet navigation with top padding */}
+      <div className="fixed inset-0 pt-16 z-30 bg-gradient-to-br from-orange-50 to-yellow-50 overflow-hidden">
         <PetThumbnailNavigation
           pets={pets.filter(p => !p.is_archived)}
           onPetSelect={handlePetSelect}
