@@ -333,3 +333,67 @@ pub struct ActivityStatsResponse {
     pub recent_activities: Vec<Activity>,
     pub date_range_days: i64,
 }
+
+/// Activity draft data structure matching the database schema
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActivityDraft {
+    pub id: i64,
+    pub pet_id: i64,
+    pub category: ActivityCategory,
+    pub subcategory: Option<String>,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub activity_date: Option<DateTime<Utc>>,
+    pub activity_data: Option<serde_json::Value>,
+    pub cost: Option<f32>,
+    pub currency: Option<String>,
+    pub location: Option<String>,
+    pub mood_rating: Option<i32>,
+    pub is_template: bool,
+    pub template_name: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Request structure for creating a new activity draft
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActivityDraftCreateRequest {
+    pub pet_id: i64,
+    pub category: ActivityCategory,
+    pub subcategory: Option<String>,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub activity_date: Option<DateTime<Utc>>,
+    pub activity_data: Option<serde_json::Value>,
+    pub cost: Option<f32>,
+    pub currency: Option<String>,
+    pub location: Option<String>,
+    pub mood_rating: Option<i32>,
+    pub is_template: Option<bool>,
+    pub template_name: Option<String>,
+}
+
+/// Request structure for updating an activity draft
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ActivityDraftUpdateRequest {
+    pub category: Option<ActivityCategory>,
+    pub subcategory: Option<String>,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub activity_date: Option<DateTime<Utc>>,
+    pub activity_data: Option<serde_json::Value>,
+    pub cost: Option<f32>,
+    pub currency: Option<String>,
+    pub location: Option<String>,
+    pub mood_rating: Option<i32>,
+    pub is_template: Option<bool>,
+    pub template_name: Option<String>,
+}
+
+/// Response structure for getting activity drafts
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetActivityDraftsResponse {
+    pub drafts: Vec<ActivityDraft>,
+    pub total_count: i64,
+    pub has_more: bool,
+}

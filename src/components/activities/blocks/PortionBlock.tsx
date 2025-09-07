@@ -1,13 +1,12 @@
 import React from 'react';
-import { Control, FieldError } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import { Input } from '../../ui/input';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Plus, Minus, Package } from 'lucide-react';
-import { ActivityFormData, ActivityBlockDef } from '../../../lib/types/activities';
+import { BlockProps } from '../../../lib/types/activities';
 import { Field } from './Field';
-import { useFormContext } from './FormContext';
 
 // Portion value interface
 interface PortionValue {
@@ -75,121 +74,140 @@ const getMockBrandMemory = (_petId?: number): Array<{ brand: string; product: st
   { brand: 'Blue Buffalo', product: 'Life Protection Formula', lastUsed: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
 ];
 
-// Portion block specific props
-interface PortionBlockProps {
-  block: ActivityBlockDef & { type: 'portion' };
-  control?: Control<ActivityFormData>;
-  error?: FieldError;
+// Portion block configuration
+interface PortionBlockConfig {
+  defaultUnit?: string;
+  allowedUnits?: string[];
+  showBrandSelector?: boolean;
+  requireBrand?: boolean;
+  petId?: number;
+  step?: number;
+  hint?: string;
+  presetAmounts?: number[];
+  showNotes?: boolean;
 }
 
 // PortionBlock component for food portion tracking with units and brand memory
-const PortionBlock: React.FC<PortionBlockProps> = ({
-  block,
-  error,
+const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
+  control,
+  name,
+  label = 'Portion',
+  required = false,
+  config = {},
 }) => {
-  const { watch, setValue, petId } = useFormContext();
-  const fieldName = `blocks.${block.id}` as const;
-  const currentValue: PortionValue | undefined = watch(fieldName);
-
-  // State for brand/product selection
-  const [showBrandSelector, setShowBrandSelector] = React.useState(false);
-  const [customBrand, setCustomBrand] = React.useState('');
-  const [customProduct, setCustomProduct] = React.useState('');
-
-  // Mock brand memory
-  const brandMemory = React.useMemo(() => getMockBrandMemory(petId), [petId]);
-
-  // Initialize default value
-  React.useEffect(() => {
-    if (!currentValue) {
-      const defaultUnit = block.config?.defaultUnit || 'cup';
-      setValue(fieldName, {
-        amount: 0,
-        unit: defaultUnit,
-      });
-    }
-  }, [currentValue, fieldName, setValue, block.config?.defaultUnit]);
-
-  // Handle amount change
-  const handleAmountChange = React.useCallback((newAmount: number) => {
-    const updatedValue: PortionValue = {
-      ...currentValue,
-      amount: Math.max(0, newAmount), // Ensure non-negative
-      unit: currentValue?.unit || 'cup',
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Handle unit change
-  const handleUnitChange = React.useCallback((newUnit: string) => {
-    const updatedValue: PortionValue = {
-      ...currentValue,
-      amount: currentValue?.amount || 0,
-      unit: newUnit,
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Handle brand/product selection
-  const handleBrandSelect = React.useCallback((brand: string, product: string) => {
-    const updatedValue: PortionValue = {
-      ...currentValue,
-      amount: currentValue?.amount || 0,
-      unit: currentValue?.unit || 'cup',
-      brand,
-      product,
-    };
-    setValue(fieldName, updatedValue);
-    setShowBrandSelector(false);
-  }, [currentValue, fieldName, setValue]);
-
-  // Handle custom brand/product
-  const handleCustomBrandSubmit = React.useCallback(() => {
-    if (customBrand.trim()) {
-      handleBrandSelect(customBrand.trim(), customProduct.trim() || 'Custom Product');
-      setCustomBrand('');
-      setCustomProduct('');
-    }
-  }, [customBrand, customProduct, handleBrandSelect]);
-
-  // Quick increment/decrement
-  const incrementAmount = () => {
-    const step = block.config?.step || 0.25;
-    handleAmountChange((currentValue?.amount || 0) + step);
-  };
-
-  const decrementAmount = () => {
-    const step = block.config?.step || 0.25;
-    handleAmountChange(Math.max(0, (currentValue?.amount || 0) - step));
-  };
-
-  // Format amount display
-  const formatAmount = (amount: number) => {
-    return amount % 1 === 0 ? amount.toString() : amount.toFixed(2);
-  };
-
-  // Get unit display info
-  const getUnitInfo = (unitValue: string) => {
-    return ALL_UNITS.find(unit => unit.value === unitValue);
-  };
-
-  const currentUnit = currentValue?.unit ? getUnitInfo(currentValue.unit) : null;
-  const displayAmount = currentValue?.amount || 0;
+  const fieldName = name;
+  const {
+    defaultUnit = 'cup',
+    showBrandSelector = true,
+    petId,
+  } = config;
 
   return (
-    <Field
-      label={block.label}
-      required={block.required}
-      error={error?.message}
-      hint={block.config?.hint || 'Enter the portion amount and select appropriate unit'}
-      blockType="portion"
-      id={`portion-${block.id}`}
-    >
-      <div className="space-y-4">
-        {/* Amount and unit input */}
-        <div className="flex items-center gap-2">
-          {/* Decrement button */}
-          <Button
+    <Controller
+      control={control}
+      name={fieldName}
+      rules={{ required: required ? `${label} is required` : false }}
+      render={({ field, fieldState: { error } }) => {
+        const currentValue: PortionValue | undefined = field.value;
+        
+        // State for brand/product selection
+        const [showBrandSelectorState, setShowBrandSelectorState] = React.useState(showBrandSelector);
+        const [customBrand, setCustomBrand] = React.useState('');
+        const [customProduct, setCustomProduct] = React.useState('');
+        
+        // Mock brand memory
+        const brandMemory = React.useMemo(() => getMockBrandMemory(petId), [petId]);
+
+        // Initialize default value
+        React.useEffect(() => {
+          if (!currentValue) {
+            field.onChange({
+              amount: 0,
+              unit: defaultUnit,
+            });
+          }
+        }, [currentValue, field, defaultUnit]);
+
+        // Handle amount change
+        const handleAmountChange = React.useCallback((newAmount: number) => {
+          const updatedValue: PortionValue = {
+            ...currentValue,
+            amount: Math.max(0, newAmount), // Ensure non-negative
+            unit: currentValue?.unit || defaultUnit,
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field, defaultUnit]);
+
+        // Handle unit change
+        const handleUnitChange = React.useCallback((newUnit: string) => {
+          const updatedValue: PortionValue = {
+            ...currentValue,
+            amount: currentValue?.amount || 0,
+            unit: newUnit,
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field]);
+
+        // Handle brand/product selection
+        const handleBrandSelect = React.useCallback((brand: string, product: string) => {
+          const updatedValue: PortionValue = {
+            ...currentValue,
+            amount: currentValue?.amount || 0,
+            unit: currentValue?.unit || defaultUnit,
+            brand,
+            product,
+          };
+          field.onChange(updatedValue);
+          setShowBrandSelectorState(false);
+        }, [currentValue, field, defaultUnit]);
+
+        // Handle custom brand/product
+        const handleCustomBrandSubmit = React.useCallback(() => {
+          if (customBrand.trim()) {
+            handleBrandSelect(customBrand.trim(), customProduct.trim() || 'Custom Product');
+            setCustomBrand('');
+            setCustomProduct('');
+          }
+        }, [customBrand, customProduct, handleBrandSelect]);
+
+        // Quick increment/decrement
+        const incrementAmount = () => {
+          const step = config?.step || 0.25;
+          handleAmountChange((currentValue?.amount || 0) + step);
+        };
+
+        const decrementAmount = () => {
+          const step = config?.step || 0.25;
+          handleAmountChange(Math.max(0, (currentValue?.amount || 0) - step));
+        };
+
+        // Format amount display
+        const formatAmount = (amount: number) => {
+          return amount % 1 === 0 ? amount.toString() : amount.toFixed(2);
+        };
+
+        // Get unit display info
+        const getUnitInfo = (unitValue: string) => {
+          return ALL_UNITS.find(unit => unit.value === unitValue);
+        };
+
+        const currentUnit = currentValue?.unit ? getUnitInfo(currentValue.unit) : null;
+        const displayAmount = currentValue?.amount || 0;
+
+        return (
+          <Field
+            label={label}
+            required={required}
+            error={error?.message}
+            hint={config?.hint || 'Enter the portion amount and select appropriate unit'}
+            blockType="portion"
+            id={`portion-${fieldName}`}
+          >
+            <div className="space-y-4">
+              {/* Amount and unit input */}
+              <div className="flex items-center gap-2">
+                {/* Decrement button */}
+                <Button
             type="button"
             variant="outline"
             size="sm"
@@ -205,7 +223,7 @@ const PortionBlock: React.FC<PortionBlockProps> = ({
           <div className="flex-1 relative">
             <Input
               type="number"
-              step={block.config?.step || 0.25}
+              step={config?.step || 0.25}
               min={0}
               value={displayAmount}
               onChange={(e) => handleAmountChange(parseFloat(e.target.value) || 0)}
@@ -269,7 +287,7 @@ const PortionBlock: React.FC<PortionBlockProps> = ({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setShowBrandSelector(!showBrandSelector)}
+              onClick={() => setShowBrandSelectorState(!showBrandSelectorState)}
               className="text-xs"
             >
               <Package className="w-3 h-3 mr-1" />
@@ -295,7 +313,7 @@ const PortionBlock: React.FC<PortionBlockProps> = ({
                   const updatedValue = { ...currentValue };
                   delete updatedValue.brand;
                   delete updatedValue.product;
-                  setValue(fieldName, updatedValue);
+                  field.onChange(updatedValue);
                 }}
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
@@ -305,7 +323,7 @@ const PortionBlock: React.FC<PortionBlockProps> = ({
           )}
 
           {/* Brand selector */}
-          {showBrandSelector && (
+          {showBrandSelectorState && (
             <div className="space-y-3 p-3 border rounded-md bg-muted/30">
               <div className="text-sm font-medium">Recent Brands</div>
               
@@ -365,7 +383,7 @@ const PortionBlock: React.FC<PortionBlockProps> = ({
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowBrandSelector(false)}
+                      onClick={() => setShowBrandSelectorState(false)}
                     >
                       Cancel
                     </Button>
@@ -377,11 +395,11 @@ const PortionBlock: React.FC<PortionBlockProps> = ({
         </div>
 
         {/* Quick preset amounts if configured */}
-        {block.config?.presetAmounts && (
+        {config?.presetAmounts && (
           <div className="space-y-2">
             <div className="text-sm font-medium">Quick Amounts</div>
             <div className="flex flex-wrap gap-2">
-              {block.config.presetAmounts.map((amount: number) => (
+              {config?.presetAmounts?.map((amount: number) => (
                 <Button
                   key={amount}
                   type="button"
@@ -398,8 +416,11 @@ const PortionBlock: React.FC<PortionBlockProps> = ({
             </div>
           </div>
         )}
-      </div>
-    </Field>
+            </div>
+          </Field>
+        );
+      }}
+    />
   );
 };
 

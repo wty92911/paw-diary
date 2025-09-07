@@ -1,11 +1,10 @@
 import React from 'react';
-import { Control, FieldError } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Play, Pause, Square, RotateCcw, Timer } from 'lucide-react';
-import { ActivityFormData, ActivityBlockDef } from '../../../lib/types/activities';
+import { BlockProps } from '../../../lib/types/activities';
 import { Field } from './Field';
-import { useFormContext } from './FormContext';
 
 // Timer value interface
 interface TimerValue {
@@ -25,199 +24,227 @@ interface TimerLap {
   duration: number; // Duration in seconds
 }
 
-// Timer block specific props
-interface TimerBlockProps {
-  block: ActivityBlockDef & { type: 'timer' };
-  control?: Control<ActivityFormData>;
-  error?: FieldError;
+// Timer block configuration
+interface TimerBlockConfig {
+  showLaps?: boolean;
+  autoStart?: boolean;
+  maxDuration?: number; // in seconds
+  showMilliseconds?: boolean;
+  enableLaps?: boolean;
+  hint?: string;
+  presetDurations?: number[];
 }
 
 // TimerBlock component for duration tracking activities
-const TimerBlock: React.FC<TimerBlockProps> = ({
-  block,
-  error,
+const TimerBlock: React.FC<BlockProps<TimerBlockConfig>> = ({
+  control,
+  name,
+  label = 'Timer',
+  required = false,
+  config = {},
 }) => {
-  const { watch, setValue } = useFormContext();
-  const fieldName = `blocks.${block.id}` as const;
-  const currentValue: TimerValue | undefined = watch(fieldName);
-
-  // Timer interval ref
-  const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Initialize default value
-  React.useEffect(() => {
-    if (!currentValue) {
-      setValue(fieldName, {
-        duration: 0,
-        isRunning: false,
-        currentTime: 0,
-        laps: [],
-      });
-    }
-  }, [currentValue, fieldName, setValue]);
-
-  // Timer tick effect
-  React.useEffect(() => {
-    if (currentValue?.isRunning) {
-      intervalRef.current = setInterval(() => {
-        const now = new Date();
-        const startTime = currentValue.startTime || now;
-        const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-        
-        const updatedValue: TimerValue = {
-          ...currentValue,
-          currentTime: elapsed,
-        };
-        setValue(fieldName, updatedValue);
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [currentValue?.isRunning, currentValue?.startTime, fieldName, setValue]);
-
-  // Start timer
-  const handleStart = React.useCallback(() => {
-    if (!currentValue) return;
-
-    const now = new Date();
-    const updatedValue: TimerValue = {
-      ...currentValue,
-      isRunning: true,
-      startTime: currentValue.startTime || now,
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Pause timer
-  const handlePause = React.useCallback(() => {
-    if (!currentValue) return;
-
-    const updatedValue: TimerValue = {
-      ...currentValue,
-      isRunning: false,
-      duration: currentValue.currentTime,
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Stop timer
-  const handleStop = React.useCallback(() => {
-    if (!currentValue) return;
-
-    const now = new Date();
-    const updatedValue: TimerValue = {
-      ...currentValue,
-      isRunning: false,
-      endTime: now,
-      duration: currentValue.currentTime,
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Reset timer
-  const handleReset = React.useCallback(() => {
-    if (!currentValue) return;
-
-    const updatedValue: TimerValue = {
-      duration: 0,
-      isRunning: false,
-      currentTime: 0,
-      laps: [],
-    };
-    setValue(fieldName, updatedValue);
-  }, [fieldName, setValue]);
-
-  // Add lap (for activities that need lap tracking)
-  const handleAddLap = React.useCallback(() => {
-    if (!currentValue || !currentValue.isRunning) return;
-
-    const now = new Date();
-    const previousLap = currentValue.laps?.[currentValue.laps.length - 1];
-    const lapStartTime = previousLap ? previousLap.endTime : currentValue.startTime || now;
-    
-    const newLap: TimerLap = {
-      lapNumber: (currentValue.laps?.length || 0) + 1,
-      startTime: lapStartTime,
-      endTime: now,
-      duration: Math.floor((now.getTime() - lapStartTime.getTime()) / 1000),
-    };
-
-    const updatedValue: TimerValue = {
-      ...currentValue,
-      laps: [...(currentValue.laps || []), newLap],
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Format time display
-  const formatTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Get timer status
-  const getTimerStatus = (): { label: string; color: string } => {
-    if (!currentValue) return { label: 'Ready', color: 'text-muted-foreground' };
-    
-    if (currentValue.isRunning) {
-      return { label: 'Running', color: 'text-green-600' };
-    } else if (currentValue.duration > 0) {
-      return { label: 'Stopped', color: 'text-blue-600' };
-    }
-    return { label: 'Ready', color: 'text-muted-foreground' };
-  };
-
-  if (!currentValue) return null;
-
-  const displayTime = currentValue.isRunning ? currentValue.currentTime : currentValue.duration;
-  const status = getTimerStatus();
-  const canAddLaps = block.config?.enableLaps && currentValue.isRunning;
+  const fieldName = name;
 
   return (
-    <Field
-      label={block.label}
-      required={block.required}
-      error={error?.message}
-      hint={block.config?.hint || 'Track the duration of this activity'}
-      blockType="timer"
-      id={`timer-${block.id}`}
-    >
-      <div className="space-y-4">
-        {/* Timer display */}
-        <div className="text-center space-y-3">
-          <div className="relative">
-            {/* Main timer display */}
-            <div className="text-4xl font-mono font-bold text-primary">
-              {formatTime(displayTime)}
-            </div>
-            
-            {/* Status indicator */}
-            <div className={`text-sm ${status.color} flex items-center justify-center gap-1 mt-1`}>
-              <Timer className="w-3 h-3" />
-              {status.label}
-            </div>
-          </div>
+    <Controller
+      control={control}
+      name={fieldName}
+      rules={{ required: required ? `${label} is required` : false }}
+      render={({ field, fieldState: { error } }) => {
+        const currentValue: TimerValue | undefined = field.value;
 
-          {/* Timer controls */}
-          <div className="flex items-center justify-center gap-2">
-            {!currentValue.isRunning ? (
-              <Button
+        // Timer interval ref
+        const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+        // Initialize default value
+        React.useEffect(() => {
+          if (!currentValue) {
+            field.onChange({
+              duration: 0,
+              isRunning: false,
+              currentTime: 0,
+              laps: [],
+            });
+          }
+        }, [currentValue, field]);
+
+        // Timer tick effect
+        React.useEffect(() => {
+          if (currentValue?.isRunning) {
+            intervalRef.current = setInterval(() => {
+              const now = new Date();
+              const startTime = currentValue.startTime || now;
+              const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+              
+              const updatedValue: TimerValue = {
+                ...currentValue,
+                currentTime: elapsed,
+              };
+              field.onChange(updatedValue);
+            }, 1000);
+          } else {
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
+          }
+
+          return () => {
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
+          };
+        }, [currentValue?.isRunning, currentValue?.startTime, field]);
+
+        // Start timer
+        const handleStart = React.useCallback(() => {
+          if (!currentValue) return;
+
+          const now = new Date();
+          const updatedValue: TimerValue = {
+            ...currentValue,
+            isRunning: true,
+            startTime: currentValue.startTime || now,
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field]);
+
+        // Pause timer
+        const handlePause = React.useCallback(() => {
+          if (!currentValue) return;
+
+          const updatedValue: TimerValue = {
+            ...currentValue,
+            isRunning: false,
+            duration: currentValue.currentTime,
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field]);
+
+        // Stop timer
+        const handleStop = React.useCallback(() => {
+          if (!currentValue) return;
+
+          const now = new Date();
+          const updatedValue: TimerValue = {
+            ...currentValue,
+            isRunning: false,
+            endTime: now,
+            duration: currentValue.currentTime,
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field]);
+
+        // Reset timer
+        const handleReset = React.useCallback(() => {
+          if (!currentValue) return;
+
+          const updatedValue: TimerValue = {
+            duration: 0,
+            isRunning: false,
+            currentTime: 0,
+            laps: [],
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field]);
+
+        // Add lap (for activities that need lap tracking)
+        const handleAddLap = React.useCallback(() => {
+          if (!currentValue || !currentValue.isRunning) return;
+
+          const now = new Date();
+          const previousLap = currentValue.laps?.[currentValue.laps.length - 1];
+          const lapStartTime = previousLap ? previousLap.endTime : currentValue.startTime || now;
+          
+          const newLap: TimerLap = {
+            lapNumber: (currentValue.laps?.length || 0) + 1,
+            startTime: lapStartTime,
+            endTime: now,
+            duration: Math.floor((now.getTime() - lapStartTime.getTime()) / 1000),
+          };
+
+          const updatedValue: TimerValue = {
+            ...currentValue,
+            laps: [...(currentValue.laps || []), newLap],
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field]);
+
+        // Format time display
+        const formatTime = (seconds: number): string => {
+          const hours = Math.floor(seconds / 3600);
+          const minutes = Math.floor((seconds % 3600) / 60);
+          const secs = seconds % 60;
+
+          if (hours > 0) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+          }
+          return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        // Get timer status
+        const getTimerStatus = (): { label: string; color: string } => {
+          if (!currentValue) return { label: 'Ready', color: 'text-muted-foreground' };
+          
+          if (currentValue.isRunning) {
+            return { label: 'Running', color: 'text-green-600' };
+          } else if (currentValue.duration > 0) {
+            return { label: 'Stopped', color: 'text-blue-600' };
+          }
+          return { label: 'Ready', color: 'text-muted-foreground' };
+        };
+
+        // 如果没有值，显示一个空的组件而不是返回null
+        if (!currentValue) {
+          return (
+            <Field
+              label={label}
+              required={required}
+              error={error?.message}
+              blockType="timer"
+              id={`timer-${fieldName}`}
+            >
+              <div className="text-center text-muted-foreground p-4">
+                Timer not initialized
+              </div>
+            </Field>
+          );
+        }
+
+        const displayTime = currentValue.isRunning ? currentValue.currentTime : currentValue.duration;
+        const status = getTimerStatus();
+        const canAddLaps = config?.enableLaps && currentValue.isRunning;
+
+        return (
+          <Field
+            label={label}
+            required={required}
+            error={error?.message}
+            hint={config?.hint || 'Track the duration of this activity'}
+            blockType="timer"
+            id={`timer-${fieldName}`}
+          >
+            <div className="space-y-4">
+              {/* Timer display */}
+              <div className="text-center space-y-3">
+                <div className="relative">
+                  {/* Main timer display */}
+                  <div className="text-4xl font-mono font-bold text-primary">
+                    {formatTime(displayTime)}
+                  </div>
+                  
+                  {/* Status indicator */}
+                  <div className={`text-sm ${status.color} flex items-center justify-center gap-1 mt-1`}>
+                    <Timer className="w-3 h-3" />
+                    {status.label}
+                  </div>
+                </div>
+
+                {/* Timer controls */}
+                <div className="flex items-center justify-center gap-2">
+                  {!currentValue.isRunning ? (
+                    <Button
                 type="button"
                 onClick={handleStart}
                 className="flex items-center gap-2"
@@ -329,11 +356,11 @@ const TimerBlock: React.FC<TimerBlockProps> = ({
         )}
 
         {/* Presets for common activity durations */}
-        {block.config?.presetDurations && (
+        {config?.presetDurations && (
           <div className="space-y-2">
             <div className="text-sm font-medium">Quick Durations</div>
             <div className="flex flex-wrap gap-2">
-              {block.config.presetDurations.map((preset: number) => (
+              {config.presetDurations.map((preset: number) => (
                 <Button
                   key={preset}
                   type="button"
@@ -345,7 +372,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({
                       duration: preset,
                       currentTime: preset,
                     };
-                    setValue(fieldName, updatedValue);
+                    field.onChange(updatedValue);
                   }}
                   className="text-xs"
                   disabled={currentValue.isRunning}
@@ -356,8 +383,11 @@ const TimerBlock: React.FC<TimerBlockProps> = ({
             </div>
           </div>
         )}
-      </div>
-    </Field>
+            </div>
+          </Field>
+        );
+      }}
+    />
   );
 };
 

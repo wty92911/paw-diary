@@ -43,10 +43,13 @@ pub fn run() {
             // Activity management commands
             create_activity,
             update_activity,
+            update_activity_for_pet,
             get_activity,
+            get_activity_for_pet,
             get_activities,
             search_activities,
             delete_activity,
+            delete_activity_for_pet,
             get_activity_stats,
             get_recent_activities,
             get_activities_by_category,
@@ -56,7 +59,15 @@ pub fn run() {
             rebuild_fts_index,
             get_fts_index_stats,
             verify_fts_integrity,
-            repair_fts_index
+            repair_fts_index,
+            // Activity Draft Management commands
+            save_activity_draft,
+            update_activity_draft,
+            get_activity_draft,
+            get_activity_drafts,
+            delete_activity_draft,
+            convert_draft_to_activity,
+            cleanup_old_drafts
         ])
         .register_asynchronous_uri_scheme_protocol("photos", move |app, request, responder| {
             let app_handle = app.app_handle().clone();

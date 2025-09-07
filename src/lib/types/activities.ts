@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Pet } from '../types';
 
 // Activity categories and subcategories
 export enum ActivityCategory {
@@ -612,3 +613,595 @@ export const DEFAULT_ATTACHMENT_CONFIG: AttachmentConfig = {
   showOCR: false,
   allowReordering: true,
 };
+
+// =============================================================================
+// ACTIVITY PAGES ROUTING AND NAVIGATION INTERFACES
+// =============================================================================
+
+/**
+ * URL parameter extraction for pet-contextual routing in Activity Pages.
+ * Used by React Router to type-safely access route parameters.
+ * 
+ * @example
+ * ```typescript
+ * // Usage in page components with React Router
+ * const { petId, activityId } = useParams<PetActivityRouteParams>();
+ * 
+ * // Navigation with typed parameters
+ * navigate(`/pets/${petId}/activities`);
+ * navigate(`/pets/${petId}/activities/${activityId}/edit`);
+ * ```
+ */
+export interface PetActivityRouteParams {
+  /** Pet ID from URL path - always required for activity pages */
+  petId: string;
+  /** Activity ID from URL path - only present when editing existing activity */
+  activityId?: string;
+}
+
+/**
+ * Query parameters for activity editor configuration via URL.
+ * Enables direct navigation to specific editor modes and templates.
+ * 
+ * @example
+ * ```typescript
+ * // URL examples:
+ * // /pets/123/activities/new?template=feeding&mode=quick
+ * // /pets/123/activities/new?mode=guided
+ * // /pets/123/activities/456/edit?mode=advanced
+ * 
+ * const searchParams = new URLSearchParams(location.search);
+ * const queryParams: ActivityEditorQueryParams = {
+ *   template: searchParams.get('template') || undefined,
+ *   mode: searchParams.get('mode') as ActivityMode || 'guided'
+ * };
+ * ```
+ */
+export interface ActivityEditorQueryParams {
+  /** Template ID to pre-populate editor with specific activity template */
+  template?: string;
+  /** Editor interaction mode - determines UI complexity and guidance level */
+  mode?: ActivityMode;
+}
+
+/**
+ * State management for activities list page with filtering and sorting.
+ * Manages the complete state of the activities list view including filters,
+ * search, and pagination state.
+ * 
+ * @example
+ * ```typescript
+ * const [listState, setListState] = useState<ActivitiesListState>({
+ *   activities: [],
+ *   filteredActivities: [],
+ *   selectedFilters: {
+ *     categories: [ActivityCategory.Health, ActivityCategory.Diet],
+ *     dateRange: { start: new Date('2024-01-01'), end: new Date() },
+ *     hasAttachments: true
+ *   },
+ *   sortOrder: 'desc',
+ *   isLoading: false
+ * });
+ * 
+ * // Apply filters
+ * const applyFilters = (filters: ActivitiesListState['selectedFilters']) => {
+ *   setListState(prev => ({
+ *     ...prev,
+ *     selectedFilters: filters,
+ *     filteredActivities: filterActivities(prev.activities, filters)
+ *   }));
+ * };
+ * ```
+ */
+export interface ActivitiesListState {
+  /** All activities for the current pet (unfiltered) */
+  activities: ActivityTimelineItem[];
+  /** Activities after applying current filters and search */
+  filteredActivities: ActivityTimelineItem[];
+  /** Current filter selections applied to the list */
+  selectedFilters: {
+    /** Filter by activity categories (multi-select) */
+    categories: ActivityCategory[];
+    /** Filter by date range (optional) */
+    dateRange?: { start: Date; end: Date };
+    /** Filter activities that have attachments */
+    hasAttachments?: boolean;
+  };
+  /** Sort order for activities (newest first by default) */
+  sortOrder: 'desc' | 'asc';
+  /** Loading state for activities list */
+  isLoading: boolean;
+  /** Error message if activities failed to load */
+  error?: string;
+}
+
+/**
+ * Shared pet context state across activity pages.
+ * Provides centralized pet and activity data management for all
+ * activity-related pages with proper loading and error states.
+ * 
+ * @example
+ * ```typescript
+ * // Custom hook usage
+ * const usePetActivityContext = (petId: string): PetActivityContext => {
+ *   const { data: pet, isLoading: isLoadingPet, error: petError } = usePet(petId);
+ *   const { data: activities, isLoading: isLoadingActivities, error: activitiesError } = useActivities(petId);
+ *   
+ *   return {
+ *     currentPet: pet,
+ *     isLoadingPet,
+ *     petError,
+ *     activities: activities || [],
+ *     isLoadingActivities,
+ *     activitiesError
+ *   };
+ * };
+ * 
+ * // Usage in page components
+ * const context = usePetActivityContext(petId);
+ * if (context.isLoadingPet) return <LoadingSpinner />;
+ * if (context.petError) return <ErrorMessage message={context.petError} />;
+ * ```
+ */
+export interface PetActivityContext {
+  /** Current pet data for context display */
+  currentPet: Pet;
+  /** Loading state for pet data */
+  isLoadingPet: boolean;
+  /** Error message if pet failed to load */
+  petError?: string;
+  /** All activities for the current pet */
+  activities: ActivityTimelineItem[];
+  /** Loading state for activities data */
+  isLoadingActivities: boolean;
+  /** Error message if activities failed to load */
+  activitiesError?: string;
+}
+
+// =============================================================================
+// PAGE COMPONENT INTERFACES
+// =============================================================================
+
+/**
+ * Props interface for ActivitiesListPage component.
+ * Displays paginated list of activities for a specific pet with filtering,
+ * searching, and navigation to activity editor.
+ * 
+ * @example
+ * ```typescript
+ * const ActivitiesListPage: React.FC<ActivitiesListPageProps> = ({ petId }) => {
+ *   const { activities, isLoading } = useActivities(petId);
+ *   const navigate = useNavigate();
+ * 
+ *   const handleCreateActivity = () => {
+ *     navigate(`/pets/${petId}/activities/new`);
+ *   };
+ * 
+ *   const handleEditActivity = (activityId: number) => {
+ *     navigate(`/pets/${petId}/activities/${activityId}/edit`);
+ *   };
+ * 
+ *   return (
+ *     <div className="activities-list-page">
+ *       <PetContextHeader petId={petId} showBackButton />
+ *       <ActivityTimeline activities={activities} onActivityClick={handleEditActivity} />
+ *       <FloatingActionButton onClick={handleCreateActivity} />
+ *     </div>
+ *   );
+ * };
+ * ```
+ */
+export interface ActivitiesListPageProps {
+  /** Pet ID extracted from URL route parameters */
+  petId: string;
+}
+
+/**
+ * Props interface for ActivityEditorPage component.
+ * Full-screen activity creation and editing with pet context header.
+ * Handles both new activity creation and existing activity editing.
+ * 
+ * @example
+ * ```typescript
+ * const ActivityEditorPage: React.FC<ActivityEditorPageProps> = ({
+ *   petId,
+ *   activityId,
+ *   mode = 'guided',
+ *   templateId
+ * }) => {
+ *   const navigate = useNavigate();
+ *   const isEditing = !!activityId;
+ * 
+ *   const handleSave = async (activity: ActivityFormData) => {
+ *     if (isEditing) {
+ *       await updateActivity(parseInt(activityId!), activity);
+ *     } else {
+ *       await createActivity(activity);
+ *     }
+ *     navigate(`/pets/${petId}/activities`);
+ *   };
+ * 
+ *   const handleCancel = () => {
+ *     navigate(`/pets/${petId}/activities`);
+ *   };
+ * 
+ *   return (
+ *     <div className="activity-editor-page">
+ *       <PetContextHeader petId={petId} showBackButton />
+ *       <ActivityEditor
+ *         mode={mode}
+ *         templateId={templateId}
+ *         activityId={activityId ? parseInt(activityId) : undefined}
+ *         petId={parseInt(petId)}
+ *         onSave={handleSave}
+ *         onCancel={handleCancel}
+ *       />
+ *     </div>
+ *   );
+ * };
+ * ```
+ */
+export interface ActivityEditorPageProps {
+  /** Pet ID extracted from URL route parameters */
+  petId: string;
+  /** Activity ID for editing existing activity (undefined for new activity) */
+  activityId?: string;
+  /** Editor interaction mode from query parameters */
+  mode?: ActivityMode;
+  /** Template ID from query parameters for pre-populating editor */
+  templateId?: string;
+}
+
+/**
+ * Props interface for the pet context header component.
+ * Displays current pet information and navigation controls consistently
+ * across all activity pages to maintain context clarity.
+ * 
+ * @example
+ * ```typescript
+ * const PetContextHeader: React.FC<PetContextHeaderProps> = ({
+ *   pet,
+ *   showBackButton = false,
+ *   backAction,
+ *   title
+ * }) => {
+ *   const navigate = useNavigate();
+ *   
+ *   const handleBack = () => {
+ *     if (backAction) {
+ *       backAction();
+ *     } else {
+ *       navigate(-1);
+ *     }
+ *   };
+ * 
+ *   return (
+ *     <div className="pet-context-header">
+ *       {showBackButton && (
+ *         <Button variant="ghost" onClick={handleBack}>
+ *           <ArrowLeft size={20} />
+ *         </Button>
+ *       )}
+ *       <PetProfilePhoto pet={pet} size="sm" />
+ *       <div className="pet-info">
+ *         <h1>{title || `${pet.name}'s Activities`}</h1>
+ *         <span className="pet-breed">{pet.breed}</span>
+ *       </div>
+ *     </div>
+ *   );
+ * };
+ * ```
+ */
+export interface PetContextHeaderProps {
+  /** Pet object for display in header */
+  pet: Pet;
+  /** Whether to show back navigation button */
+  showBackButton?: boolean;
+  /** Custom back navigation action (defaults to browser back) */
+  backAction?: () => void;
+  /** Optional custom title (defaults to "{pet.name}'s Activities") */
+  title?: string;
+}
+
+/**
+ * Props interface for activity preview section in pet profile.
+ * Shows limited number of recent activities with navigation to full list.
+ * Used in the simplified PetProfilePage to provide activity previews.
+ * 
+ * @example
+ * ```typescript
+ * const ActivityPreviewSection: React.FC<ActivityPreviewSectionProps> = ({
+ *   activities,
+ *   petId,
+ *   maxPreviewItems = 3
+ * }) => {
+ *   const navigate = useNavigate();
+ *   const recentActivities = activities.slice(0, maxPreviewItems);
+ * 
+ *   const handleViewAll = () => {
+ *     navigate(`/pets/${petId}/activities`);
+ *   };
+ * 
+ *   return (
+ *     <div className="activity-preview-section">
+ *       <div className="section-header">
+ *         <h3>Recent Activities</h3>
+ *         <Button variant="outline" onClick={handleViewAll}>
+ *           View All ({activities.length})
+ *         </Button>
+ *       </div>
+ *       <div className="activity-preview-cards">
+ *         {recentActivities.map(activity => (
+ *           <ActivityCard
+ *             key={activity.id}
+ *             activity={activity}
+ *             variant="compact"
+ *             onClick={() => navigate(`/pets/${petId}/activities/${activity.id}/edit`)}
+ *           />
+ *         ))}
+ *       </div>
+ *       {activities.length === 0 && (
+ *         <div className="empty-state">
+ *           <p>No activities recorded yet</p>
+ *           <Button onClick={() => navigate(`/pets/${petId}/activities/new`)}>
+ *             Record First Activity
+ *           </Button>
+ *         </div>
+ *       )}
+ *     </div>
+ *   );
+ * };
+ * ```
+ */
+export interface ActivityPreviewSectionProps {
+  /** Activities to show in preview (typically recent activities) */
+  activities: ActivityTimelineItem[];
+  /** Pet ID for navigation to full activities list */
+  petId: string;
+  /** Maximum number of activities to show in preview */
+  maxPreviewItems?: number;
+}
+
+// =============================================================================
+// NAVIGATION AND ROUTING UTILITIES
+// =============================================================================
+
+/**
+ * Navigation helper functions for activity pages.
+ * Provides type-safe navigation utilities for activity-related routes.
+ * 
+ * @example
+ * ```typescript
+ * // Usage in components
+ * const navigate = useNavigate();
+ * const activityNavigation = useActivityNavigation(navigate);
+ * 
+ * // Navigate to activities list
+ * activityNavigation.toActivitiesList('123');
+ * 
+ * // Navigate to new activity editor with template
+ * activityNavigation.toNewActivity('123', {
+ *   template: 'feeding',
+ *   mode: 'quick'
+ * });
+ * 
+ * // Navigate to edit existing activity
+ * activityNavigation.toEditActivity('123', '456', { mode: 'advanced' });
+ * 
+ * // Navigate back to pet profile
+ * activityNavigation.toPetProfile('123');
+ * ```
+ */
+export interface ActivityNavigationHelpers {
+  /** Navigate to activities list page for a pet */
+  toActivitiesList: (petId: string) => void;
+  /** Navigate to new activity editor with optional query parameters */
+  toNewActivity: (petId: string, params?: ActivityEditorQueryParams) => void;
+  /** Navigate to edit existing activity with optional query parameters */
+  toEditActivity: (petId: string, activityId: string, params?: Pick<ActivityEditorQueryParams, 'mode'>) => void;
+  /** Navigate back to pet profile page */
+  toPetProfile: (petId: string) => void;
+  /** Navigate to home page */
+  toHome: () => void;
+}
+
+/**
+ * Breadcrumb navigation item for activity pages.
+ * Used to build breadcrumb navigation showing current location.
+ * 
+ * @example
+ * ```typescript
+ * // Usage in breadcrumb component
+ * const ActivityBreadcrumbs: React.FC<{ petId: string; activityId?: string }> = ({
+ *   petId,
+ *   activityId
+ * }) => {
+ *   const { data: pet } = usePet(petId);
+ *   
+ *   const breadcrumbs: ActivityNavigationItem[] = [
+ *     { label: 'Home', path: '/', isClickable: true },
+ *     { label: pet?.name || 'Pet', path: `/pets/${petId}`, isClickable: true },
+ *     { label: 'Activities', path: `/pets/${petId}/activities`, isClickable: !activityId },
+ *   ];
+ * 
+ *   if (activityId) {
+ *     breadcrumbs.push({
+ *       label: 'Edit Activity',
+ *       path: `/pets/${petId}/activities/${activityId}/edit`,
+ *       isClickable: false
+ *     });
+ *   }
+ * 
+ *   return (
+ *     <nav className="breadcrumbs">
+ *       {breadcrumbs.map((item, index) => (
+ *         <span key={index}>
+ *           {item.isClickable ? (
+ *             <Link to={item.path}>{item.label}</Link>
+ *           ) : (
+ *             <span className="current">{item.label}</span>
+ *           )}
+ *           {index < breadcrumbs.length - 1 && <span className="separator"> / </span>}
+ *         </span>
+ *       ))}
+ *     </nav>
+ *   );
+ * };
+ * ```
+ */
+export interface ActivityNavigationItem {
+  /** Display label for the navigation item */
+  label: string;
+  /** URL path for the navigation item */
+  path: string;
+  /** Whether the item should be clickable (false for current page) */
+  isClickable: boolean;
+}
+
+// =============================================================================
+// ACTIVITY PAGES SPECIFIC HOOK INTERFACES
+// =============================================================================
+
+/**
+ * Return type for useActivitiesList hook.
+ * Manages activities list page state including filtering, searching, and pagination.
+ * 
+ * @example
+ * ```typescript
+ * const useActivitiesList = (petId: string): UseActivitiesListReturn => {
+ *   const [state, setState] = useState<ActivitiesListState>({
+ *     activities: [],
+ *     filteredActivities: [],
+ *     selectedFilters: { categories: [] },
+ *     sortOrder: 'desc',
+ *     isLoading: true
+ *   });
+ * 
+ *   const applyFilters = useCallback((filters: ActivitiesListState['selectedFilters']) => {
+ *     const filtered = state.activities.filter(activity => {
+ *       if (filters.categories.length > 0 && !filters.categories.includes(activity.category)) {
+ *         return false;
+ *       }
+ *       if (filters.hasAttachments && !activity.attachmentCount) {
+ *         return false;
+ *       }
+ *       return true;
+ *     });
+ * 
+ *     setState(prev => ({
+ *       ...prev,
+ *       selectedFilters: filters,
+ *       filteredActivities: filtered
+ *     }));
+ *   }, [state.activities]);
+ * 
+ *   return { ...state, applyFilters, clearFilters, toggleSortOrder };
+ * };
+ * ```
+ */
+export interface UseActivitiesListReturn {
+  /** All activities for the current pet */
+  activities: ActivityTimelineItem[];
+  /** Activities after applying filters and search */
+  filteredActivities: ActivityTimelineItem[];
+  /** Current filter selections */
+  selectedFilters: ActivitiesListState['selectedFilters'];
+  /** Current sort order */
+  sortOrder: 'desc' | 'asc';
+  /** Loading state for activities */
+  isLoading: boolean;
+  /** Error message if loading failed */
+  error?: string;
+  /** Apply new filters to the activities list */
+  applyFilters: (filters: ActivitiesListState['selectedFilters']) => void;
+  /** Clear all filters */
+  clearFilters: () => void;
+  /** Toggle sort order between ascending and descending */
+  toggleSortOrder: () => void;
+  /** Search activities by text */
+  searchActivities: (query: string) => void;
+}
+
+/**
+ * Return type for usePetActivityContext hook.
+ * Provides centralized pet and activity context for activity pages.
+ * 
+ * @example
+ * ```typescript
+ * const usePetActivityContext = (petId: string): UsePetActivityContextReturn => {
+ *   const { data: pet, isLoading: isLoadingPet, error: petError } = usePet(petId);
+ *   const { data: activities, isLoading: isLoadingActivities, error: activitiesError } = useActivities(petId);
+ * 
+ *   const contextValue: PetActivityContext = {
+ *     currentPet: pet,
+ *     isLoadingPet,
+ *     petError,
+ *     activities: activities || [],
+ *     isLoadingActivities,
+ *     activitiesError
+ *   };
+ * 
+ *   const isLoading = isLoadingPet || isLoadingActivities;
+ *   const hasError = !!petError || !!activitiesError;
+ * 
+ *   return {
+ *     context: contextValue,
+ *     isLoading,
+ *     hasError,
+ *     refresh: () => {
+ *       queryClient.invalidateQueries(['pet', petId]);
+ *       queryClient.invalidateQueries(['activities', petId]);
+ *     }
+ *   };
+ * };
+ * ```
+ */
+export interface UsePetActivityContextReturn {
+  /** Combined pet and activity context */
+  context: PetActivityContext;
+  /** Overall loading state (pet or activities loading) */
+  isLoading: boolean;
+  /** Whether any errors occurred */
+  hasError: boolean;
+  /** Refresh pet and activity data */
+  refresh: () => void;
+}
+
+/**
+ * Return type for useActivityNavigation hook.
+ * Provides type-safe navigation utilities for activity pages.
+ * 
+ * @example
+ * ```typescript
+ * const useActivityNavigation = (): UseActivityNavigationReturn => {
+ *   const navigate = useNavigate();
+ * 
+ *   const navigationHelpers: ActivityNavigationHelpers = {
+ *     toActivitiesList: (petId: string) => {
+ *       navigate(`/pets/${petId}/activities`);
+ *     },
+ *     toNewActivity: (petId: string, params?: ActivityEditorQueryParams) => {
+ *       const searchParams = new URLSearchParams();
+ *       if (params?.template) searchParams.set('template', params.template);
+ *       if (params?.mode) searchParams.set('mode', params.mode);
+ *       
+ *       const query = searchParams.toString();
+ *       navigate(`/pets/${petId}/activities/new${query ? `?${query}` : ''}`);
+ *     },
+ *     // ... other navigation methods
+ *   };
+ * 
+ *   return {
+ *     ...navigationHelpers,
+ *     canGoBack: window.history.length > 1,
+ *     goBack: () => navigate(-1)
+ *   };
+ * };
+ * ```
+ */
+export interface UseActivityNavigationReturn extends ActivityNavigationHelpers {
+  /** Whether browser back navigation is available */
+  canGoBack: boolean;
+  /** Navigate back in browser history */
+  goBack: () => void;
+}

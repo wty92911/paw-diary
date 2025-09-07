@@ -1,13 +1,12 @@
 import React from 'react';
-import { Control, FieldError } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import { Input } from '../../ui/input';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Receipt, Plus } from 'lucide-react';
-import { ActivityFormData, ActivityBlockDef } from '../../../lib/types/activities';
+import { BlockProps } from '../../../lib/types/activities';
 import { Field } from './Field';
-import { useFormContext } from './FormContext';
 
 // Cost value interface
 interface CostValue {
@@ -65,137 +64,154 @@ const EXPENSE_CATEGORIES = {
   },
 } as const;
 
-// Cost block specific props
-interface CostBlockProps {
-  block: ActivityBlockDef & { type: 'cost' };
-  control?: Control<ActivityFormData>;
-  error?: FieldError;
+// Cost block configuration
+interface CostBlockConfig {
+  defaultCurrency?: string;
+  allowedCurrencies?: string[];
+  showCategories?: boolean;
+  requireCategory?: boolean;
+  showAdvanced?: boolean;
+  quickAmounts?: number[];
+  hint?: string;
 }
 
 // CostBlock component for expense tracking with currency and categories
-const CostBlock: React.FC<CostBlockProps> = ({
-  block,
-  error,
+const CostBlock: React.FC<BlockProps<CostBlockConfig>> = ({
+  control,
+  name,
+  label = 'Cost',
+  required = false,
+  config = {},
 }) => {
-  const { watch, setValue } = useFormContext();
-  const fieldName = `blocks.${block.id}` as const;
-  const currentValue: CostValue | undefined = watch(fieldName);
-
-  // State management
-  const [showAdvanced, setShowAdvanced] = React.useState(false);
-  const [customCategory, setCustomCategory] = React.useState('');
-
-  // Initialize default value
-  React.useEffect(() => {
-    if (!currentValue) {
-      setValue(fieldName, {
-        amount: 0,
-        currency: block.config?.defaultCurrency || 'USD',
-      });
-    }
-  }, [currentValue, fieldName, setValue, block.config?.defaultCurrency]);
-
-  // Handle amount change
-  const handleAmountChange = React.useCallback((newAmount: number) => {
-    const updatedValue: CostValue = {
-      ...currentValue,
-      amount: Math.max(0, newAmount), // Ensure non-negative
-      currency: currentValue?.currency || 'USD',
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Handle currency change
-  const handleCurrencyChange = React.useCallback((newCurrency: string) => {
-    const updatedValue: CostValue = {
-      ...currentValue,
-      amount: currentValue?.amount || 0,
-      currency: newCurrency,
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Handle category change
-  const handleCategoryChange = React.useCallback((newCategory: string) => {
-    const updatedValue: CostValue = {
-      ...currentValue,
-      amount: currentValue?.amount || 0,
-      currency: currentValue?.currency || 'USD',
-      category: newCategory,
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Handle description change
-  const handleDescriptionChange = React.useCallback((description: string) => {
-    const updatedValue: CostValue = {
-      ...currentValue,
-      amount: currentValue?.amount || 0,
-      currency: currentValue?.currency || 'USD',
-      description: description || undefined,
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Handle advanced options
-  const handleAdvancedToggle = React.useCallback((field: 'isRecurring' | 'taxIncluded', value: boolean) => {
-    const updatedValue: CostValue = {
-      ...currentValue,
-      amount: currentValue?.amount || 0,
-      currency: currentValue?.currency || 'USD',
-      [field]: value,
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Add custom category
-  const handleAddCustomCategory = React.useCallback(() => {
-    if (customCategory.trim()) {
-      handleCategoryChange(customCategory.trim());
-      setCustomCategory('');
-    }
-  }, [customCategory, handleCategoryChange]);
-
-  // Format currency amount
-  const formatCurrency = (amount: number, currencyCode: string): string => {
-    const currency = CURRENCIES.find(c => c.code === currencyCode);
-    if (!currency) return `${amount}`;
-
-    try {
-      return new Intl.NumberFormat(currency.locale, {
-        style: 'currency',
-        currency: currencyCode,
-      }).format(amount);
-    } catch {
-      return `${currency.symbol}${amount.toFixed(2)}`;
-    }
-  };
-
-  // Get currency info
-  const getCurrentCurrency = () => {
-    return CURRENCIES.find(c => c.code === currentValue?.currency) || CURRENCIES[0];
-  };
-
-  // Quick amount presets
-  const quickAmounts = block.config?.quickAmounts || [5, 10, 25, 50, 100];
-
-  const currentCurrency = getCurrentCurrency();
-  const displayAmount = currentValue?.amount || 0;
+  const fieldName = name;
+  const {
+    defaultCurrency = 'USD',
+    showAdvanced = false,
+  } = config;
 
   return (
-    <Field
-      label={block.label}
-      required={block.required}
-      error={error?.message}
-      hint={block.config?.hint || 'Enter the cost amount and select currency'}
-      blockType="cost"
-      id={`cost-${block.id}`}
-    >
-      <div className="space-y-4">
-        {/* Amount and currency input */}
-        <div className="flex items-center gap-2">
-          {/* Currency selector */}
-          <Select 
+    <Controller
+      control={control}
+      name={fieldName}
+      rules={{ required: required ? `${label} is required` : false }}
+      render={({ field, fieldState: { error } }) => {
+        const currentValue: CostValue | undefined = field.value;
+        
+        // State management
+        const [, setShowAdvanced] = React.useState(showAdvanced);
+        const [customCategory, setCustomCategory] = React.useState('');
+
+        // Initialize default value
+        React.useEffect(() => {
+          if (!currentValue) {
+            field.onChange({
+              amount: 0,
+              currency: defaultCurrency,
+            });
+          }
+        }, [currentValue, field, defaultCurrency]);
+
+        // Handle amount change
+        const handleAmountChange = React.useCallback((newAmount: number) => {
+          const updatedValue: CostValue = {
+            ...currentValue,
+            amount: Math.max(0, newAmount), // Ensure non-negative
+            currency: currentValue?.currency || defaultCurrency,
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field, defaultCurrency]);
+
+        // Handle currency change
+        const handleCurrencyChange = React.useCallback((newCurrency: string) => {
+          const updatedValue: CostValue = {
+            ...currentValue,
+            amount: currentValue?.amount || 0,
+            currency: newCurrency,
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field]);
+
+        // Handle category change
+        const handleCategoryChange = React.useCallback((newCategory: string) => {
+          const updatedValue: CostValue = {
+            ...currentValue,
+            amount: currentValue?.amount || 0,
+            currency: currentValue?.currency || defaultCurrency,
+            category: newCategory,
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field, defaultCurrency]);
+
+        // Handle description change
+        const handleDescriptionChange = React.useCallback((description: string) => {
+          const updatedValue: CostValue = {
+            ...currentValue,
+            amount: currentValue?.amount || 0,
+            currency: currentValue?.currency || defaultCurrency,
+            description: description || undefined,
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field, defaultCurrency]);
+
+        // Handle advanced options
+        const handleAdvancedToggle = React.useCallback((fieldKey: 'isRecurring' | 'taxIncluded', value: boolean) => {
+          const updatedValue: CostValue = {
+            ...currentValue,
+            amount: currentValue?.amount || 0,
+            currency: currentValue?.currency || defaultCurrency,
+            [fieldKey]: value,
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field, defaultCurrency]);
+
+        // Add custom category
+        const handleAddCustomCategory = React.useCallback(() => {
+          if (customCategory.trim()) {
+            handleCategoryChange(customCategory.trim());
+            setCustomCategory('');
+          }
+        }, [customCategory, handleCategoryChange]);
+
+        // Format currency amount
+        const formatCurrency = (amount: number, currencyCode: string): string => {
+          const currency = CURRENCIES.find(c => c.code === currencyCode);
+          if (!currency) return `${amount}`;
+
+          try {
+            return new Intl.NumberFormat(currency.locale, {
+              style: 'currency',
+              currency: currencyCode,
+            }).format(amount);
+          } catch {
+            return `${currency.symbol}${amount.toFixed(2)}`;
+          }
+        };
+
+        // Get currency info
+        const getCurrentCurrency = () => {
+          return CURRENCIES.find(c => c.code === currentValue?.currency) || CURRENCIES[0];
+        };
+
+        // Quick amount presets
+        const quickAmounts = config?.quickAmounts || [5, 10, 25, 50, 100];
+
+        const currentCurrency = getCurrentCurrency();
+        const displayAmount = currentValue?.amount || 0;
+
+        return (
+          <Field
+            label={label}
+            required={required}
+            error={error?.message}
+            hint={config?.hint || 'Enter the cost amount and select currency'}
+            blockType="cost"
+            id={`cost-${fieldName}`}
+          >
+            <div className="space-y-4">
+              {/* Amount and currency input */}
+              <div className="flex items-center gap-2">
+                {/* Currency selector */}
+                <Select 
             value={currentValue?.currency || 'USD'} 
             onValueChange={handleCurrencyChange}
           >
@@ -401,8 +417,11 @@ const CostBlock: React.FC<CostBlockProps> = ({
             )}
           </div>
         )}
-      </div>
-    </Field>
+          </div>
+          </Field>
+        );
+      }}
+    />
   );
 };
 

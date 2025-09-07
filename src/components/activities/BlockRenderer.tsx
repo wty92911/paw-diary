@@ -20,15 +20,15 @@ const NotesBlock = React.lazy(() => import('./blocks/NotesBlock'));
 const MeasurementBlock = React.lazy(() => import('./blocks/MeasurementBlock'));
 const SubcategoryBlock = React.lazy(() => import('./blocks/SubcategoryBlock'));
 
-// TODO: Implement these block components
-// const RatingBlock = React.lazy(() => import('./blocks/RatingBlock'));
-// const PortionBlock = React.lazy(() => import('./blocks/PortionBlock'));
-// const TimerBlock = React.lazy(() => import('./blocks/TimerBlock'));
+// Implemented block components
+const RatingBlock = React.lazy(() => import('./blocks/RatingBlock'));
+const PortionBlock = React.lazy(() => import('./blocks/PortionBlock'));
+const TimerBlock = React.lazy(() => import('./blocks/TimerBlock'));
 // const LocationBlock = React.lazy(() => import('./blocks/LocationBlock'));
 // const WeatherBlock = React.lazy(() => import('./blocks/WeatherBlock'));
 // const ChecklistBlock = React.lazy(() => import('./blocks/ChecklistBlock'));
-// const AttachmentBlock = React.lazy(() => import('./blocks/AttachmentBlock'));
-// const CostBlock = React.lazy(() => import('./blocks/CostBlock'));
+const AttachmentBlock = React.lazy(() => import('./blocks/AttachmentBlock'));
+const CostBlock = React.lazy(() => import('./blocks/CostBlock'));
 // const ReminderBlock = React.lazy(() => import('./blocks/ReminderBlock'));
 // const PeopleBlock = React.lazy(() => import('./blocks/PeopleBlock'));
 // const RecurrenceBlock = React.lazy(() => import('./blocks/RecurrenceBlock'));
@@ -40,15 +40,15 @@ const BLOCK_COMPONENT_REGISTRY: Partial<Record<ActivityBlockType, React.LazyExot
   'notes': NotesBlock,
   'measurement': MeasurementBlock,
   'subcategory': SubcategoryBlock,
-  // TODO: Add other block components as they are implemented
-  // 'rating': RatingBlock,
-  // 'portion': PortionBlock,
-  // 'timer': TimerBlock,
+  'rating': RatingBlock,
+  'portion': PortionBlock,
+  'timer': TimerBlock,
+  // 暂时注释掉未修复的组件，将逐个修复后再添加回来
   // 'location': LocationBlock,
   // 'weather': WeatherBlock,
   // 'checklist': ChecklistBlock,
-  // 'attachment': AttachmentBlock,
-  // 'cost': CostBlock,
+  'attachment': AttachmentBlock,
+  'cost': CostBlock,
   // 'reminder': ReminderBlock,
   // 'people': PeopleBlock,
   // 'recurrence': RecurrenceBlock,

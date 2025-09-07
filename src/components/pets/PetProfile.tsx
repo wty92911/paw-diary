@@ -1,8 +1,14 @@
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { invoke } from '@tauri-apps/api/core';
 import { Pet } from '../../lib/types';
+import { Activity } from '../../hooks/useActivities';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { PetProfilePhoto } from './PetProfilePhoto';
 import { cn, calculateAge } from '../../lib/utils';
+import { convertActivitiesToTimelineItems } from '../../lib/utils/activityUtils';
+import { ActivityPreviewSection } from '../activities/ActivityPreviewSection';
 import { Edit, Heart, Calendar } from 'lucide-react';
 
 interface PetProfileProps {
@@ -12,6 +18,7 @@ interface PetProfileProps {
   disableVerticalScroll?: boolean;
 }
 
+
 export function PetProfile({
   pet,
   onEdit,
@@ -19,6 +26,27 @@ export function PetProfile({
   disableVerticalScroll = false,
 }: PetProfileProps) {
   const age = calculateAge(pet.birth_date);
+
+  // Fetch recent activities for this pet
+  const {
+    data: activities = [],
+    isLoading: isActivitiesLoading,
+    error: activitiesError,
+  } = useQuery<Activity[]>({
+    queryKey: ['activities', pet.id],
+    queryFn: async () => {
+      const result = await invoke('get_activities_for_pet', { petId: pet.id });
+      return result as Activity[];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Convert activities to timeline items for display
+  const timelineItems = React.useMemo(() => {
+    if (!activities || activities.length === 0) return [];
+    return convertActivitiesToTimelineItems(activities)
+      .sort((a, b) => new Date(b.activityDate).getTime() - new Date(a.activityDate).getTime());
+  }, [activities]);
 
   return (
     <div
@@ -112,6 +140,16 @@ export function PetProfile({
             </CardContent>
           </Card>
         )}
+
+        {/* Recent Activities Preview */}
+        <ActivityPreviewSection
+          activities={timelineItems}
+          petId={pet.id}
+          isLoading={isActivitiesLoading}
+          error={activitiesError ? 'Unable to load activities. Please try again later.' : undefined}
+          maxActivities={3}
+          className=""
+        />
 
         {/* Bottom spacing for safe area */}
         <div className="h-8" />

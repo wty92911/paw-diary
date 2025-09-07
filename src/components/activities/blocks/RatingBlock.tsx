@@ -1,10 +1,9 @@
 import React from 'react';
-import { Control, FieldError } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
-import { ActivityFormData, ActivityBlockDef } from '../../../lib/types/activities';
+import { BlockProps } from '../../../lib/types/activities';
 import { Field } from './Field';
-import { useFormContext } from './FormContext';
 
 // Rating value interface
 interface RatingValue {
@@ -13,11 +12,14 @@ interface RatingValue {
   label?: string; // Optional text label for the rating
 }
 
-// Rating block specific props
-interface RatingBlockProps {
-  block: ActivityBlockDef & { type: 'rating' };
-  control?: Control<ActivityFormData>;
-  error?: FieldError;
+// Rating block configuration
+interface RatingBlockConfig {
+  scale?: number;
+  labels?: string[];
+  showEmojis?: boolean;
+  ratingType?: 'mood' | 'energy' | 'appetite' | 'behavior' | 'custom';
+  showContext?: boolean;
+  contextDescription?: string[];
 }
 
 // Predefined rating configurations for different contexts
@@ -52,75 +54,90 @@ const RATING_CONFIGS = {
 type RatingConfigType = keyof typeof RATING_CONFIGS;
 
 // RatingBlock component for 1-5 star ratings with emoji and accessibility support
-const RatingBlock: React.FC<RatingBlockProps> = ({
-  block,
-  error,
+const RatingBlock: React.FC<BlockProps<RatingBlockConfig>> = ({
+  control,
+  name,
+  label = 'Rating',
+  required = false,
+  config = {},
 }) => {
-  const { watch, setValue } = useFormContext();
-  const fieldName = `blocks.${block.id}` as const;
-  const currentValue: RatingValue | undefined = watch(fieldName);
+  const fieldName = name;
+  
+  // Extract configuration
+  const {
+    scale = 5,
+    ratingType = 'default',
+  } = config;
 
   // Get rating configuration based on block config or default
-  const configType: RatingConfigType = (block.config?.ratingType as RatingConfigType) || 'default';
+  const configType: RatingConfigType = ratingType as RatingConfigType || 'default';
   const ratingConfig = RATING_CONFIGS[configType];
 
-  // Handle rating selection
-  const handleRatingSelect = React.useCallback((rating: number) => {
-    const newValue: RatingValue = {
-      rating,
-      emoji: ratingConfig.emojis[rating - 1],
-      label: ratingConfig.labels[rating - 1],
-    };
-    setValue(fieldName, newValue);
-  }, [fieldName, setValue, ratingConfig]);
-
-  // Handle keyboard navigation
-  const handleKeyDown = React.useCallback((event: React.KeyboardEvent, rating: number) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      handleRatingSelect(rating);
-    } else if (event.key === 'ArrowLeft' && rating > 1) {
-      event.preventDefault();
-      handleRatingSelect(rating - 1);
-    } else if (event.key === 'ArrowRight' && rating < 5) {
-      event.preventDefault();
-      handleRatingSelect(rating + 1);
-    } else if (event.key >= '1' && event.key <= '5') {
-      event.preventDefault();
-      handleRatingSelect(parseInt(event.key));
-    }
-  }, [handleRatingSelect]);
-
-  // Clear rating handler
-  const handleClear = React.useCallback(() => {
-    setValue(fieldName, undefined);
-  }, [fieldName, setValue]);
-
-  // Generate accessible description
-  const getAriaLabel = (rating: number) => {
-    const label = ratingConfig.labels[rating - 1];
-    const emoji = ratingConfig.emojis[rating - 1];
-    return `Rate ${rating} out of 5 stars - ${label}. ${emoji}`;
-  };
-
   return (
-    <Field
-      label={block.label}
-      required={block.required}
-      error={error?.message}
-      hint={block.config?.hint || `Rate from 1 to 5 stars. Current: ${currentValue?.label || 'None'}`}
-      blockType="rating"
-      id={`rating-${block.id}`}
-    >
+    <Controller
+      control={control}
+      name={fieldName}
+      rules={{ required: required ? `${label} is required` : false }}
+      render={({ field, fieldState: { error } }) => {
+        const currentValue: RatingValue | undefined = field.value;
+
+        // Handle rating selection
+        const handleRatingSelect = React.useCallback((rating: number) => {
+          const newValue: RatingValue = {
+            rating,
+            emoji: ratingConfig.emojis[rating - 1],
+            label: ratingConfig.labels[rating - 1],
+          };
+          field.onChange(newValue);
+        }, [field, ratingConfig]);
+
+        // Handle keyboard navigation
+        const handleKeyDown = React.useCallback((event: React.KeyboardEvent, rating: number) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleRatingSelect(rating);
+          } else if (event.key === 'ArrowLeft' && rating > 1) {
+            event.preventDefault();
+            handleRatingSelect(rating - 1);
+          } else if (event.key === 'ArrowRight' && rating < scale) {
+            event.preventDefault();
+            handleRatingSelect(rating + 1);
+          } else if (event.key >= '1' && event.key <= scale.toString()) {
+            event.preventDefault();
+            handleRatingSelect(parseInt(event.key));
+          }
+        }, [handleRatingSelect, scale]);
+
+        // Clear rating handler
+        const handleClear = React.useCallback(() => {
+          field.onChange(undefined);
+        }, [field]);
+
+        // Generate accessible description
+        const getAriaLabel = (rating: number) => {
+          const ratingLabel = ratingConfig.labels[rating - 1];
+          const emoji = ratingConfig.emojis[rating - 1];
+          return `Rate ${rating} out of ${scale} stars - ${ratingLabel}. ${emoji}`;
+        };
+
+        return (
+          <Field
+            label={label}
+            required={required}
+            error={error?.message}
+            hint={`Rate from 1 to ${scale} stars. Current: ${currentValue?.label || 'None'}`}
+            blockType="rating"
+            id={`rating-${fieldName}`}
+          >
       <div className="space-y-4">
         {/* Rating buttons */}
         <div 
           className="flex items-center gap-1"
           role="radiogroup"
-          aria-label={`${block.label} rating`}
-          aria-describedby={`rating-${block.id}-hint`}
+          aria-label={`${label} rating`}
+          aria-describedby={`rating-${fieldName}-hint`}
         >
-          {[1, 2, 3, 4, 5].map((rating) => {
+          {Array.from({ length: scale }, (_, i) => i + 1).map((rating) => {
             const isSelected = currentValue?.rating === rating;
             const emoji = ratingConfig.emojis[rating - 1];
             // const label = ratingConfig.labels[rating - 1];
@@ -202,12 +219,12 @@ const RatingBlock: React.FC<RatingBlockProps> = ({
         </div>
 
         {/* Additional context if provided */}
-        {block.config?.showContext && currentValue && (
+        {config?.showContext && currentValue && (
           <div className="text-xs text-muted-foreground bg-muted/30 rounded-md p-2">
             <strong>{ratingConfig.labels[currentValue.rating - 1]}</strong>
-            {block.config?.contextDescription && (
+            {config?.contextDescription && (
               <div className="mt-1">
-                {block.config.contextDescription[currentValue.rating - 1]}
+                {config.contextDescription[currentValue.rating - 1]}
               </div>
             )}
           </div>
@@ -215,13 +232,16 @@ const RatingBlock: React.FC<RatingBlockProps> = ({
 
         {/* Keyboard navigation hint */}
         <div 
-          id={`rating-${block.id}-hint`} 
+          id={`rating-${fieldName}-hint`} 
           className="text-xs text-muted-foreground"
         >
           Use arrow keys, number keys (1-5), or click to rate. Press Enter or Space to select.
         </div>
-      </div>
-    </Field>
+          </div>
+        </Field>
+        );
+      }}
+    />
   );
 };
 
