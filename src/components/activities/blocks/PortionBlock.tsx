@@ -1,5 +1,6 @@
 import React from 'react';
 import { Controller } from 'react-hook-form';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '../../ui/input';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
@@ -327,85 +328,102 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
             </div>
           )}
 
-          {/* Brand selector */}
-          {showBrandSelectorState && (
-            <div className="space-y-3 p-3 border rounded-md bg-muted/30">
-              <div className="text-sm font-medium">Recent Brands</div>
-              
-              {/* Brand memory suggestions */}
-              {brandSuggestions.length > 0 && (
-                <div className="space-y-2">
-                  {brandSuggestions.slice(0, 5).map((suggestion) => (
-                    <Button
-                      key={suggestion.id}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleBrandSelect(suggestion.brand, suggestion.product || 'Generic Product')}
-                      className={`w-full justify-start text-left ${
-                        suggestion.isFrequent ? 'border-blue-300 bg-blue-50 hover:bg-blue-100' : ''
-                      } ${
-                        suggestion.isRecent ? 'border-green-300 bg-green-50 hover:bg-green-100' : ''
-                      }`}
-                      title={`Used ${suggestion.usageCount} times, last used ${suggestion.lastUsed.toLocaleDateString()}`}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-1">
-                          <div className="font-medium text-sm">{suggestion.brand}</div>
-                          {suggestion.isFrequent && <span className="text-blue-600 text-xs">★</span>}
-                          {suggestion.isRecent && <span className="text-green-600 text-xs">●</span>}
-                        </div>
-                        <div className="text-xs text-muted-foreground">{suggestion.product || 'Generic Product'}</div>
-                      </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {Math.floor((Date.now() - suggestion.lastUsed.getTime()) / (24 * 60 * 60 * 1000))}d ago
-                      </Badge>
-                    </Button>
-                  ))}
-                </div>
-              )}
+          {/* Brand selector with smooth animation */}
+          <AnimatePresence>
+            {showBrandSelectorState && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ 
+                  height: { duration: 0.3, ease: 'easeInOut' },
+                  opacity: { duration: 0.2, ease: 'easeInOut' }
+                }}
+                className="overflow-hidden"
+              >
+                <div className="space-y-3 p-3 border rounded-md bg-muted/30">
+                  <div className="text-sm font-medium">Recent Brands</div>
+                  
+                  {/* Brand memory suggestions */}
+                  {brandSuggestions.length > 0 && (
+                    <div className="space-y-2">
+                      {brandSuggestions.slice(0, 5).map((suggestion) => (
+                        <Button
+                          key={suggestion.id}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleBrandSelect(suggestion.brand, suggestion.product || 'Generic Product')}
+                          className={`w-full justify-start text-left ${
+                            suggestion.isFrequent ? 'border-blue-300 bg-blue-50 hover:bg-blue-100' : ''
+                          } ${
+                            suggestion.isRecent ? 'border-green-300 bg-green-50 hover:bg-green-100' : ''
+                          }`}
+                          title={`Used ${suggestion.usageCount} times, last used ${suggestion.lastUsed.toLocaleDateString()}`}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-1">
+                              <div className="font-medium text-sm">{suggestion.brand}</div>
+                              {suggestion.isFrequent && <span className="text-blue-600 text-xs">★</span>}
+                              {suggestion.isRecent && <span className="text-green-600 text-xs">●</span>}
+                            </div>
+                            <div className="text-xs text-muted-foreground">{suggestion.product || 'Generic Product'}</div>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {Math.floor((Date.now() - suggestion.lastUsed.getTime()) / (24 * 60 * 60 * 1000))}d ago
+                          </Badge>
+                        </Button>
+                      ))}
+                    </div>
+                  )}
 
-              {/* Custom brand input */}
-              <div className="space-y-2 border-t pt-2">
-                <div className="text-sm font-medium">Add New Brand</div>
-                <div className="space-y-2">
-                  <Input
-                    type="text"
-                    placeholder="Brand name (e.g., Hill's Science Diet)"
-                    value={customBrand}
-                    onChange={(e) => setCustomBrand(e.target.value)}
-                    className="text-sm"
-                  />
-                  <Input
-                    type="text"
-                    placeholder="Product name (optional)"
-                    value={customProduct}
-                    onChange={(e) => setCustomProduct(e.target.value)}
-                    className="text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={handleCustomBrandSubmit}
-                      disabled={!customBrand.trim()}
-                      className="flex-1"
-                    >
-                      Add Brand
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowBrandSelectorState(false)}
-                    >
-                      Cancel
-                    </Button>
+                  {/* Custom brand input */}
+                  <div className="space-y-2 border-t pt-2">
+                    <div className="text-sm font-medium">Add New Brand</div>
+                    <div className="space-y-2">
+                      <Input
+                        type="text"
+                        placeholder="Brand name (e.g., Hill's Science Diet)"
+                        value={customBrand}
+                        onChange={(e) => setCustomBrand(e.target.value)}
+                        className="text-sm"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Product name (optional)"
+                        value={customProduct}
+                        onChange={(e) => setCustomProduct(e.target.value)}
+                        className="text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleCustomBrandSubmit}
+                          disabled={!customBrand.trim()}
+                          className="flex-1"
+                        >
+                          Add Brand
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowBrandSelectorState(false);
+                            setCustomBrand('');
+                            setCustomProduct('');
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Quick preset amounts if configured */}
