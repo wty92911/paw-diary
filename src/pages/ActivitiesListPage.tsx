@@ -1,10 +1,8 @@
 import { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Plus, AlertCircle } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/core';
-import { Pet } from '../lib/types';
 import { useActivitiesList } from '../hooks/useActivitiesList';
+import { usePets } from '../hooks/usePets';
 {
   /* ActivityTimelineItem import removed - not used in this file */
 }
@@ -52,19 +50,11 @@ export function ActivitiesListPage() {
     numericPetId = 0; // Fallback value for TypeScript
   }
 
-  // Fetch pet data (always call this hook)
-  const {
-    data: pet,
-    isLoading: isPetLoading,
-    error: petError,
-  } = useQuery<Pet>({
-    queryKey: ['pet', numericPetId],
-    queryFn: async () => {
-      const result = await invoke('get_pet', { petId: numericPetId });
-      return result as Pet;
-    },
-    enabled: !validationError, // Only fetch if validation passed
-  });
+  // Fetch pets data using hook
+  const { pets, isLoading: isPetLoading, error: petError } = usePets();
+
+  // Find the specific pet from the list
+  const pet = pets.find(p => p.id === numericPetId) || null;
 
   // Use activities list hook for better functionality
   const {
@@ -123,11 +113,11 @@ export function ActivitiesListPage() {
 
   // Error states
   if (petError) {
-    return <PetNotFoundError petId={numericPetId} />;
+    return <PetNotFoundError petId={numericPetId} error={petError} />;
   }
 
   if (!pet) {
-    return <PetNotFoundError petId={numericPetId} />;
+    return <PetNotFoundError petId={numericPetId} error="Pet not found" />;
   }
 
   // Event handlers
@@ -359,7 +349,7 @@ function InvalidPetIdError({ message }: { message: string }) {
 /**
  * Error component for pet not found
  */
-function PetNotFoundError({ petId }: { petId: number }) {
+function PetNotFoundError({ error }: { petId?: number; error: any }) {
   const navigate = useNavigate();
 
   return (
@@ -368,10 +358,7 @@ function PetNotFoundError({ petId }: { petId: number }) {
         <CardContent className="text-center py-8">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Pet Not Found</h2>
-          <p className="text-gray-600 mb-6">
-            The pet with ID {petId} could not be found. It may have been deleted or the ID is
-            incorrect.
-          </p>
+          <p className="text-gray-600 mb-6">{error}</p>
           <div className="space-x-3">
             <Button onClick={() => navigate('/')} variant="outline">
               Return Home

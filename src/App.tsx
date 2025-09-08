@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { Loader2 } from 'lucide-react';
 import { useAppState } from './hooks/useAppState';
 import { cleanupOldActivityDrafts } from './hooks/useActivityDraftSimple';
+import { ToastProvider } from './components/ui/toast';
 import { HomePage, AddPetPage, PetProfilePage, EditPetPage, ActivitiesListPage, ActivityEditorPage } from './pages';
 import './App.css';
 
@@ -105,29 +106,31 @@ function App() {
 
   // Main router-based application
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Home route - pet selection page */}
-        <Route path="/" element={<HomePage />} />
-        
-        {/* Add pet route - pet creation page */}
-        <Route path="/pets/new" element={<AddPetPage />} />
-        
-        {/* Pet profile route - pet details with activities */}
-        <Route path="/pets/:petId" element={<PetProfilePage />} />
-        
-        {/* Edit pet route - edit pet information */}
-        <Route path="/pets/:petId/edit" element={<EditPetPage />} />
-        
-        {/* Pet activity routes - dedicated activity pages */}
-        <Route path="/pets/:petId/activities" element={<ActivitiesListPage />} />
-        <Route path="/pets/:petId/activities/new" element={<ActivityEditorPage />} />
-        <Route path="/pets/:petId/activities/:activityId/edit" element={<ActivityEditorPage />} />
-        
-        {/* Fallback route - redirect unknown paths to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Home route - pet selection page */}
+          <Route path="/" element={<HomePage />} />
+          
+          {/* Add pet route - pet creation page */}
+          <Route path="/pets/new" element={<AddPetPage />} />
+          
+          {/* Pet profile route - pet details with activities */}
+          <Route path="/pets/:petId" element={<PetProfilePage />} />
+          
+          {/* Edit pet route - edit pet information */}
+          <Route path="/pets/:petId/edit" element={<EditPetPage />} />
+          
+          {/* Pet activity routes - dedicated activity pages */}
+          <Route path="/pets/:petId/activities" element={<ActivitiesListPage />} />
+          <Route path="/pets/:petId/activities/new" element={<ActivityEditorPage />} />
+          <Route path="/pets/:petId/activities/:activityId/edit" element={<ActivityEditorPage />} />
+          
+          {/* Fallback route - redirect unknown paths to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 

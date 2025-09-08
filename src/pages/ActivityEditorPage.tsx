@@ -1,9 +1,7 @@
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { invoke } from '@tauri-apps/api/core';
 import { AlertCircle } from 'lucide-react';
-import { Pet } from '../lib/types';
 import { useActivity, useCreateActivity, useUpdateActivity } from '../hooks/useActivities';
+import { usePets } from '../hooks/usePets';
 import { ActivityFormData, ActivityMode } from '../lib/types/activities';
 import { RouteValidator, RouteBuilder, BreadcrumbBuilder } from '../lib/types/routing';
 import { PetContextHeader, PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
@@ -12,11 +10,9 @@ import {
   DraftProvider,
   DraftOverview,
   useDraftRecovery,
-  useAutoSaveDraft,
 } from '../components/activities/DraftManager';
-import { PageTitleDraftIndicator, AutoSaveStatus } from '../components/activities/DraftIndicator';
-import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { Card, CardContent } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
 
 /**
@@ -96,21 +92,14 @@ function ActivityEditorPageContent({
   // Draft recovery hook
   const { RecoveryDialog } = useDraftRecovery();
 
-  // Auto-save draft hook
-  const { lastSaved, isSaving, isDirty } = useAutoSaveDraft(numericPetId);
+  // Auto-save functionality is handled by ActivityEditorCore
 
   // Fetch pet data
-  const {
-    data: pet,
-    isLoading: isPetLoading,
-    error: petError,
-  } = useQuery<Pet>({
-    queryKey: ['pet', numericPetId],
-    queryFn: async () => {
-      const result = await invoke('get_pet', { petId: numericPetId });
-      return result as Pet;
-    },
-  });
+  // Fetch pets data using hook
+  const { pets, isLoading: isPetLoading, error: petError } = usePets();
+
+  // Find the specific pet from the list
+  const pet = pets.find(p => p.id === numericPetId) || null;
 
   // Fetch activity data if editing using hook
   const {
@@ -233,7 +222,7 @@ function ActivityEditorPageContent({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
-      {/* Pet Context Header */}
+      {/* Simplified Pet Context Header - only back navigation */}
       <PetContextHeader
         pet={pet}
         showBackButton={true}
@@ -241,69 +230,37 @@ function ActivityEditorPageContent({
         backAction={handleCancel}
       />
 
-      {/* Page Title with Draft Indicator */}
-      <div className="max-w-4xl mx-auto px-4 pt-2">
-        <div className="flex items-center gap-2 mb-4">
-          <h1 className="text-xl font-semibold text-gray-800">
-            {isEditMode ? activity?.title || 'Edit Activity' : 'New Activity'}
-          </h1>
-          <PageTitleDraftIndicator
-            hasDraft={isDirty || isSaving}
-            isDirty={isDirty}
-            isAutoSaving={isSaving}
-            lastSaved={lastSaved || undefined}
-          />
-        </div>
-      </div>
-
-      {/* Draft Overview - Shows if there are any drafts */}
-      <div className="max-w-4xl mx-auto px-4 pt-6">
-        <DraftOverview petId={numericPetId} className="mb-4" />
-      </div>
-
-      {/* Full-screen Activity Editor */}
-      <main className="max-w-4xl mx-auto px-4 pb-6">
-        {/* Activity Editor Error State */}
-        {isEditMode && activityError && (
-          <Alert className="mb-6 border-red-200 bg-red-50">
+      {/* Activity Editor Error State */}
+      {isEditMode && activityError && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <Alert className="mb-4 border-red-200 bg-red-50">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               Failed to load activity. Please refresh the page or try again later.
             </AlertDescription>
           </Alert>
-        )}
+        </div>
+      )}
 
-        {/* Full-screen Activity Editor using ActivityEditorCore */}
-        <Card className="shadow-lg border-orange-200">
-          <CardContent className="p-6">
-            {/* Auto-save Status Bar */}
-            <div className="flex justify-between items-center mb-4 pb-3 border-b border-orange-100">
-              <h2 className="text-lg font-semibold text-gray-800">
-                {isEditMode ? 'Edit Activity' : 'Create Activity'}
-              </h2>
-              <AutoSaveStatus
-                isEnabled={true}
-                lastSaved={lastSaved || undefined}
-                isSaving={isSaving}
-                hasError={false}
-                className="text-sm"
-              />
-            </div>
+      {/* Draft Overview - Shows if there are any drafts */}
+      <div className="max-w-4xl mx-auto px-4 pt-2">
+        <DraftOverview petId={numericPetId} className="mb-2" />
+      </div>
 
-            <ActivityEditorCore
-              mode={mode}
-              templateId={templateId}
-              activityId={numericActivityId}
-              petId={numericPetId}
-              onSave={handleSave}
-              onCancel={handleCancel}
-              onNavigationAttempt={handleNavigationAttempt}
-              initialData={initialData}
-              showHeader={false} // We have our own header now
-              className=""
-            />
-          </CardContent>
-        </Card>
+      {/* Direct Activity Editor - No wrapper cards */}
+      <main className="max-w-4xl mx-auto px-4 pb-6">
+        <ActivityEditorCore
+          mode={mode}
+          templateId={templateId}
+          activityId={numericActivityId}
+          petId={numericPetId}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          onNavigationAttempt={handleNavigationAttempt}
+          initialData={initialData}
+          showHeader={true} // Let ActivityEditorCore show its own header
+          className=""
+        />
       </main>
 
       {/* Draft Recovery Dialog */}

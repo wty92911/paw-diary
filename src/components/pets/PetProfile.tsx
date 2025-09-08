@@ -1,8 +1,6 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { invoke } from '@tauri-apps/api/core';
 import { Pet } from '../../lib/types';
-import { Activity } from '../../hooks/useActivities';
+import { useActivitiesList } from '../../hooks/useActivitiesList';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { PetProfilePhoto } from './PetProfilePhoto';
@@ -27,19 +25,14 @@ export function PetProfile({
 }: PetProfileProps) {
   const age = calculateAge(pet.birth_date);
 
-  // Fetch recent activities for this pet
+  // Fetch recent activities for this pet using hook
   const {
-    data: activities = [],
+    activities = [],
     isLoading: isActivitiesLoading,
-    error: activitiesError,
-  } = useQuery<Activity[]>({
-    queryKey: ['activities', pet.id],
-    queryFn: async () => {
-      const result = await invoke('get_activities_for_pet', { petId: pet.id });
-      return result as Activity[];
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+    error: activitiesErrorMessage,
+  } = useActivitiesList(pet.id);
+  
+  const activitiesError = activitiesErrorMessage ? new Error(activitiesErrorMessage) : null;
 
   // Convert activities to timeline items for display
   const timelineItems = React.useMemo(() => {

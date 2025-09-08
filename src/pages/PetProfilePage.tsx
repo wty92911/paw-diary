@@ -1,24 +1,13 @@
 import { useNavigate } from 'react-router-dom';
-import {
-  Heart,
-  Loader2,
-  AlertTriangle,
-  ArrowLeft,
-  Plus,
-  Calendar,
-  Edit,
-  Activity,
-} from 'lucide-react';
+import { Heart, Loader2, AlertTriangle, ArrowLeft, Activity, Plus } from 'lucide-react';
 import { usePets } from '../hooks/usePets';
 import { useRouterNavigation } from '../hooks/usePetProfileNavigation';
-import { PetProfilePhoto } from '../components/pets/PetProfilePhoto';
-import ActivityTimeline from '../components/activities/ActivityTimeline';
-import QuickLogSheet from '../components/activities/QuickLogSheet';
-import { calculateAge } from '../lib/utils';
+import { useActivitiesList } from '../hooks/useActivitiesList';
+import { PetProfileHeader } from '../components/pets/PetProfileHeader';
+import { ActivityPreviewSection } from '../components/activities/ActivityPreviewSection';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { useState } from 'react';
+import { convertActivitiesToTimelineItems } from '../lib/utils/activityUtils';
 
 /**
  * PetProfilePage - Comprehensive pet profile
@@ -32,13 +21,19 @@ export function PetProfilePage() {
   const { getCurrentPetIdFromUrl, navigateToHome, navigateToAddPet } = useRouterNavigation();
   const { pets, isLoading: petsLoading, error: petsError, refetch: refetchPets } = usePets();
   const navigate = useNavigate();
-  const [showQuickLog, setShowQuickLog] = useState(false);
 
   // Get pet ID from URL
   const petId = getCurrentPetIdFromUrl();
 
   // Find the current pet
   const currentPet = petId ? pets.find(p => p.id === petId) : null;
+
+  // Get activities for preview
+  const {
+    activities = [],
+    isLoading: isActivitiesLoading,
+    error: activitiesErrorMessage,
+  } = useActivitiesList(petId || 0);
 
   // Loading state while pets are loading or pet not found yet
   if (petsLoading && pets.length === 0) {
@@ -136,167 +131,44 @@ export function PetProfilePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Pet Profile Section */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
+            <PetProfileHeader
+              pet={currentPet}
+              onEdit={() => navigate(`/pets/${currentPet.id}/edit`)}
+              size="full"
+              className="shadow-lg"
+            />
+
+            {/* Activities Navigation */}
             <Card className="bg-white shadow-lg">
-              <CardContent className="p-6">
-                {/* Pet Photo and Name */}
-                <div className="text-center mb-6">
-                  <PetProfilePhoto pet={currentPet} size="large" className="mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-orange-900 mb-2">{currentPet.name}</h2>
-                  <div className="flex items-center justify-center gap-2 text-orange-700 mb-2">
-                    <Heart className="w-4 h-4 fill-current" />
-                    <span className="capitalize font-medium">
-                      {currentPet.species.toLowerCase()}
-                    </span>
-                  </div>
-                  <p className="text-lg text-orange-600">{calculateAge(currentPet.birth_date)}</p>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 justify-center mt-4">
-                    <Button
-                      onClick={() => setShowQuickLog(true)}
-                      className="bg-orange-500 hover:bg-orange-600 text-white"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Log Activity
-                    </Button>
-                    <Button
-                      onClick={() => navigate(`/pets/${currentPet.id}/edit`)}
-                      variant="outline"
-                      className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit Profile
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Pet Details */}
-                <div className="space-y-4">
-                  {currentPet.breed && (
-                    <div className="flex items-center justify-between py-2 border-b border-orange-100">
-                      <span className="text-sm font-medium text-orange-700">Breed</span>
-                      <span className="text-sm text-orange-900">{currentPet.breed}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between py-2 border-b border-orange-100">
-                    <span className="text-sm font-medium text-orange-700">Gender</span>
-                    <span className="text-sm text-orange-900 capitalize">
-                      {currentPet.gender.toLowerCase()}
-                    </span>
-                  </div>
-
-                  {currentPet.color && (
-                    <div className="flex items-center justify-between py-2 border-b border-orange-100">
-                      <span className="text-sm font-medium text-orange-700">Color</span>
-                      <span className="text-sm text-orange-900">{currentPet.color}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between py-2 border-b border-orange-100">
-                    <span className="text-sm font-medium text-orange-700 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Born
-                    </span>
-                    <span className="text-sm text-orange-900">
-                      {new Date(currentPet.birth_date).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  {currentPet.weight_kg && (
-                    <div className="flex items-center justify-between py-2 border-b border-orange-100">
-                      <span className="text-sm font-medium text-orange-700">Weight</span>
-                      <span className="text-sm text-orange-900">{currentPet.weight_kg} kg</span>
-                    </div>
-                  )}
-
-                  {/* Notes */}
-                  {currentPet.notes && (
-                    <div className="mt-4 p-4 bg-orange-50 rounded-lg">
-                      <h3 className="text-sm font-semibold text-orange-900 mb-2">Notes</h3>
-                      <p className="text-sm text-orange-800 whitespace-pre-wrap">
-                        {currentPet.notes}
-                      </p>
-                    </div>
-                  )}
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <Button
+                    onClick={() => navigate(`/pets/${currentPet.id}/activities`)}
+                    variant="outline"
+                    className="w-full border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+                  >
+                    <Activity className="w-4 h-4 mr-2" />
+                    View All Activities
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Activities Section */}
+          {/* Recent Activities Preview */}
           <div className="lg:col-span-2">
-            <Card className="bg-white shadow-lg h-full">
-              <CardContent className="p-0 h-full">
-                <Tabs defaultValue="timeline" className="h-full flex flex-col">
-                  <div className="px-6 pt-6 pb-0">
-                    <TabsList className="grid grid-cols-3 w-full">
-                      <TabsTrigger value="timeline" className="flex items-center gap-2">
-                        <Activity className="w-4 h-4" />
-                        Timeline
-                      </TabsTrigger>
-                      <TabsTrigger value="stats" className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        Statistics
-                      </TabsTrigger>
-                      <TabsTrigger value="health" className="flex items-center gap-2">
-                        <Heart className="w-4 h-4" />
-                        Health
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
-
-                  <TabsContent value="timeline" className="flex-1 px-6 pb-6 mt-4">
-                    <div className="h-full">
-                      <ActivityTimeline
-                        activities={[]} // TODO: Implement activities loading
-                        petId={currentPet.id}
-                        className="h-full"
-                      />
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="stats" className="flex-1 px-6 pb-6 mt-4">
-                    <div className="flex items-center justify-center h-64 text-gray-500">
-                      <div className="text-center">
-                        <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                        <p className="text-lg font-medium">Statistics Coming Soon</p>
-                        <p className="text-sm">Growth charts, health trends, and insights</p>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="health" className="flex-1 px-6 pb-6 mt-4">
-                    <div className="flex items-center justify-center h-64 text-gray-500">
-                      <div className="text-center">
-                        <Heart className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                        <p className="text-lg font-medium">Health Dashboard Coming Soon</p>
-                        <p className="text-sm">
-                          Vaccination schedules, medical records, and reminders
-                        </p>
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+            <ActivityPreviewSection
+              activities={convertActivitiesToTimelineItems(activities.slice(0, 3))}
+              petId={currentPet.id}
+              isLoading={isActivitiesLoading}
+              error={activitiesErrorMessage || undefined}
+              maxActivities={3}
+              className="shadow-lg"
+              emptyStateMessage={`Start tracking ${currentPet.name}'s activities`}
+            />
           </div>
         </div>
-
-        {/* Quick Log Sheet */}
-        {showQuickLog && (
-          <QuickLogSheet
-            isOpen={showQuickLog}
-            petId={currentPet.id}
-            onClose={() => setShowQuickLog(false)}
-            onSave={async activity => {
-              // TODO: Implement activity saving
-              console.log('Saving activity:', activity);
-              setShowQuickLog(false);
-            }}
-          />
-        )}
       </main>
     </div>
   );

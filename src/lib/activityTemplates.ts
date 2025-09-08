@@ -42,8 +42,8 @@ export class ActivityTemplateRegistry implements TemplateRegistry {
   templates: ActivityTemplate[] = ACTIVITY_TEMPLATES;
   categories: ActivityCategory[] = Object.values(ActivityCategory);
 
-  getTemplate(id: string): ActivityTemplate | undefined {
-    return this.templates.find(template => template.id === id);
+  getTemplate(id: string): ActivityTemplate {
+    return this.templates.find(template => template.id === id) as ActivityTemplate;
   }
 
   getTemplatesByCategory(category: ActivityCategory): ActivityTemplate[] {

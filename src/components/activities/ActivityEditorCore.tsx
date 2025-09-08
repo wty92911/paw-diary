@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useActivityDraftSimple } from '../../hooks/useActivityDraftSimple';
@@ -7,6 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { LoadingSpinner } from '../ui/loading-spinner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../ui/dialog';
+import { ChevronDown, Activity } from 'lucide-react';
 import { 
   ActivityEditorProps, 
   ActivityFormData, 
@@ -52,12 +60,13 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
   className,
 }) => {
   // State management
-  const [selectedTemplate, setSelectedTemplate] = React.useState<ActivityTemplate | undefined>(
-    templateId ? templateRegistry.getTemplate(templateId) : undefined
+  const [selectedTemplate, setSelectedTemplate] = React.useState<ActivityTemplate>(
+    templateRegistry.getTemplate(templateId as string)
   );
   const [currentMode, setCurrentMode] = React.useState<ActivityMode>(mode);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
 
   // Draft management
   const draft = useActivityDraftSimple({
@@ -153,11 +162,12 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
 
   // Handle template selection
   const handleTemplateSelect = (template: ActivityTemplate | null) => {
-    setSelectedTemplate(template || undefined);
+    setSelectedTemplate(template as ActivityTemplate);
     if (template) {
       setValue('templateId', template.id);
       setValue('category', template.category);
       setValue('subcategory', template.subcategory);
+      setIsTemplateDialogOpen(false); // Close dialog after selection
     }
   };
 
@@ -166,25 +176,78 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
     setCurrentMode(newMode);
   };
 
-  // Render template picker for new activities
-  const renderTemplatePicker = () => {
+  // Render template picker trigger for new activities
+  const renderTemplatePickerTrigger = () => {
     if (activityId) return null; // Don't show for editing existing activities
 
+    if (!selectedTemplate) {
+      // Show prominent selection prompt when no template is selected
+      return (
+        <div className="mb-6 text-center py-8">
+          <Activity className="w-12 h-12 mx-auto text-orange-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-800 mb-2">Choose Activity Type</h3>
+          <p className="text-sm text-gray-600 mb-6">Select what type of activity you want to record</p>
+          
+          <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-orange-600 hover:bg-orange-700">
+                <Activity className="w-4 h-4 mr-2" />
+                Select Activity Type
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Select Activity Type</DialogTitle>
+              </DialogHeader>
+              <div className="mt-4">
+                <TemplatePicker
+                  selectedTemplateId={selectedTemplate ? (selectedTemplate as ActivityTemplate).id : undefined}
+                  onTemplateSelect={handleTemplateSelect}
+                  petId={petId}
+                  syncWithUrl={false}
+                  compact={false}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      );
+    }
+
+    // Show compact template info with change option when template is selected
     return (
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Select Activity Type</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TemplatePicker
-            selectedTemplateId={selectedTemplate?.id}
-            onTemplateSelect={handleTemplateSelect}
-            petId={petId}
-            syncWithUrl={false} // We handle URL sync in the page component
-            compact={false}
-          />
-        </CardContent>
-      </Card>
+      <div className="mb-4 flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
+        <div className="flex items-center gap-3">
+          <span className="text-xl">{selectedTemplate.icon}</span>
+          <div>
+            <h4 className="font-medium text-orange-900">{selectedTemplate.label}</h4>
+            <p className="text-sm text-orange-700">{selectedTemplate.category}</p>
+          </div>
+        </div>
+        
+        <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="border-orange-300 text-orange-700 hover:bg-orange-100">
+              Change Type
+              <ChevronDown className="w-4 h-4 ml-1" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Select Activity Type</DialogTitle>
+            </DialogHeader>
+            <div className="mt-4">
+              <TemplatePicker
+                selectedTemplateId={selectedTemplate ? (selectedTemplate as ActivityTemplate).id : undefined}
+                onTemplateSelect={handleTemplateSelect}
+                petId={petId}
+                syncWithUrl={false}
+                compact={false}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     );
   };
 
@@ -344,8 +407,8 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
       >
         <div className={className}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Template Picker for new activities */}
-            {renderTemplatePicker()}
+            {/* Template Picker Trigger for new activities */}
+            {renderTemplatePickerTrigger()}
             
             {renderModeInterface()}
             
