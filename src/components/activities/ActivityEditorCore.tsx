@@ -351,9 +351,10 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
             {renderDraftStatus()}
 
             {/* Action buttons */}
-            <div className="flex justify-between items-center pt-6 border-t border-gray-200">
-              <div className="flex items-center gap-2">
-                {currentMode !== 'quick' && (
+            <div className="relative pt-6 border-t border-gray-200">
+              {/* Left side - Quick Mode button (absolute positioning) */}
+              {currentMode !== 'quick' && (
+                <div className="absolute left-0 top-6">
                   <Button
                     type="button"
                     variant="ghost"
@@ -362,9 +363,10 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
                   >
                     Quick Mode
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
 
+              {/* Center - Save button */}
               <div className="flex justify-center">
                 <Button 
                   type="submit" 

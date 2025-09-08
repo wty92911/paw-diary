@@ -11,7 +11,6 @@ import {
 import { Button } from '../../ui/button';
 import { Card } from '../../ui/card';
 import { Badge } from '../../ui/badge';
-import { Field } from './Field';
 import { BlockProps, MeasurementConfig, MeasurementData } from '../../../lib/types/activities';
 import { measurementBlockSchema } from '../../../lib/validation/activityBlocks';
 
@@ -225,12 +224,14 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
         };
 
         return (
-          <Field
-            label={label}
-            required={required}
-            error={fieldState.error?.message}
-            blockType="measurement"
-          >
+          <div className="space-y-2">
+            {/* Error message */}
+            {fieldState.error && (
+              <p className="text-sm text-destructive" role="alert">
+                {fieldState.error.message}
+              </p>
+            )}
+            
             <div className="space-y-3">
               {/* Measurement Type Selector */}
               {showTypeSelector && (
@@ -263,6 +264,7 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
                     min={min}
                     max={max}
                     step={precision === 0 ? 1 : 1 / Math.pow(10, precision)}
+                    aria-invalid={fieldState.error ? 'true' : 'false'}
                   />
                 </div>
                 <div className="w-24">
@@ -364,7 +366,7 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
                 </div>
               )}
             </div>
-          </Field>
+          </div>
         );
       }}
     />

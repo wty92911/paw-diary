@@ -273,17 +273,6 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
           </Select>
         </div>
 
-        {/* Amount display with unit */}
-        <div className="text-center">
-          <div className="text-2xl font-bold text-primary">
-            {formatAmount(displayAmount)}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {currentUnit?.label && displayAmount !== 1 
-              ? currentUnit.plural 
-              : currentUnit?.label || 'Units'}
-          </div>
-        </div>
 
         {/* Brand/Product section */}
         <div className="space-y-3 border-t pt-3 relative">
