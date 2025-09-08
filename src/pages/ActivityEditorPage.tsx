@@ -187,19 +187,6 @@ function ActivityEditorPageContent({
     navigate(RouteBuilder.activitiesList(numericPetId));
   };
 
-  const handleNavigationAttempt = (hasUnsavedChanges: boolean) => {
-    if (hasUnsavedChanges) {
-      const confirmed = window.confirm(
-        'You have unsaved changes. Are you sure you want to leave without saving?',
-      );
-      if (confirmed) {
-        navigate(RouteBuilder.activitiesList(numericPetId));
-      }
-    } else {
-      navigate(RouteBuilder.activitiesList(numericPetId));
-    }
-  };
-
   // Generate breadcrumbs
   const breadcrumbs = isEditMode
     ? [
@@ -255,10 +242,7 @@ function ActivityEditorPageContent({
           activityId={numericActivityId}
           petId={numericPetId}
           onSave={handleSave}
-          onCancel={handleCancel}
-          onNavigationAttempt={handleNavigationAttempt}
           initialData={initialData}
-          showHeader={true} // Let ActivityEditorCore show its own header
           className=""
         />
       </main>

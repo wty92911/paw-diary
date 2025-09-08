@@ -1,7 +1,6 @@
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Input } from '../../ui/input';
-import { Field } from './Field';
 import { useFormContext } from './FormContext';
 import { BlockProps } from '../../../lib/types/activities';
 import { titleBlockSchema } from '../../../lib/validation/activityBlocks';
@@ -56,13 +55,15 @@ const TitleBlock: React.FC<BlockProps<TitleBlockConfig>> = ({
         },
       }}
       render={({ field, fieldState }) => (
-        <Field
-          label={label}
-          required={required}
-          error={fieldState.error?.message}
-          hint={showCounter ? `${currentLength}/${maxLength} characters` : undefined}
-          blockType="title"
-        >
+        <div className="space-y-2">
+          {/* Character count hint */}
+          {showCounter && (
+            <p className="text-xs text-muted-foreground">
+              {currentLength}/{maxLength} characters
+            </p>
+          )}
+          
+          {/* Input field */}
           <div className="space-y-1">
             <Input
               {...field}
@@ -71,6 +72,7 @@ const TitleBlock: React.FC<BlockProps<TitleBlockConfig>> = ({
               maxLength={maxLength}
               autoComplete="off"
               list={autocomplete.length > 0 ? `${name}-suggestions` : undefined}
+              aria-invalid={fieldState.error ? 'true' : 'false'}
             />
 
             {/* Autocomplete suggestions */}
@@ -82,7 +84,14 @@ const TitleBlock: React.FC<BlockProps<TitleBlockConfig>> = ({
               </datalist>
             )}
           </div>
-        </Field>
+          
+          {/* Error message */}
+          {fieldState.error && (
+            <p className="text-sm text-destructive" role="alert">
+              {fieldState.error.message}
+            </p>
+          )}
+        </div>
       )}
     />
   );

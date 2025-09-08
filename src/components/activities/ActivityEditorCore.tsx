@@ -3,8 +3,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useActivityDraftSimple } from '../../hooks/useActivityDraftSimple';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
+import { Card, CardContent } from '../ui/card';
 import { Alert, AlertDescription } from '../ui/alert';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import {
@@ -26,14 +25,10 @@ import { activityFormValidationSchema } from '../../lib/validation/activityBlock
 import { templateRegistry } from '../../lib/activityTemplates';
 import { MultiBlockRenderer } from './BlockRenderer';
 import { FormProvider as ActivityFormProvider } from './blocks/FormContext';
-import { EditorModeSwitch } from './EditorModeSwitch';
 import { TemplatePicker } from './TemplatePicker';
 
 // Enhanced props for page context
 export interface ActivityEditorCoreProps extends Omit<ActivityEditorProps, 'onCancel'> {
-  onCancel: () => void;
-  onNavigationAttempt?: (hasUnsavedChanges: boolean) => void;
-  showHeader?: boolean;
   className?: string;
 }
 
@@ -53,10 +48,7 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
   activityId,
   petId,
   onSave,
-  onCancel,
-  onNavigationAttempt,
   initialData,
-  showHeader = true,
   className,
 }) => {
   // State management
@@ -65,7 +57,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
   );
   const [currentMode, setCurrentMode] = React.useState<ActivityMode>(mode);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
 
   // Draft management
@@ -100,10 +91,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
   const { control, handleSubmit, formState, watch, setValue, getValues, trigger } = form;
   const { errors, isDirty, isValid } = formState;
 
-  // Track unsaved changes
-  React.useEffect(() => {
-    setHasUnsavedChanges(isDirty);
-  }, [isDirty]);
 
   // Watch for template changes
   const watchedTemplateId = watch('templateId');
@@ -126,7 +113,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
     setIsSubmitting(true);
     try {
       await onSave(data);
-      setHasUnsavedChanges(false); // Clear unsaved changes on successful save
       draft.clearDraft(); // Clear draft after successful save
     } catch (error) {
       console.error('Failed to save activity:', error);
@@ -136,14 +122,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
     }
   }, [onSave, draft]);
 
-  // Enhanced cancel handler with unsaved changes confirmation
-  const handleCancel = React.useCallback(() => {
-    if (hasUnsavedChanges && onNavigationAttempt) {
-      onNavigationAttempt(true);
-    } else {
-      onCancel();
-    }
-  }, [hasUnsavedChanges, onCancel, onNavigationAttempt]);
 
   // Auto-save draft every 3 seconds when dirty and valid
   React.useEffect(() => {
@@ -154,11 +132,10 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
     }, 3000); // 3 seconds as per requirements
 
     return () => clearTimeout(timeoutId);
-  }, [isDirty, isValid, draft, getValues, watch()]);
+  }, [isDirty, isValid, draft, getValues]);
 
   // Mode switching handlers
   const switchToGuided = () => setCurrentMode('guided');
-  const switchToAdvanced = () => setCurrentMode('advanced');
 
   // Handle template selection
   const handleTemplateSelect = (template: ActivityTemplate | null) => {
@@ -171,10 +148,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
     }
   };
 
-  // Handle mode changes from the EditorModeSwitch
-  const handleModeChange = (newMode: ActivityMode) => {
-    setCurrentMode(newMode);
-  };
 
   // Render template picker trigger for new activities
   const renderTemplatePickerTrigger = () => {
@@ -290,47 +263,7 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
 
     return (
       <div className="space-y-6">
-        {/* Editor Mode Switch */}
-        <EditorModeSwitch
-          currentMode={currentMode}
-          onModeChange={handleModeChange}
-          syncWithUrl={false} // Page component handles URL sync
-          className="mb-4"
-        />
 
-        {/* Template info header - only show if showHeader is true */}
-        {showHeader && (
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{selectedTemplate.icon}</span>
-                  <div>
-                    <CardTitle className="text-lg">{selectedTemplate.label}</CardTitle>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline" className="text-xs">
-                        {selectedTemplate.category}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {currentMode}
-                      </Badge>
-                      {hasUnsavedChanges && (
-                        <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
-                          Modified
-                        </Badge>
-                      )}
-                      {draft.hasDraft && (
-                        <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
-                          Draft
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-        )}
 
         {/* Dynamic blocks based on template and mode */}
         <MultiBlockRenderer
@@ -352,9 +285,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
                 <div className="flex gap-2 justify-center">
                   <Button variant="outline" size="sm" onClick={switchToGuided}>
                     Show All Fields
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={switchToAdvanced}>
-                    Full Editor
                   </Button>
                 </div>
               </div>
@@ -429,19 +359,11 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
                 )}
               </div>
 
-              <div className="flex gap-3">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
+              <div className="flex justify-center">
                 <Button 
                   type="submit" 
                   disabled={!isValid || isSubmitting}
-                  className="min-w-20 bg-orange-600 hover:bg-orange-700"
+                  className="w-48 bg-orange-600 hover:bg-orange-700"
                 >
                   {isSubmitting ? (
                     <LoadingSpinner className="w-4 h-4" />
