@@ -155,6 +155,12 @@ export function TemplatePicker({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
+              autoFocus={false}
+              tabIndex={-1}
+              onFocus={(e) => {
+                // Re-enable tabIndex when user manually focuses
+                e.target.tabIndex = 0;
+              }}
             />
           </div>
         </div>

@@ -168,7 +168,10 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
                 Select Activity Type
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogContent 
+              className="max-w-4xl max-h-[80vh] overflow-y-auto"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
               <DialogHeader>
                 <DialogTitle>Select Activity Type</DialogTitle>
               </DialogHeader>
@@ -205,7 +208,10 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
               <ChevronDown className="w-4 h-4 ml-1" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent 
+            className="max-w-4xl max-h-[80vh] overflow-y-auto"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
             <DialogHeader>
               <DialogTitle>Select Activity Type</DialogTitle>
             </DialogHeader>

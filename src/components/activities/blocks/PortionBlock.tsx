@@ -328,20 +328,23 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
             </div>
           )}
 
-          {/* Brand selector with smooth animation */}
-          <AnimatePresence>
+          {/* Brand selector with stable animation */}
+          <AnimatePresence mode="wait">
             {showBrandSelectorState && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ 
-                  height: { duration: 0.3, ease: 'easeInOut' },
-                  opacity: { duration: 0.2, ease: 'easeInOut' }
+                  duration: 0.15,
+                  ease: 'easeOut',
+                  layout: { duration: 0.2, ease: 'easeInOut' }
                 }}
-                className="overflow-hidden"
+                layout
+                className="will-change-auto"
+                style={{ transformOrigin: 'center top' }}
               >
-                <div className="space-y-3 p-3 border rounded-md bg-muted/30">
+                <div className="space-y-3 p-3 border rounded-md bg-muted/30 transform-gpu">
                   <div className="text-sm font-medium">Recent Brands</div>
                   
                   {/* Brand memory suggestions */}
@@ -354,7 +357,7 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
                           variant="outline"
                           size="sm"
                           onClick={() => handleBrandSelect(suggestion.brand, suggestion.product || 'Generic Product')}
-                          className={`w-full justify-start text-left ${
+                          className={`w-full justify-start text-left transition-all duration-100 ${
                             suggestion.isFrequent ? 'border-blue-300 bg-blue-50 hover:bg-blue-100' : ''
                           } ${
                             suggestion.isRecent ? 'border-green-300 bg-green-50 hover:bg-green-100' : ''
