@@ -94,7 +94,6 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
   const fieldName = name;
   const {
     defaultUnit = 'cup',
-    showBrandSelector = true,
     petId,
     category = 'food', // Default to 'food' if not specified
   } = config;
@@ -107,8 +106,8 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
       render={({ field, fieldState: { error } }) => {
         const currentValue: PortionValue | undefined = field.value;
         
-        // State for brand/product selection
-        const [showBrandSelectorState, setShowBrandSelectorState] = React.useState(showBrandSelector);
+        // State for brand/product selection - always start closed
+        const [showBrandSelectorState, setShowBrandSelectorState] = React.useState(false);
         const [customBrand, setCustomBrand] = React.useState('');
         const [customProduct, setCustomProduct] = React.useState('');
         

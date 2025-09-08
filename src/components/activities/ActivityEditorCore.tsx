@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/dialog';
-import { ChevronDown, Activity } from 'lucide-react';
+import { ChevronDown, Activity, AlertCircle } from 'lucide-react';
 import { 
   ActivityEditorProps, 
   ActivityFormData, 
@@ -78,7 +78,7 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
       category: selectedTemplate?.category || ActivityCategory.Diet,
       subcategory: selectedTemplate?.subcategory || '',
       templateId: selectedTemplate?.id || '',
-      title: '',
+      title: selectedTemplate?.label || '',
       description: '',
       activityDate: new Date(),
       blocks: {},
@@ -104,9 +104,14 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
       if (newTemplate) {
         setValue('category', newTemplate.category);
         setValue('subcategory', newTemplate.subcategory);
+        // Auto-fill title with template label if current title is empty
+        const currentTitle = getValues('title');
+        if (!currentTitle || currentTitle.trim() === '') {
+          setValue('title', newTemplate.label);
+        }
       }
     }
-  }, [watchedTemplateId, selectedTemplate, setValue]);
+  }, [watchedTemplateId, selectedTemplate, setValue, getValues]);
 
   // Form submission handler
   const onSubmit = React.useCallback(async (data: ActivityFormData) => {
@@ -350,6 +355,54 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
             
             {renderDraftStatus()}
 
+            {/* Form validation hints - Always show when button is disabled */}
+            {(!isValid || isSubmitting) && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                  <h4 className="text-sm font-medium text-amber-800">
+                    {isSubmitting ? '正在保存中...' : '保存按钮已禁用，请检查：'}
+                  </h4>
+                </div>
+                
+                {isSubmitting ? (
+                  <p className="text-sm text-amber-700">请稍等，正在保存您的活动记录...</p>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Show specific field errors */}
+                    {Object.keys(errors).length > 0 ? (
+                      <ul className="text-sm text-amber-700 space-y-1">
+                        {Object.entries(errors).map(([key, error]) => (
+                          <li key={key} className="flex items-start gap-1">
+                            <span className="text-amber-400">•</span>
+                            <span>
+                              {key === 'title' && '标题不能为空'}
+                              {key === 'templateId' && '请先选择活动类型'}
+                              {key === 'category' && '请选择活动分类'}
+                              {key === 'subcategory' && '请选择活动子分类'}
+                              {key === 'petId' && '宠物信息缺失'}
+                              {key === 'activityDate' && '请选择有效的活动日期'}
+                              {!['title', 'templateId', 'category', 'subcategory', 'petId', 'activityDate'].includes(key) && 
+                                (String(error?.message) || `${key} 字段有问题`)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-sm text-amber-700">
+                        <p className="mb-2">请检查以下内容是否完整：</p>
+                        <ul className="space-y-1">
+                          <li>• {selectedTemplate ? '✓ 已选择活动类型' : '✗ 请先选择活动类型'}</li>
+                          <li>• {petId ? '✓ 宠物信息正常' : '✗ 宠物信息缺失'}</li>
+                          <li>• 请确保所有必填字段都已填写</li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Action buttons */}
             <div className="relative pt-6 border-t border-gray-200">
               {/* Left side - Quick Mode button (absolute positioning) */}
@@ -366,8 +419,8 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
                 </div>
               )}
 
-              {/* Center - Save button */}
-              <div className="flex justify-center">
+              {/* Center - Save button with conditional offset */}
+              <div className={`flex justify-center ${currentMode !== 'quick' ? 'pl-20' : ''}`}>
                 <Button 
                   type="submit" 
                   disabled={!isValid || isSubmitting}
