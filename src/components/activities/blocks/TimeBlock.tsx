@@ -1,21 +1,10 @@
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Input } from '../../ui/input';
-import { Button } from '../../ui/button';
-import { Card } from '../../ui/card';
 import { Badge } from '../../ui/badge';
-import { Field } from './Field';
-import { BlockProps, TimeConfig, TimePreset } from '../../../lib/types/activities';
+import { BlockProps, TimeConfig } from '../../../lib/types/activities';
 import { timeBlockSchema } from '../../../lib/validation/activityBlocks';
 
-// Default presets for common time selections
-const DEFAULT_TIME_PRESETS: TimePreset[] = [
-  { id: 'now', label: 'Now', offset: 0 },
-  { id: '1h_ago', label: '1 hour ago', offset: -60 },
-  { id: '2h_ago', label: '2 hours ago', offset: -120 },
-  { id: '3h_ago', label: '3 hours ago', offset: -180 },
-  { id: '6h_ago', label: '6 hours ago', offset: -360 },
-];
 
 // TimeBlock component for handling date and time input
 const TimeBlock: React.FC<BlockProps<TimeConfig>> = ({
@@ -30,8 +19,6 @@ const TimeBlock: React.FC<BlockProps<TimeConfig>> = ({
     showTime = true,
     allowFuture = false,
     defaultToNow = true,
-    showPresets = false,
-    presets = DEFAULT_TIME_PRESETS,
   } = config;
 
   // Helper function to format date for input
@@ -67,12 +54,6 @@ const TimeBlock: React.FC<BlockProps<TimeConfig>> = ({
     return new Date();
   };
 
-  // Handle preset selection
-  const handlePresetSelect = (preset: TimePreset, onChange: (value: Date) => void) => {
-    const now = new Date();
-    const presetTime = new Date(now.getTime() + preset.offset * 60000); // offset is in minutes
-    onChange(presetTime);
-  };
 
   // Determine input type based on configuration
   const getInputType = (): string => {
@@ -157,55 +138,39 @@ const TimeBlock: React.FC<BlockProps<TimeConfig>> = ({
           : '';
 
         return (
-          <Field
-            label={label}
-            required={required}
-            error={fieldState.error?.message}
-            hint={field.value ? humanReadableDate : undefined}
-            blockType="time"
-          >
-            <div className="space-y-2">
-              {/* Main date/time input */}
-              <Input
-                type={getInputType()}
-                value={inputValue}
-                onChange={handleInputChange}
-                max={allowFuture ? undefined : formatDateForInput(new Date())}
-              />
+          <div className="space-y-2">
+            {/* Human readable hint */}
+            {field.value && (
+              <p className="text-xs text-muted-foreground">
+                {humanReadableDate}
+              </p>
+            )}
+            
+            {/* Main date/time input */}
+            <Input
+              type={getInputType()}
+              value={inputValue}
+              onChange={handleInputChange}
+              max={allowFuture ? undefined : formatDateForInput(new Date())}
+              aria-invalid={fieldState.error ? 'true' : 'false'}
+            />
 
-              {/* Preset buttons */}
-              {showPresets && presets.length > 0 && (
-                <Card className="p-3">
-                  <div className="space-y-2">
-                    <div className="text-xs font-medium text-muted-foreground">Quick select:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {presets.map((preset) => (
-                        <Button
-                          key={preset.id}
-                          variant="outline"
-                          size="sm"
-                          type="button"
-                          className="text-xs h-7 px-2"
-                          onClick={() => handlePresetSelect(preset, field.onChange)}
-                        >
-                          {preset.label}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              {/* Current timezone info */}
-              {showTime && (
-                <div className="flex justify-end">
-                  <Badge variant="secondary" className="text-xs">
-                    {Intl.DateTimeFormat().resolvedOptions().timeZone}
-                  </Badge>
-                </div>
-              )}
-            </div>
-          </Field>
+            {/* Current timezone info */}
+            {showTime && (
+              <div className="flex justify-end">
+                <Badge variant="secondary" className="text-xs">
+                  {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                </Badge>
+              </div>
+            )}
+            
+            {/* Error message */}
+            {fieldState.error && (
+              <p className="text-sm text-destructive" role="alert">
+                {fieldState.error.message}
+              </p>
+            )}
+          </div>
         );
       }}
     />

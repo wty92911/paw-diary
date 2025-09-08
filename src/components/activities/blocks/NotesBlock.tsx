@@ -3,7 +3,6 @@ import { Controller } from 'react-hook-form';
 import { Textarea } from '../../ui/textarea';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
-import { Field } from './Field';
 import { BlockProps } from '../../../lib/types/activities';
 import { notesBlockSchema } from '../../../lib/validation/activityBlocks';
 
@@ -144,13 +143,13 @@ const NotesBlock: React.FC<BlockProps<NotesBlockConfig>> = ({
           : 'text-muted-foreground';
 
         return (
-          <Field
-            label={label}
-            required={required}
-            error={fieldState.error?.message}
-            hint={undefined}
-            blockType="notes"
-          >
+          <div className="space-y-2">
+            {/* Error message */}
+            {fieldState.error && (
+              <p className="text-sm text-destructive" role="alert">
+                {fieldState.error.message}
+              </p>
+            )}
             <div className="space-y-2">
               {/* Formatting toolbar */}
               {allowFormatting && (
@@ -233,7 +232,7 @@ const NotesBlock: React.FC<BlockProps<NotesBlockConfig>> = ({
                 </div>
               )}
             </div>
-          </Field>
+          </div>
         );
       }}
     />

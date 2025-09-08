@@ -16,7 +16,6 @@ import {
   Eye
 } from 'lucide-react';
 import { BlockProps } from '../../../lib/types/activities';
-import { Field } from './Field';
 
 // Attachment value interface
 interface AttachmentValue {
@@ -343,14 +342,18 @@ const AttachmentBlock: React.FC<BlockProps<AttachmentBlockConfig>> = ({
         };
 
         return (
-          <Field
-            label={label}
-            required={required}
-            error={error?.message}
-            hint={config?.hint || `Upload photos, videos, or documents. Max ${maxFiles} files, ${formatFileSize(maxFileSize)} each.`}
-            blockType="attachment"
-            id={`attachment-${fieldName}`}
-          >
+          <div className="space-y-2">
+            {/* Hint */}
+            <p className="text-xs text-muted-foreground">
+              {config?.hint || `Upload photos, videos, or documents. Max ${maxFiles} files, ${formatFileSize(maxFileSize)} each.`}
+            </p>
+            
+            {/* Error message */}
+            {error && (
+              <p className="text-sm text-destructive" role="alert">
+                {error.message}
+              </p>
+            )}
             <div className="space-y-4">
               {/* Upload area */}
               <div
@@ -583,7 +586,7 @@ const AttachmentBlock: React.FC<BlockProps<AttachmentBlockConfig>> = ({
                   </div>
                 </div>
               </div>
-            </Field>
+            </div>
           );
         }}
       />

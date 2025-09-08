@@ -6,7 +6,6 @@ import { Badge } from '../../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Plus, Minus, Package } from 'lucide-react';
 import { BlockProps } from '../../../lib/types/activities';
-import { Field } from './Field';
 import { useBrandSuggestions } from '../../../hooks/useBrandMemory';
 
 // Portion value interface
@@ -197,14 +196,18 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
         const displayAmount = currentValue?.amount || 0;
 
         return (
-          <Field
-            label={label}
-            required={required}
-            error={error?.message}
-            hint={config?.hint || 'Enter the portion amount and select appropriate unit'}
-            blockType="portion"
-            id={`portion-${fieldName}`}
-          >
+          <div className="space-y-2">
+            {/* Hint */}
+            <p className="text-xs text-muted-foreground">
+              {config?.hint || 'Enter the portion amount and select appropriate unit'}
+            </p>
+            
+            {/* Error message */}
+            {error && (
+              <p className="text-sm text-destructive" role="alert">
+                {error.message}
+              </p>
+            )}
             <div className="space-y-4">
               {/* Amount and unit input */}
               <div className="flex items-center gap-2">
@@ -428,7 +431,7 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
           </div>
         )}
             </div>
-          </Field>
+          </div>
         );
       }}
     />
