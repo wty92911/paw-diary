@@ -20,6 +20,17 @@ export const dietTemplates: ActivityTemplate[] = [
     description: 'Record feeding sessions with food type, portion, and timing',
     blocks: [
       {
+        id: 'title',
+        type: 'title' as ActivityBlockType,
+        label: 'Meal Description',
+        required: true,
+        config: {
+          placeholder: 'Breakfast, lunch, dinner, snack...',
+          maxLength: 100,
+          autocomplete: ['Breakfast', 'Lunch', 'Dinner', 'Morning Snack', 'Evening Snack', 'Treat']
+        }
+      },
+      {
         id: 'time',
         type: 'time' as ActivityBlockType,
         label: 'Feeding Time',

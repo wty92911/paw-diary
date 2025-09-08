@@ -274,8 +274,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
 
     return (
       <div className="space-y-6">
-
-
         {/* Dynamic blocks based on template and mode */}
         <MultiBlockRenderer
           blocks={blocksToRender}
@@ -361,12 +359,12 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
                 <div className="flex items-center gap-2 mb-2">
                   <AlertCircle className="w-4 h-4 text-amber-600" />
                   <h4 className="text-sm font-medium text-amber-800">
-                    {isSubmitting ? '正在保存中...' : '保存按钮已禁用，请检查：'}
+                    {isSubmitting ? 'Saving...' : 'Save button is disabled - missing required fields:'}
                   </h4>
                 </div>
                 
                 {isSubmitting ? (
-                  <p className="text-sm text-amber-700">请稍等，正在保存您的活动记录...</p>
+                  <p className="text-sm text-amber-700">Please wait while we save your activity...</p>
                 ) : (
                   <div className="space-y-2">
                     {/* Show specific field errors */}
@@ -376,25 +374,30 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
                           <li key={key} className="flex items-start gap-1">
                             <span className="text-amber-400">•</span>
                             <span>
-                              {key === 'title' && '标题不能为空'}
-                              {key === 'templateId' && '请先选择活动类型'}
-                              {key === 'category' && '请选择活动分类'}
-                              {key === 'subcategory' && '请选择活动子分类'}
-                              {key === 'petId' && '宠物信息缺失'}
-                              {key === 'activityDate' && '请选择有效的活动日期'}
+                              {key === 'title' && 'Activity title is required'}
+                              {key === 'templateId' && 'Please select an activity type first'}
+                              {key === 'category' && 'Activity category is required'}
+                              {key === 'subcategory' && 'Activity subcategory is required'}
+                              {key === 'petId' && 'Pet information is missing'}
+                              {key === 'activityDate' && 'Please select a valid activity date'}
+                              {key.startsWith('blocks.') && `${key.replace('blocks.', '').toUpperCase()} field is required`}
                               {!['title', 'templateId', 'category', 'subcategory', 'petId', 'activityDate'].includes(key) && 
-                                (String(error?.message) || `${key} 字段有问题`)}
+                                !key.startsWith('blocks.') && 
+                                (String(error?.message) || `${key} field has an issue`)}
                             </span>
                           </li>
                         ))}
                       </ul>
                     ) : (
                       <div className="text-sm text-amber-700">
-                        <p className="mb-2">请检查以下内容是否完整：</p>
+                        <p className="mb-2">Please check the following:</p>
                         <ul className="space-y-1">
-                          <li>• {selectedTemplate ? '✓ 已选择活动类型' : '✗ 请先选择活动类型'}</li>
-                          <li>• {petId ? '✓ 宠物信息正常' : '✗ 宠物信息缺失'}</li>
-                          <li>• 请确保所有必填字段都已填写</li>
+                          <li>• {selectedTemplate ? '✓ Activity type selected' : '✗ Please select an activity type first'}</li>
+                          <li>• {petId ? '✓ Pet information available' : '✗ Pet information missing'}</li>
+                          <li>• Ensure all required fields are filled out</li>
+                          <li className="text-xs text-amber-600 mt-2">
+                            Debug: Form valid={String(isValid)}, Has errors={Object.keys(errors).length}, Template={selectedTemplate?.label || 'none'}
+                          </li>
                         </ul>
                       </div>
                     )}
