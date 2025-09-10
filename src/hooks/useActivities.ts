@@ -11,24 +11,42 @@ export const activityKeys = {
   list: (petId: number) => [...activityKeys.lists(), petId] as const,
   details: () => [...activityKeys.all, 'detail'] as const,
   detail: (id: number) => [...activityKeys.details(), id] as const,
-  drafts: () => [...activityKeys.all, 'drafts'] as const,
-  petDrafts: (petId: number) => [...activityKeys.drafts(), petId] as const,
 } as const;
 
 /**
  * Basic hook for fetching activities for a specific pet with optimized caching
  */
 export function useActivities(petId: number) {
-  return useQuery<Activity[]>({
+  console.log(`🎯 useActivities called with petId: ${petId}, enabled: ${!!petId}`);
+
+  const query = useQuery<Activity[]>({
     queryKey: activityKeys.list(petId),
     queryFn: async () => {
+      console.log(`🔍 Fetching activities for pet ${petId} from backend...`);
       const result = await invoke('get_activities_for_pet', { petId });
-      return result as Activity[];
+      const activities = result as Activity[];
+      console.log(
+        `📊 Backend returned ${activities.length} activities for pet ${petId}:`,
+        activities,
+      );
+      return activities;
     },
-    staleTime: 30000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
-    enabled: !!petId, // Only run when petId is provided
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
+    enabled: !!petId,
   });
+
+  console.log(`📋 useActivities query state:`, {
+    petId,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    isError: query.isError,
+    dataLength: query.data?.length || 0,
+    enabled: !!petId,
+    status: query.status,
+  });
+
+  return query;
 }
 
 /**
@@ -55,33 +73,29 @@ export function useCreateActivity() {
 
   return useMutation({
     mutationFn: async (data: { petId: number; activityData: ActivityFormData }) => {
+      // Convert ActivityFormData to ActivityCreateRequest format expected by backend
       const result = await invoke('create_activity', {
-        petId: data.petId,
-        activityData: data.activityData,
+        activityData: {
+          pet_id: data.petId,
+          category: data.activityData.category,
+          subcategory: data.activityData.subcategory,
+          activity_data: data.activityData.blocks,
+        },
       });
       return result as Activity;
     },
     onMutate: async ({ petId, activityData }) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: activityKeys.list(petId) });
-
-      // Snapshot previous value
       const previousActivities = queryClient.getQueryData<Activity[]>(activityKeys.list(petId));
+      const tempId = Date.now();
 
-      // Optimistically update with temporary activity
       if (previousActivities) {
         const tempActivity: Activity = {
-          id: Date.now(), // Temporary ID
+          id: tempId,
           pet_id: petId,
           category: activityData.category,
           subcategory: activityData.subcategory || '',
-          title: 'Saving...', // Temporary title
-          activity_date: new Date().toISOString(), // Temporary date
-          activity_data: {
-            templateId: activityData.templateId || 'default',
-            blocks: activityData.blocks || {},
-            mode: 'guided', // Default mode
-          },
+          activity_data: activityData.blocks || {},
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -92,23 +106,20 @@ export function useCreateActivity() {
         ]);
       }
 
-      return { previousActivities };
+      return { previousActivities, tempId };
     },
     onError: (_err, { petId }, context) => {
-      // Rollback on error
       if (context?.previousActivities) {
         queryClient.setQueryData(activityKeys.list(petId), context.previousActivities);
       }
     },
-    onSuccess: (newActivity, { petId }) => {
-      // Update the cache with the real activity data
+    onSuccess: (newActivity, { petId }, context) => {
       queryClient.setQueryData<Activity[]>(activityKeys.list(petId), (old = []) => {
-        // Remove temporary activity and add real one
-        const filtered = old.filter(activity => activity.id !== Date.now());
+        const filtered = context?.tempId
+          ? old.filter(activity => activity.id !== context.tempId)
+          : old;
         return [newActivity, ...filtered];
       });
-
-      // Also update individual activity cache
       queryClient.setQueryData(activityKeys.detail(newActivity.id), newActivity);
     },
     onSettled: (newActivity, _error, { petId }) => {
@@ -134,9 +145,15 @@ export function useUpdateActivity() {
       petId: number;
       updates: Partial<ActivityFormData>;
     }) => {
+      // Convert to ActivityUpdateRequest format expected by backend
+      const updateData: any = {};
+      if (data.updates.category) updateData.category = data.updates.category;
+      if (data.updates.subcategory) updateData.subcategory = data.updates.subcategory;
+      if (data.updates.blocks) updateData.activity_data = data.updates.blocks;
+
       const result = await invoke('update_activity', {
-        activityId: data.activityId,
-        activityData: data.updates,
+        activity_id: data.activityId,
+        updates: updateData,
       });
       return result as Activity;
     },

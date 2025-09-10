@@ -41,6 +41,15 @@ export class ActivityTemplateRegistry implements TemplateRegistry {
     );
   }
 
+  getTemplateByCategory(
+    category: ActivityCategory,
+    subcategory: string,
+  ): ActivityTemplate | undefined {
+    return this.templates.find(
+      template => template.category === category && template.subcategory === subcategory,
+    );
+  }
+
   searchTemplates(query: string): ActivityTemplate[] {
     const searchTerm = query.toLowerCase();
     return this.templates.filter(

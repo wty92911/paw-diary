@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { invoke } from '@tauri-apps/api/core';
 import { Loader2 } from 'lucide-react';
 import { useAppState } from './hooks/useAppState';
-import { cleanupOldActivityDrafts } from './hooks/useActivityDraftSimple';
 import { ToastProvider } from './components/ui/toast';
 import { HomePage, AddPetPage, PetProfilePage, EditPetPage, ActivitiesListPage, ActivityEditorPage } from './pages';
 import './App.css';
@@ -19,7 +18,6 @@ import './App.css';
  * - Configure React Router with clean, SEO-friendly URLs
  * - Handle global loading and error states during initialization
  * - Provide comprehensive routing for all application features
- * - Manage draft cleanup and maintenance tasks
  * 
  * @routes
  * Core Application Routes:
@@ -40,7 +38,6 @@ import './App.css';
  * - Pet-centric URL structure for intuitive navigation
  * - Bookmarkable URLs for all major application states
  * - Comprehensive error boundaries and loading states
- * - Automatic draft cleanup on application startup
  * - Tauri backend initialization with retry logic
  * 
  * @performance
@@ -73,9 +70,6 @@ function App() {
 
         actions.completeInitialization();
         console.log('Initialization successful');
-        
-        // Cleanup old activity drafts on app startup (older than 24 hours)
-        cleanupOldActivityDrafts(24);
       } catch (error) {
         console.error('Failed to initialize app:', error);
         actions.setInitializationError(

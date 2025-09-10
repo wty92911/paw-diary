@@ -10,6 +10,13 @@ impl super::PetDatabase {
         &self,
         activity_data: ActivityCreateRequest,
     ) -> Result<Activity, ActivityError> {
+        log::debug!(
+            "[DB] create_activity: inserting activity for pet_id={}, category={}, subcategory={}",
+            activity_data.pet_id,
+            activity_data.category,
+            activity_data.subcategory
+        );
+
         let now = Utc::now();
 
         // Insert the activity
@@ -29,11 +36,20 @@ impl super::PetDatabase {
         .bind(now)
         .execute(&self.pool)
         .await
-        .map_err(|e| ActivityError::InvalidData {
-            message: format!("Database error: {e}"),
+        .map_err(|e| {
+            log::error!(
+                "[DB] create_activity: insert failed for pet_id={}, error={}",
+                activity_data.pet_id,
+                e
+            );
+            ActivityError::InvalidData {
+                message: format!("Database error: {e}"),
+            }
         })?;
 
         let activity_id = result.last_insert_rowid();
+        log::debug!("[DB] create_activity: inserted activity with id={activity_id}");
+
         self.get_activity_by_id(activity_id).await
     }
 
@@ -88,17 +104,28 @@ impl super::PetDatabase {
 
     /// Get an activity by ID
     pub async fn get_activity_by_id(&self, id: i64) -> Result<Activity, ActivityError> {
+        log::debug!("[DB] get_activity_by_id: querying activity id={id}");
+
         let row = sqlx::query("SELECT * FROM activities WHERE id = ?")
             .bind(id)
             .fetch_optional(&self.pool)
             .await
-            .map_err(|e| ActivityError::InvalidData {
-                message: format!("Database error: {e}"),
+            .map_err(|e| {
+                log::error!("[DB] get_activity_by_id: query failed for id={id}, error={e}");
+                ActivityError::InvalidData {
+                    message: format!("Database error: {e}"),
+                }
             })?;
 
         match row {
-            Some(row) => self.row_to_activity(&row).await,
-            None => Err(ActivityError::NotFound { id }),
+            Some(row) => {
+                log::debug!("[DB] get_activity_by_id: found activity id={id}");
+                self.row_to_activity(&row).await
+            }
+            None => {
+                log::debug!("[DB] get_activity_by_id: activity not found id={id}");
+                Err(ActivityError::NotFound { id })
+            }
         }
     }
 
@@ -107,9 +134,15 @@ impl super::PetDatabase {
         &self,
         request: GetActivitiesRequest,
     ) -> Result<GetActivitiesResponse, ActivityError> {
-        // Simple implementation - just get recent activities for the pet
         let limit = request.limit.unwrap_or(50).min(1000);
         let offset = request.offset.unwrap_or(0);
+
+        log::debug!(
+            "[DB] get_activities: querying activities pet_id={:?}, limit={}, offset={}",
+            request.pet_id,
+            limit,
+            offset
+        );
 
         let query = if let Some(_pet_id) = request.pet_id {
             "SELECT * FROM activities WHERE pet_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
@@ -131,9 +164,18 @@ impl super::PetDatabase {
                 .fetch_all(&self.pool)
                 .await
         }
-        .map_err(|e| ActivityError::InvalidData {
-            message: format!("Database error: {e}"),
+        .map_err(|e| {
+            log::error!(
+                "[DB] get_activities: query failed pet_id={:?}, error={}",
+                request.pet_id,
+                e
+            );
+            ActivityError::InvalidData {
+                message: format!("Database error: {e}"),
+            }
         })?;
+
+        log::debug!("[DB] get_activities: fetched {} raw rows", rows.len());
 
         let mut activities = Vec::new();
         for row in rows {
@@ -151,11 +193,26 @@ impl super::PetDatabase {
                 .fetch_one(&self.pool)
                 .await
         }
-        .map_err(|e| ActivityError::InvalidData {
-            message: format!("Database error: {e}"),
+        .map_err(|e| {
+            log::error!(
+                "[DB] get_activities: count query failed pet_id={:?}, error={}",
+                request.pet_id,
+                e
+            );
+            ActivityError::InvalidData {
+                message: format!("Database error: {e}"),
+            }
         })?;
 
         let has_more = (offset + activities.len() as i64) < total_count;
+
+        log::debug!(
+            "[DB] get_activities: returning {} activities, total_count={}, has_more={}",
+            activities.len(),
+            total_count,
+            has_more
+        );
+
         Ok(GetActivitiesResponse {
             activities,
             total_count,
@@ -168,11 +225,11 @@ impl super::PetDatabase {
         &self,
         request: SearchActivitiesRequest,
     ) -> Result<Vec<Activity>, ActivityError> {
-        // Simple text search in title and description
+        // Simple text search in activity_data JSON and subcategory
         let query = if request.pet_id.is_some() {
-            "SELECT * FROM activities WHERE (title LIKE ? OR description LIKE ?) AND pet_id = ? ORDER BY activity_date DESC LIMIT ?"
+            "SELECT * FROM activities WHERE (activity_data LIKE ? OR subcategory LIKE ?) AND pet_id = ? ORDER BY created_at DESC LIMIT ?"
         } else {
-            "SELECT * FROM activities WHERE (title LIKE ? OR description LIKE ?) ORDER BY activity_date DESC LIMIT ?"
+            "SELECT * FROM activities WHERE (activity_data LIKE ? OR subcategory LIKE ?) ORDER BY created_at DESC LIMIT ?"
         };
 
         let search_term = format!("%{}%", request.query);
@@ -208,21 +265,33 @@ impl super::PetDatabase {
 
     /// Delete an activity
     pub async fn delete_activity(&self, id: i64) -> Result<(), ActivityError> {
+        log::debug!("[DB] delete_activity: deleting activity id={id}");
+
         // Check if activity exists
-        let _ = self.get_activity_by_id(id).await?;
+        let activity = self.get_activity_by_id(id).await?;
+        log::debug!(
+            "[DB] delete_activity: confirmed activity exists id={}, pet_id={}",
+            id,
+            activity.pet_id
+        );
 
         let result = sqlx::query("DELETE FROM activities WHERE id = ?")
             .bind(id)
             .execute(&self.pool)
             .await
-            .map_err(|e| ActivityError::InvalidData {
-                message: format!("Database error: {e}"),
+            .map_err(|e| {
+                log::error!("[DB] delete_activity: delete failed id={id}, error={e}");
+                ActivityError::InvalidData {
+                    message: format!("Database error: {e}"),
+                }
             })?;
 
         if result.rows_affected() == 0 {
+            log::warn!("[DB] delete_activity: no rows affected for id={id}");
             return Err(ActivityError::NotFound { id });
         }
 
+        log::debug!("[DB] delete_activity: successfully deleted activity id={id}");
         Ok(())
     }
 
@@ -240,7 +309,7 @@ impl super::PetDatabase {
             r#"
             SELECT category, COUNT(*) as count 
             FROM activities 
-            WHERE pet_id = ? AND activity_date >= ?
+            WHERE pet_id = ? AND created_at >= ?
             GROUP BY category
             "#,
         )
@@ -273,7 +342,7 @@ impl super::PetDatabase {
 
         // Get recent activities
         let recent_rows = sqlx::query(
-            "SELECT * FROM activities WHERE pet_id = ? ORDER BY activity_date DESC LIMIT 10",
+            "SELECT * FROM activities WHERE pet_id = ? ORDER BY created_at DESC LIMIT 10",
         )
         .bind(pet_id)
         .fetch_all(&self.pool)
@@ -305,14 +374,14 @@ impl super::PetDatabase {
 
         let rows = if let Some(pet_id) = pet_id {
             sqlx::query(
-                "SELECT * FROM activities WHERE pet_id = ? ORDER BY activity_date DESC LIMIT ?",
+                "SELECT * FROM activities WHERE pet_id = ? ORDER BY created_at DESC LIMIT ?",
             )
             .bind(pet_id)
             .bind(limit)
             .fetch_all(&self.pool)
             .await
         } else {
-            sqlx::query("SELECT * FROM activities ORDER BY activity_date DESC LIMIT ?")
+            sqlx::query("SELECT * FROM activities ORDER BY created_at DESC LIMIT ?")
                 .bind(limit)
                 .fetch_all(&self.pool)
                 .await
@@ -339,7 +408,7 @@ impl super::PetDatabase {
         let limit = limit.unwrap_or(50).min(1000);
 
         let rows = sqlx::query(
-            "SELECT * FROM activities WHERE pet_id = ? AND category = ? ORDER BY activity_date DESC LIMIT ?"
+            "SELECT * FROM activities WHERE pet_id = ? AND category = ? ORDER BY created_at DESC LIMIT ?"
         )
         .bind(pet_id)
         .bind(category.to_string())
@@ -364,12 +433,12 @@ impl super::PetDatabase {
         request: ExportActivitiesRequest,
     ) -> Result<Vec<Activity>, ActivityError> {
         let rows = if let Some(pet_id) = request.pet_id {
-            sqlx::query("SELECT * FROM activities WHERE pet_id = ? ORDER BY activity_date ASC")
+            sqlx::query("SELECT * FROM activities WHERE pet_id = ? ORDER BY created_at ASC")
                 .bind(pet_id)
                 .fetch_all(&self.pool)
                 .await
         } else {
-            sqlx::query("SELECT * FROM activities ORDER BY pet_id, activity_date ASC")
+            sqlx::query("SELECT * FROM activities ORDER BY pet_id, created_at ASC")
                 .fetch_all(&self.pool)
                 .await
         }
@@ -433,328 +502,6 @@ impl super::PetDatabase {
                     message: format!("Invalid activity_data: {e}"),
                 }
             })?,
-            created_at,
-            updated_at,
-        })
-    }
-
-    // Activity Draft Management Methods
-
-    /// Create a new activity draft
-    pub async fn create_activity_draft(
-        &self,
-        draft_data: ActivityDraftCreateRequest,
-    ) -> Result<ActivityDraft, ActivityError> {
-        let now = Utc::now();
-
-        let result = sqlx::query(
-            r#"
-            INSERT INTO activity_drafts (
-                pet_id, category, subcategory, title, description, activity_date, 
-                activity_data, cost, currency, location, mood_rating, 
-                is_template, template_name, created_at, updated_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            "#,
-        )
-        .bind(draft_data.pet_id)
-        .bind(draft_data.category.to_string())
-        .bind(&draft_data.subcategory)
-        .bind(&draft_data.title)
-        .bind(&draft_data.description)
-        .bind(
-            draft_data
-                .activity_date
-                .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string()),
-        )
-        .bind(draft_data.activity_data.as_ref().map(|v| v.to_string()))
-        .bind(draft_data.cost)
-        .bind(&draft_data.currency)
-        .bind(&draft_data.location)
-        .bind(draft_data.mood_rating)
-        .bind(draft_data.is_template.unwrap_or(false))
-        .bind(&draft_data.template_name)
-        .bind(now)
-        .bind(now)
-        .execute(&self.pool)
-        .await
-        .map_err(|e| ActivityError::InvalidData {
-            message: format!("Database error: {e}"),
-        })?;
-
-        let draft_id = result.last_insert_rowid();
-        self.get_activity_draft_by_id(draft_id).await
-    }
-
-    /// Update an existing activity draft
-    pub async fn update_activity_draft(
-        &self,
-        draft_id: i64,
-        updates: ActivityDraftUpdateRequest,
-    ) -> Result<ActivityDraft, ActivityError> {
-        let now = Utc::now();
-
-        // Build dynamic query based on what fields are being updated
-        let mut query_parts = vec!["UPDATE activity_drafts SET updated_at = ?"];
-        let mut bind_values: Vec<String> = vec![now.to_rfc3339()];
-
-        if let Some(category) = &updates.category {
-            query_parts.push(", category = ?");
-            bind_values.push(category.to_string());
-        }
-        if updates.subcategory.is_some() {
-            query_parts.push(", subcategory = ?");
-            bind_values.push(updates.subcategory.clone().unwrap_or_default());
-        }
-        if updates.title.is_some() {
-            query_parts.push(", title = ?");
-            bind_values.push(updates.title.clone().unwrap_or_default());
-        }
-        if updates.description.is_some() {
-            query_parts.push(", description = ?");
-            bind_values.push(updates.description.clone().unwrap_or_default());
-        }
-        if let Some(activity_date) = &updates.activity_date {
-            query_parts.push(", activity_date = ?");
-            bind_values.push(activity_date.format("%Y-%m-%d %H:%M:%S").to_string());
-        }
-        if let Some(activity_data) = &updates.activity_data {
-            query_parts.push(", activity_data = ?");
-            bind_values.push(activity_data.to_string());
-        }
-        if updates.cost.is_some() {
-            query_parts.push(", cost = ?");
-            bind_values.push(updates.cost.unwrap_or(0.0).to_string());
-        }
-        if updates.currency.is_some() {
-            query_parts.push(", currency = ?");
-            bind_values.push(updates.currency.clone().unwrap_or_default());
-        }
-        if updates.location.is_some() {
-            query_parts.push(", location = ?");
-            bind_values.push(updates.location.clone().unwrap_or_default());
-        }
-        if updates.mood_rating.is_some() {
-            query_parts.push(", mood_rating = ?");
-            bind_values.push(updates.mood_rating.unwrap_or(0).to_string());
-        }
-        if let Some(is_template) = updates.is_template {
-            query_parts.push(", is_template = ?");
-            bind_values.push(is_template.to_string());
-        }
-        if updates.template_name.is_some() {
-            query_parts.push(", template_name = ?");
-            bind_values.push(updates.template_name.clone().unwrap_or_default());
-        }
-
-        query_parts.push(" WHERE id = ?");
-        bind_values.push(draft_id.to_string());
-
-        let query_str = query_parts.join("");
-
-        // Execute query with all the bind values
-        let mut query = sqlx::query(&query_str);
-        for value in &bind_values {
-            query = query.bind(value);
-        }
-
-        query
-            .execute(&self.pool)
-            .await
-            .map_err(|e| ActivityError::InvalidData {
-                message: format!("Database error: {e}"),
-            })?;
-
-        self.get_activity_draft_by_id(draft_id).await
-    }
-
-    /// Get an activity draft by ID
-    pub async fn get_activity_draft_by_id(
-        &self,
-        draft_id: i64,
-    ) -> Result<ActivityDraft, ActivityError> {
-        let row = sqlx::query(
-            r#"
-            SELECT id, pet_id, category, subcategory, title, description, activity_date,
-                   activity_data, cost, currency, location, mood_rating,
-                   is_template, template_name, created_at, updated_at
-            FROM activity_drafts
-            WHERE id = ?
-            "#,
-        )
-        .bind(draft_id)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::RowNotFound => ActivityError::NotFound { id: draft_id },
-            _ => ActivityError::InvalidData {
-                message: format!("Database error: {e}"),
-            },
-        })?;
-
-        Self::row_to_activity_draft(row)
-    }
-
-    /// Get activity drafts for a specific pet
-    pub async fn get_activity_drafts_for_pet(
-        &self,
-        pet_id: i64,
-        include_templates: bool,
-        limit: Option<i64>,
-        offset: Option<i64>,
-    ) -> Result<Vec<ActivityDraft>, ActivityError> {
-        let limit = limit.unwrap_or(20);
-        let offset = offset.unwrap_or(0);
-
-        let mut query = String::from(
-            r#"
-            SELECT id, pet_id, category, subcategory, title, description, activity_date,
-                   activity_data, cost, currency, location, mood_rating,
-                   is_template, template_name, created_at, updated_at
-            FROM activity_drafts
-            WHERE pet_id = ?
-            "#,
-        );
-
-        if !include_templates {
-            query.push_str(" AND is_template = FALSE");
-        }
-
-        query.push_str(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
-
-        let rows = sqlx::query(&query)
-            .bind(pet_id)
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| ActivityError::InvalidData {
-                message: format!("Database error: {e}"),
-            })?;
-
-        let mut drafts = Vec::new();
-        for row in rows {
-            drafts.push(Self::row_to_activity_draft(row)?);
-        }
-
-        Ok(drafts)
-    }
-
-    /// Delete an activity draft
-    pub async fn delete_activity_draft(&self, draft_id: i64) -> Result<(), ActivityError> {
-        let result = sqlx::query("DELETE FROM activity_drafts WHERE id = ?")
-            .bind(draft_id)
-            .execute(&self.pool)
-            .await
-            .map_err(|e| ActivityError::InvalidData {
-                message: format!("Database error: {e}"),
-            })?;
-
-        if result.rows_affected() == 0 {
-            return Err(ActivityError::NotFound { id: draft_id });
-        }
-
-        Ok(())
-    }
-
-    /// Clean up old activity drafts (excluding templates)
-    pub async fn cleanup_old_drafts(&self, days_old: i64) -> Result<i64, ActivityError> {
-        let result = sqlx::query(
-            r#"
-            DELETE FROM activity_drafts 
-            WHERE is_template = FALSE 
-              AND datetime(created_at) < datetime('now', '-' || ? || ' days')
-            "#,
-        )
-        .bind(days_old)
-        .execute(&self.pool)
-        .await
-        .map_err(|e| ActivityError::InvalidData {
-            message: format!("Database error: {e}"),
-        })?;
-
-        Ok(result.rows_affected() as i64)
-    }
-
-    /// Helper function to convert a database row to ActivityDraft
-    fn row_to_activity_draft(row: sqlx::sqlite::SqliteRow) -> Result<ActivityDraft, ActivityError> {
-        // Parse category
-        let category_str: String =
-            row.try_get("category")
-                .map_err(|e| ActivityError::InvalidData {
-                    message: format!("Invalid category: {e}"),
-                })?;
-        let category =
-            category_str
-                .parse()
-                .map_err(|e: anyhow::Error| ActivityError::InvalidData {
-                    message: format!("Invalid category value: {e}"),
-                })?;
-
-        // Parse activity_date (optional for drafts)
-        let activity_date = match row
-            .try_get::<Option<String>, _>("activity_date")
-            .ok()
-            .flatten()
-        {
-            Some(date_str) => Some(
-                DateTime::parse_from_str(&date_str, "%Y-%m-%d %H:%M:%S")
-                    .map_err(|e| ActivityError::InvalidData {
-                        message: format!("Invalid activity_date format: {e}"),
-                    })?
-                    .with_timezone(&Utc),
-            ),
-            None => None,
-        };
-
-        // Parse activity_data JSON (optional)
-        let activity_data: Option<String> = row.try_get("activity_data").ok().flatten();
-        let activity_data = match activity_data {
-            Some(json_str) if !json_str.is_empty() => Some(
-                serde_json::from_str(&json_str).map_err(|e| ActivityError::InvalidData {
-                    message: format!("Invalid activity_data JSON: {e}"),
-                })?,
-            ),
-            _ => None,
-        };
-
-        // Parse timestamps
-        let created_at: DateTime<Utc> =
-            row.try_get("created_at")
-                .map_err(|e| ActivityError::InvalidData {
-                    message: format!("Invalid created_at: {e}"),
-                })?;
-        let updated_at: DateTime<Utc> =
-            row.try_get("updated_at")
-                .map_err(|e| ActivityError::InvalidData {
-                    message: format!("Invalid updated_at: {e}"),
-                })?;
-
-        Ok(ActivityDraft {
-            id: row.try_get("id").map_err(|e| ActivityError::InvalidData {
-                message: format!("Invalid id: {e}"),
-            })?,
-            pet_id: row
-                .try_get("pet_id")
-                .map_err(|e| ActivityError::InvalidData {
-                    message: format!("Invalid pet_id: {e}"),
-                })?,
-            category,
-            subcategory: row.try_get("subcategory").ok(),
-            title: row.try_get("title").ok(),
-            description: row.try_get("description").ok(),
-            activity_date,
-            activity_data,
-            cost: row.try_get("cost").ok(),
-            currency: row.try_get("currency").ok(),
-            location: row.try_get("location").ok(),
-            mood_rating: row.try_get("mood_rating").ok(),
-            is_template: row
-                .try_get("is_template")
-                .map_err(|e| ActivityError::InvalidData {
-                    message: format!("Invalid is_template: {e}"),
-                })?,
-            template_name: row.try_get("template_name").ok(),
             created_at,
             updated_at,
         })

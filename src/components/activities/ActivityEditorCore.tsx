@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useActivityDraftSimple } from '../../hooks/useActivityDraftSimple';
+import { z } from 'zod';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Alert, AlertDescription } from '../ui/alert';
@@ -51,36 +51,98 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
   initialData,
   className,
 }) => {
+  // Initialize template from templateId (if provided) or initialData
+  const initialTemplate = templateId 
+    ? templateRegistry.getTemplate(templateId)
+    : (initialData && initialData.category && initialData.subcategory
+      ? templateRegistry.getTemplateByCategory(initialData.category, initialData.subcategory)
+      : templateRegistry.getTemplatesByCategory(ActivityCategory.Diet)[0]); // fallback
+  
   // State management
-  const [selectedTemplate, setSelectedTemplate] = React.useState<ActivityTemplate>(
-    templateRegistry.getTemplate(templateId as string)
-  );
+  const [selectedTemplate, setSelectedTemplate] = React.useState<ActivityTemplate | undefined>(initialTemplate);
   const [currentMode, setCurrentMode] = React.useState<ActivityMode>(mode);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
 
-  // Draft management
-  const draft = useActivityDraftSimple({
-    petId,
-    activityId,
-    mode,
-    templateId,
-  });
 
-  // Load draft data if available
-  // const draftData = React.useMemo(() => draft.loadDraft(), [draft]);
+  // Create dynamic validation schema based on selected template
+  const createValidationSchema = React.useMemo(() => {
+    if (!selectedTemplate) {
+      return activityFormValidationSchema;
+    }
 
-  // React Hook Form setup with Zod validation
+    // Create dynamic blocks validation based on template requirements
+    const blocksSchema = z.object(
+      selectedTemplate.blocks.reduce((acc, block) => {
+        if (block.required) {
+          // For required blocks, ensure they have a value
+          acc[block.id] = z.any().refine(
+            (value) => value !== undefined && value !== null && value !== '',
+            { message: `${block.label || block.id} is required` }
+          );
+        } else {
+          // For optional blocks, allow any value or undefined
+          acc[block.id] = z.any().optional();
+        }
+        return acc;
+      }, {} as Record<string, z.ZodSchema>)
+    ).partial(); // Allow partial object since not all blocks may be present initially
+
+    return activityFormValidationSchema.extend({
+      blocks: blocksSchema,
+    });
+  }, [selectedTemplate]);
+
+  // Create default blocks values based on template
+  const getDefaultBlocks = React.useCallback(() => {
+    const defaultBlocks: Record<string, any> = {};
+    if (selectedTemplate) {
+      selectedTemplate.blocks.forEach(block => {
+        // Set appropriate default values based on block type
+        switch (block.type) {
+          case 'title':
+          case 'notes':
+          case 'subcategory':
+            defaultBlocks[block.id] = '';
+            break;
+          case 'time':
+            defaultBlocks[block.id] = {
+              date: new Date(),
+              time: '',
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            };
+            break;
+          case 'measurement':
+            defaultBlocks[block.id] = {
+              value: 0,
+              unit: '',
+              measurementType: '',
+            };
+            break;
+          case 'portion':
+            defaultBlocks[block.id] = {
+              amount: 0,
+              unit: '',
+              portionType: '',
+            };
+            break;
+          default:
+            defaultBlocks[block.id] = '';
+        }
+      });
+    }
+    return defaultBlocks;
+  }, [selectedTemplate]);
+
+  // React Hook Form setup with dynamic Zod validation
   const form = useForm<ActivityFormData>({
-    resolver: zodResolver(activityFormValidationSchema),
+    resolver: zodResolver(createValidationSchema),
     defaultValues: {
       petId: petId,
       category: selectedTemplate?.category || ActivityCategory.Diet,
       subcategory: selectedTemplate?.subcategory || '',
-      templateId: selectedTemplate?.id || '',
-      blocks: {},
+      blocks: initialData?.blocks || getDefaultBlocks(),
       ...initialData,
-      // ...draftData, // Apply draft data if available
     },
     mode: 'onChange', // Validate on change (less aggressive than 'all')
     reValidateMode: 'onChange',
@@ -90,18 +152,15 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
   const { errors, isDirty, isValid } = formState;
 
 
-  // Watch for template changes
-  const watchedTemplateId = watch('templateId');
+  // Watch for template changes via category and subcategory
+  const watchedCategory = watch('category');
+  const watchedSubcategory = watch('subcategory');
   
   React.useEffect(() => {
-    if (watchedTemplateId && watchedTemplateId !== selectedTemplate?.id) {
-      const newTemplate = templateRegistry.getTemplate(watchedTemplateId);
-      setSelectedTemplate(newTemplate);
-      
-      // Update form values when template changes
-      if (newTemplate) {
-        setValue('category', newTemplate.category);
-        setValue('subcategory', newTemplate.subcategory);
+    if (watchedCategory && watchedSubcategory) {
+      const newTemplate = templateRegistry.getTemplateByCategory(watchedCategory, watchedSubcategory);
+      if (newTemplate && newTemplate.id !== selectedTemplate?.id) {
+        setSelectedTemplate(newTemplate);
         
         // Trigger form validation after template change
         setTimeout(() => {
@@ -109,61 +168,91 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
         }, 100);
       }
     }
-  }, [watchedTemplateId, selectedTemplate, setValue, getValues, trigger]);
+  }, [watchedCategory, watchedSubcategory, selectedTemplate, trigger]);
 
-  // Check for missing required fields before submission
-  const checkRequiredFields = React.useCallback(() => {
-    const missingFields: string[] = [];
+  // Re-validate when selected template changes (for dynamic schema)
+  React.useEffect(() => {
+    if (selectedTemplate) {
+      // Update blocks with proper default values for new template
+      const newBlocks = getDefaultBlocks();
+      const currentBlocks = getValues('blocks');
+      
+      // Merge existing values with new defaults (preserve user input)
+      const mergedBlocks = { ...newBlocks, ...currentBlocks };
+      setValue('blocks', mergedBlocks);
+      
+      setTimeout(() => {
+        trigger();
+      }, 100);
+    }
+  }, [selectedTemplate, trigger, getDefaultBlocks, setValue, getValues]);
+
+  // Watch all form fields to trigger validation on any change
+  const watchedValues = watch();
+  
+  // Single source of truth for form validation state
+  const formValidation = React.useMemo(() => {
+    // Basic requirements
+    const hasTemplate = !!selectedTemplate;
+    const hasPet = !!(petId && petId > 0);
+    const hasFormErrors = Object.keys(errors).length > 0;
     
+    // Check required blocks using current form values
+    const missingRequiredBlocks: string[] = [];
     if (selectedTemplate) {
       selectedTemplate.blocks
         .filter(block => block.required)
         .forEach(block => {
-          const blockValue = getValues(`blocks.${block.id}` as any);
-          if (blockValue === undefined || blockValue === null || blockValue === '') {
-            missingFields.push(block.label || block.id);
+          const blockValue = watchedValues.blocks?.[block.id];
+          const isEmpty = blockValue === undefined || blockValue === null || blockValue === '' || 
+            (typeof blockValue === 'object' && Object.keys(blockValue).length === 0);
+          
+          if (isEmpty) {
+            missingRequiredBlocks.push(block.label || block.id);
           }
         });
     }
     
-    return missingFields;
-  }, [selectedTemplate, getValues]);
+    const canSave = hasTemplate && hasPet && !hasFormErrors && missingRequiredBlocks.length === 0;
+    
+    return {
+      hasTemplate,
+      hasPet,
+      hasFormErrors,
+      missingRequiredBlocks,
+      canSave,
+      // Simple error message - only show what needs to be fixed
+      errorMessage: !canSave ? (
+        !hasTemplate ? 'Select an activity type' :
+        !hasPet ? 'Select a pet' :
+        missingRequiredBlocks.length > 0 ? `Complete: ${missingRequiredBlocks.join(', ')}` :
+        hasFormErrors ? 'Fix form errors' :
+        'Unknown validation issue'
+      ) : null
+    };
+  }, [selectedTemplate, petId, errors, watchedValues]);
+
+  const isSaveDisabled = isSubmitting || !formValidation.canSave;
 
   // Form submission handler
   const onSubmit = React.useCallback(async (data: ActivityFormData) => {
-    // Pre-submission validation check
-    const missingRequired = checkRequiredFields();
-    if (missingRequired.length > 0) {
-      console.warn('Missing required fields:', missingRequired);
-      // Trigger form validation to show errors
-      trigger();
-      return;
-    }
-
     setIsSubmitting(true);
+    
     try {
-      console.log('Saving activity:', data);
+      if (!formValidation.canSave) {
+        console.warn('Form validation failed:', formValidation.errorMessage);
+        return;
+      }
+
       await onSave(data);
-      draft.clearDraft(); // Clear draft after successful save
     } catch (error) {
       console.error('Failed to save activity:', error);
-      // Error handling could be improved with proper error context
     } finally {
       setIsSubmitting(false);
     }
-  }, [onSave, draft, checkRequiredFields, trigger]);
+  }, [onSave, formValidation]);
 
 
-  // Auto-save draft every 3 seconds when dirty and valid
-  React.useEffect(() => {
-    if (!isDirty || !isValid) return;
-
-    const timeoutId = setTimeout(() => {
-      draft.saveDraft(getValues());
-    }, 3000); // 3 seconds as per requirements
-
-    return () => clearTimeout(timeoutId);
-  }, [isDirty, isValid, draft, getValues]);
 
   // Mode switching handlers
   const switchToGuided = () => setCurrentMode('guided');
@@ -172,7 +261,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
   const handleTemplateSelect = (template: ActivityTemplate | null) => {
     setSelectedTemplate(template as ActivityTemplate);
     if (template) {
-      setValue('templateId', template.id);
       setValue('category', template.category);
       setValue('subcategory', template.subcategory);
       setIsTemplateDialogOpen(false); // Close dialog after selection
@@ -329,20 +417,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
     );
   };
 
-  // Render draft status
-  const renderDraftStatus = () => {
-    if (!draft.lastSaved && !draft.isDraftSaving) return null;
-
-    return (
-      <div className="text-xs text-muted-foreground text-center py-2">
-        {draft.isDraftSaving ? (
-          <span>Saving draft...</span>
-        ) : draft.lastSaved ? (
-          <span>Draft saved at {draft.lastSaved.toLocaleTimeString()}</span>
-        ) : null}
-      </div>
-    );
-  };
 
   const isEditing = !!activityId;
 
@@ -362,12 +436,10 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
         isDirty={isDirty}
         isValid={isValid}
         saveDraft={async () => {
-          if (isDirty) {
-            await draft.saveDraft(getValues());
-          }
+          // Draft functionality removed
         }}
-        isDraftSaving={draft.isDraftSaving}
-        lastDraftSave={draft.lastSaved || undefined}
+        isDraftSaving={false}
+        lastDraftSave={undefined}
       >
         <div className={className}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -376,240 +448,27 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
             
             {renderModeInterface()}
             
-            {renderDraftStatus()}
+            {/* Draft status removed */}
 
-            {/* Form validation hints - Clear and actionable */}
-            {(!isValid || isSubmitting) && (
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                {isSubmitting ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full"></div>
-                    <p className="text-sm text-amber-700">Saving your activity...</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-amber-600" />
-                      <h4 className="text-sm font-medium text-amber-800">
-                        Form validation failed - please fix the issues below:
-                      </h4>
-                    </div>
-                    
-                    {/* Check required form fields systematically */}
-                    <div className="space-y-2">
-                      {/* 1. Template selection is required */}
-                      {!selectedTemplate && (
-                        <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded">
-                          <span className="text-red-500">✗</span>
-                          <span className="text-sm text-red-700">
-                            <strong>Activity Type Required:</strong> Please select an activity type first
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* 2. Pet ID validation */}
-                      {(!petId || petId < 1) && (
-                        <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded">
-                          <span className="text-red-500">✗</span>
-                          <span className="text-sm text-red-700">
-                            <strong>Pet Required:</strong> A valid pet must be selected
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* 3. Category validation */}
-                      {selectedTemplate && errors.category && (
-                        <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded">
-                          <span className="text-red-500">✗</span>
-                          <span className="text-sm text-red-700">
-                            <strong>Category Error:</strong> {(errors.category as any)?.message || 'Activity category is required'}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* 4. Subcategory validation */}
-                      {selectedTemplate && errors.subcategory && (
-                        <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded">
-                          <span className="text-red-500">✗</span>
-                          <span className="text-sm text-red-700">
-                            <strong>Subcategory Error:</strong> {(errors.subcategory as any)?.message || 'Activity subcategory is required (1-100 characters)'}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* 5. Template ID validation */}
-                      {selectedTemplate && errors.templateId && (
-                        <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded">
-                          <span className="text-red-500">✗</span>
-                          <span className="text-sm text-red-700">
-                            <strong>Template Error:</strong> {(errors.templateId as any)?.message || 'Valid template ID is required'}
-                          </span>
-                        </div>
-                      )}
-                      
-                      
-                      {/* 8. Required template blocks validation */}
-                      {selectedTemplate && selectedTemplate.blocks
-                        .filter(block => block.required)
-                        .map(block => {
-                          const blockValue = watch(`blocks.${block.id}` as any);
-                          const isEmpty = blockValue === undefined || blockValue === null || blockValue === '';
-                          const hasError = errors.blocks?.[block.id];
-                          const blockError = hasError ? (typeof hasError === 'object' && hasError && 'message' in hasError ? (hasError as any).message : 'Invalid value') : null;
-                          
-                          if (!isEmpty && !hasError) {
-                            return (
-                              <div key={block.id} className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded">
-                                <span className="text-green-500">✓</span>
-                                <span className="text-sm text-green-700">
-                                  <strong>{block.label || block.id}:</strong> Completed
-                                </span>
-                              </div>
-                            );
-                          }
-                          
-                          return (
-                            <div key={block.id} className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded">
-                              <span className="text-red-500">✗</span>
-                              <span className="text-sm text-red-700">
-                                 <strong>{block.label || block.id} Required:</strong> {
-                                   (typeof blockError === 'string' ? blockError : blockError?.message) || `This field is required for ${selectedTemplate.label}`
-                                 }
-                              </span>
-                            </div>
-                          );
-                        })
-                      }
-                      
-                      {/* 9. Other validation errors */}
-                      {Object.entries(errors)
-                        .filter(([key]) => !['blocks', 'title', 'templateId', 'category', 'subcategory', 'activityDate'].includes(key))
-                        .map(([key, error]) => (
-                          <div key={key} className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded">
-                            <span className="text-red-500">✗</span>
-                            <span className="text-sm text-red-700">
-                              <strong>{key.charAt(0).toUpperCase() + key.slice(1)} Error:</strong> {
-                                typeof error === 'object' && error && 'message' in error 
-                                  ? (error as any).message 
-                                  : `Field "${key}" has an issue`
-                              }
-                            </span>
-                          </div>
-                        ))
-                      }
-                    </div>
-                    
-                    {/* Success message when form is complete */}
-                    {isValid && Object.keys(errors).length === 0 && selectedTemplate && petId && petId >= 1 && (
-                      <div className="p-2 bg-green-50 border border-green-200 rounded">
-                        <div className="flex items-center gap-2">
-                          <span className="text-green-500">✓</span>
-                          <span className="text-sm text-green-700 font-medium">
-                            All required fields completed! Form is ready to save.
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Validation requirements summary */}
-                    <div className="text-xs text-amber-700 bg-amber-100 p-2 rounded border">
-                      <p className="font-medium mb-1">To save this activity, you need:</p>
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>Select an activity type</li>
-                        <li>Have a valid pet selected</li>
-                        <li>Provide an activity title (1-200 characters)</li>
-                        <li>Set activity date (cannot be in future)</li>
-                        {selectedTemplate && selectedTemplate.blocks.filter(b => b.required).length > 0 && (
-                          <li>Complete all required fields for "{selectedTemplate.label}"</li>
-                        )}
-                      </ul>
-                      {!isValid && (
-                        <details className="mt-2">
-                          <summary className="cursor-pointer text-amber-600">
-                            Show technical details {Object.keys(errors).length === 0 ? '(Form appears complete but validation fails)' : ''}
-                          </summary>
-                          <div className="mt-1 text-xs space-y-2">
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>Form valid: <span className={isValid ? 'text-green-600' : 'text-red-600'}>{String(isValid)}</span></div>
-                              <div>Error count: <span className={Object.keys(errors).length === 0 ? 'text-green-600' : 'text-red-600'}>{Object.keys(errors).length}</span></div>
-                              <div>Template: <span className={selectedTemplate ? 'text-green-600' : 'text-red-600'}>{selectedTemplate?.label || 'None'}</span></div>
-                              <div>Pet ID: <span className={petId && petId >= 1 ? 'text-green-600' : 'text-red-600'}>{petId || 'Missing'}</span></div>
-                            </div>
-                            
-                            {selectedTemplate && (
-                              <div>
-                                <p className="font-medium">Required blocks status:</p>
-                                {selectedTemplate.blocks.filter(b => b.required).map(block => {
-                                  const blockValue = getValues(`blocks.${block.id}` as any);
-                                  const isEmpty = blockValue === undefined || blockValue === null || blockValue === '';
-                                  const hasError = errors.blocks?.[block.id];
-                                  return (
-                                    <div key={block.id} className="ml-2">
-                                      <span className={!isEmpty && !hasError ? 'text-green-600' : 'text-red-600'}>
-                                        {block.label || block.id}: {isEmpty ? 'Empty' : hasError ? 'Error' : 'OK'}
-                                        {!isEmpty && (
-                                          <span className="ml-1 text-gray-500">
-                                            ({typeof blockValue === 'object' ? 'Object' : String(blockValue).slice(0, 20)}{String(blockValue).length > 20 ? '...' : ''})
-                                          </span>
-                                        )}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                            
-                            <details className="mt-2">
-                              <summary className="cursor-pointer">All form values</summary>
-                              <pre className="mt-1 overflow-x-auto whitespace-pre-wrap text-xs bg-gray-100 p-2 rounded">
-                                {JSON.stringify(getValues(), null, 2)}
-                              </pre>
-                            </details>
-                            
-                            <details className="mt-2">
-                              <summary className="cursor-pointer">All form errors</summary>
-                              <pre className="mt-1 overflow-x-auto whitespace-pre-wrap text-xs bg-red-100 p-2 rounded">
-                                {JSON.stringify(errors, null, 2)}
-                              </pre>
-                            </details>
-                            
-                            <details className="mt-2">
-                              <summary className="cursor-pointer">Complete form state debug</summary>
-                              <div className="mt-1 text-xs space-y-1">
-                                <div>isValid: <span className={isValid ? 'text-green-600' : 'text-red-600'}>{String(isValid)}</span></div>
-                                <div>isDirty: <span className={isDirty ? 'text-green-600' : 'text-red-600'}>{String(isDirty)}</span></div>
-                                <div>isSubmitted: {String(formState.isSubmitted)}</div>
-                                <div>isSubmitting: {String(formState.isSubmitting)}</div>
-                                <div>isValidating: {String(formState.isValidating)}</div>
-                                <div>submitCount: {formState.submitCount}</div>
-                                <div>touchedFields: {JSON.stringify(formState.touchedFields)}</div>
-                                <div>dirtyFields: {JSON.stringify(formState.dirtyFields)}</div>
-                                <div className="mt-2">
-                                  <p className="font-medium">Manual validation test:</p>
-                                  <button 
-                                    type="button" 
-                                    className="px-2 py-1 bg-blue-100 rounded text-xs"
-                                    onClick={async () => {
-                                      console.log('=== Manual validation test ===');
-                                      console.log('Current values:', getValues());
-                                      console.log('Current errors:', errors);
-                                      const result = await trigger();
-                                      console.log('Trigger result:', result);
-                                      console.log('Errors after trigger:', formState.errors);
-                                    }}
-                                  >
-                                    Run manual validation
-                                  </button>
-                                </div>
-                              </div>
-                            </details>
-                          </div>
-                        </details>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+            {/* Only show error when save is disabled and form is not submitting */}
+            {isSaveDisabled && !isSubmitting && formValidation.errorMessage && (
+              <Alert className="border-amber-200 bg-amber-50">
+                <AlertCircle className="w-4 h-4 text-amber-600" />
+                <AlertDescription className="text-amber-700">
+                  {formValidation.errorMessage}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {isSubmitting && (
+              <Alert className="border-blue-200 bg-blue-50">
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                  <AlertDescription className="text-blue-700">
+                    Saving your activity...
+                  </AlertDescription>
+                </div>
+              </Alert>
             )}
 
             {/* Action buttons */}
@@ -632,8 +491,9 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
               <div className={`flex justify-center ${currentMode !== 'quick' ? 'pl-20' : ''}`}>
                 <Button 
                   type="submit" 
-                  disabled={!isValid || isSubmitting}
-                  className="w-48 bg-orange-600 hover:bg-orange-700"
+                  disabled={isSaveDisabled}
+                  className={`w-48 ${formValidation.canSave ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-400'}`}
+                  title={!formValidation.canSave ? formValidation.errorMessage || 'Complete form to save' : ''}
                 >
                   {isSubmitting ? (
                     <LoadingSpinner className="w-4 h-4" />

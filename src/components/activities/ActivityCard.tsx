@@ -7,7 +7,6 @@ import {
   MoreHorizontal, 
   Edit3, 
   Trash2, 
-  Copy, 
   Share,
   Clock,
   MapPin,
@@ -37,7 +36,6 @@ interface ActivityCardProps {
   activity: ActivityTimelineItem;
   onEdit?: (activityId: number) => void;
   onDelete?: (activityId: number) => void;
-  onDuplicate?: (activityId: number) => void;
   onShare?: (activityId: number) => void;
   onViewDetails?: (activityId: number) => void;
   className?: string;
@@ -84,7 +82,6 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   activity,
   onEdit,
   onDelete,
-  onDuplicate,
   onShare,
   onViewDetails,
   className,
@@ -280,10 +277,6 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                 <DropdownMenuItem onClick={() => onEdit?.(activity.id)}>
                   <Edit3 className="w-4 h-4 mr-2" />
                   Edit Activity
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDuplicate?.(activity.id)}>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Duplicate
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onShare?.(activity.id)}>
                   <Share className="w-4 h-4 mr-2" />

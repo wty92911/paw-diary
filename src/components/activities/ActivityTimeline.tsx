@@ -25,7 +25,6 @@ interface ActivityTimelineProps {
   isLoading?: boolean;
   onActivityEdit?: (activityId: number) => void;
   onActivityDelete?: (activityId: number) => void;
-  onActivityDuplicate?: (activityId: number) => void;
   onActivityShare?: (activityId: number) => void;
   onActivityView?: (activityId: number) => void;
   className?: string;
@@ -66,7 +65,6 @@ export default function ActivityTimeline({
   isLoading = false,
   onActivityEdit,
   onActivityDelete,
-  onActivityDuplicate,
   onActivityShare,
   onActivityView,
   className,
@@ -674,7 +672,6 @@ export default function ActivityTimeline({
                         activity={item as ActivityTimelineItem}
                         onEdit={onActivityEdit}
                         onDelete={onActivityDelete}
-                        onDuplicate={onActivityDuplicate}
                         onShare={onActivityShare}
                         onViewDetails={onActivityView}
                       />

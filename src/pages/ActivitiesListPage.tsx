@@ -66,7 +66,6 @@ export function ActivitiesListPage() {
     updateFilters,
     clearFilters,
     deleteActivity,
-    duplicateActivity,
   } = useActivitiesList(validationError ? 0 : numericPetId); // Skip if validation error
 
   // Convert error message to error object for compatibility
@@ -140,15 +139,6 @@ export function ActivitiesListPage() {
     }
   };
 
-  const handleActivityDuplicate = async (activityId: number) => {
-    try {
-      await duplicateActivity(activityId);
-    } catch (error) {
-      console.error('Failed to duplicate activity:', error);
-      alert('Failed to duplicate activity. Please try again.');
-    }
-  };
-
   // Generate breadcrumbs
   const breadcrumbs = BreadcrumbBuilder.forActivitiesList(pet.name, numericPetId);
 
@@ -204,7 +194,6 @@ export function ActivitiesListPage() {
               onActivityEdit={handleActivityEdit}
               onActivityView={handleActivityEdit} // Map view to edit for page navigation
               onActivityDelete={handleActivityDelete}
-              onActivityDuplicate={handleActivityDuplicate}
               className="mb-6"
             />
           ) : (

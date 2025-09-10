@@ -28,40 +28,38 @@ impl PetDatabase {
             })?;
 
         // Get all activities and rebuild FTS index
-        let rows =
-            sqlx::query("SELECT id, title, description, subcategory, location FROM activities")
-                .fetch_all(&mut *tx)
-                .await
-                .map_err(|e| ActivityError::InvalidData {
-                    message: format!("Activities fetch error: {e}"),
-                })?;
+        let rows = sqlx::query("SELECT id, subcategory, activity_data FROM activities")
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(|e| ActivityError::InvalidData {
+                message: format!("Activities fetch error: {e}"),
+            })?;
 
         let mut indexed_count = 0;
         for row in rows {
             let id: i64 = row.try_get("id").map_err(|e| ActivityError::InvalidData {
                 message: format!("Invalid id: {e}"),
             })?;
-            let title: String = row
-                .try_get("title")
-                .map_err(|e| ActivityError::InvalidData {
-                    message: format!("Invalid title: {e}"),
-                })?;
-            let description: Option<String> = row.try_get("description").ok();
             let subcategory: String =
                 row.try_get("subcategory")
                     .map_err(|e| ActivityError::InvalidData {
                         message: format!("Invalid subcategory: {e}"),
                     })?;
-            let location: Option<String> = row.try_get("location").ok();
 
+            // Extract text content from activity_data JSON for search indexing
+            let activity_data: Option<String> = row.try_get("activity_data").ok();
+            let searchable_content = activity_data.unwrap_or_else(|| "{}".to_string());
+
+            // For now, store the JSON data directly in the description field for simple text search
+            // In the future, this could be enhanced to extract specific fields like title, notes, etc.
             sqlx::query(
                 "INSERT INTO activities_fts(rowid, title, description, subcategory, location) VALUES (?, ?, ?, ?, ?)"
             )
             .bind(id)
-            .bind(&title)
-            .bind(&description)
+            .bind(&subcategory) // Use subcategory as title for now
+            .bind(&searchable_content) // Store JSON data for search
             .bind(&subcategory)
-            .bind(&location)
+            .bind("") // No separate location field anymore
             .execute(&mut *tx)
             .await
             .map_err(|e| ActivityError::InvalidData { message: format!("FTS insert error: {e}") })?;
@@ -104,9 +102,7 @@ impl PetDatabase {
         let rows = sqlx::query(
             r#"
             SELECT 
-                a.id, a.pet_id, a.category, a.subcategory, a.title, a.description, 
-                a.activity_date, a.activity_data, a.cost, a.currency, a.location, 
-                a.mood_rating, a.created_at, a.updated_at,
+                a.id, a.pet_id, a.category, a.subcategory, a.activity_data, a.created_at, a.updated_at,
                 fts.rank
             FROM activities_fts fts
             JOIN activities a ON a.id = fts.rowid
@@ -139,7 +135,7 @@ impl PetDatabase {
             results.push(FtsSearchResult {
                 activity,
                 rank,
-                matched_fields: vec!["title".to_string()], // Simplified
+                matched_fields: vec!["activity_data".to_string()], // Simplified - searching in JSON data
             });
         }
 
@@ -310,7 +306,7 @@ impl PetDatabase {
 
         // Add missing FTS entries
         let missing_activities = sqlx::query(
-            "SELECT id, title, description, subcategory, location FROM activities WHERE id NOT IN (SELECT rowid FROM activities_fts)"
+            "SELECT id, subcategory, activity_data FROM activities WHERE id NOT IN (SELECT rowid FROM activities_fts)"
         )
         .fetch_all(&mut *tx)
         .await
@@ -320,27 +316,24 @@ impl PetDatabase {
             let id: i64 = row.try_get("id").map_err(|e| ActivityError::InvalidData {
                 message: format!("Invalid id: {e}"),
             })?;
-            let title: String = row
-                .try_get("title")
-                .map_err(|e| ActivityError::InvalidData {
-                    message: format!("Invalid title: {e}"),
-                })?;
-            let description: Option<String> = row.try_get("description").ok();
             let subcategory: String =
                 row.try_get("subcategory")
                     .map_err(|e| ActivityError::InvalidData {
                         message: format!("Invalid subcategory: {e}"),
                     })?;
-            let location: Option<String> = row.try_get("location").ok();
+
+            // Extract text content from activity_data JSON for search indexing
+            let activity_data: Option<String> = row.try_get("activity_data").ok();
+            let searchable_content = activity_data.unwrap_or_else(|| "{}".to_string());
 
             sqlx::query(
                 "INSERT INTO activities_fts(rowid, title, description, subcategory, location) VALUES (?, ?, ?, ?, ?)"
             )
             .bind(id)
-            .bind(&title)
-            .bind(&description)
+            .bind(&subcategory) // Use subcategory as title for now
+            .bind(&searchable_content) // Store JSON data for search
             .bind(&subcategory)
-            .bind(&location)
+            .bind("") // No separate location field anymore
             .execute(&mut *tx)
             .await
             .map_err(|e| ActivityError::InvalidData { message: format!("FTS repair insert error: {e}") })?;

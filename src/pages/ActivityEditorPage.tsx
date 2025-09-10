@@ -6,14 +6,10 @@ import { ActivityFormData, ActivityMode } from '../lib/types/activities';
 import { RouteValidator, RouteBuilder, BreadcrumbBuilder } from '../lib/types/routing';
 import { PetContextHeader, PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
 import ActivityEditorCore from '../components/activities/ActivityEditorCore';
-import {
-  DraftProvider,
-  DraftOverview,
-  useDraftRecovery,
-} from '../components/activities/DraftManager';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { getActivityTitle } from '../lib/utils/activityUtils';
 
 /**
  * ActivityEditorPage - Full-screen activity creation and editing page
@@ -30,14 +26,11 @@ import { Alert, AlertDescription } from '../components/ui/alert';
  * - Error handling for invalid pet IDs or activities
  * - Loading states with skeleton UI
  * - Optimistic updates and proper navigation
- * - Draft auto-save and recovery functionality
- * - Draft status indicators in UI
  *
  * Integration:
  * - Uses existing ActivityEditor component without Dialog wrapper
  * - Integrates with React Query for data management
  * - Follows established routing patterns and error handling
- * - Integrates DraftManager and DraftIndicator components
  */
 export function ActivityEditorPage() {
   const { petId, activityId } = useParams<{ petId: string; activityId?: string }>();
@@ -60,16 +53,11 @@ export function ActivityEditorPage() {
     return <InvalidPetIdError message={validationError} />;
   }
 
-  // Wrap with DraftProvider for draft functionality
-  return (
-    <DraftProvider petId={numericPetId}>
-      <ActivityEditorPageContent activityId={activityId} numericPetId={numericPetId} />
-    </DraftProvider>
-  );
+  return <ActivityEditorPageContent activityId={activityId} numericPetId={numericPetId} />;
 }
 
 /**
- * Main ActivityEditorPage content wrapped with draft functionality
+ * Main ActivityEditorPage content
  */
 function ActivityEditorPageContent({
   activityId,
@@ -88,11 +76,6 @@ function ActivityEditorPageContent({
   // Parse query parameters with proper defaults
   const mode = (searchParams.get('mode') as ActivityMode) || (isEditMode ? 'advanced' : 'quick');
   const templateId = searchParams.get('template') || undefined;
-
-  // Draft recovery hook
-  const { RecoveryDialog } = useDraftRecovery();
-
-  // Auto-save functionality is handled by ActivityEditorCore
 
   // Fetch pet data
   // Fetch pets data using hook
@@ -151,8 +134,7 @@ function ActivityEditorPageContent({
         petId: activity.pet_id,
         category: activity.category as any, // Category will need proper conversion
         subcategory: activity.subcategory,
-        templateId: activity.activity_data?.templateId || '',
-        blocks: activity.activity_data?.blocks || {},
+        blocks: activity.activity_data || {},
       }
     : undefined;
 
@@ -198,7 +180,7 @@ function ActivityEditorPageContent({
           active: false,
         },
         {
-          label: activity?.title || 'Edit Activity',
+          label: activity ? getActivityTitle(activity) : 'Edit Activity',
           active: true,
         },
       ]
@@ -226,11 +208,6 @@ function ActivityEditorPageContent({
         </div>
       )}
 
-      {/* Draft Overview - Shows if there are any drafts */}
-      <div className="max-w-4xl mx-auto px-4 pt-2">
-        <DraftOverview petId={numericPetId} className="mb-2" />
-      </div>
-
       {/* Direct Activity Editor - No wrapper cards */}
       <main className="max-w-4xl mx-auto px-4 pb-6">
         <ActivityEditorCore
@@ -243,15 +220,6 @@ function ActivityEditorPageContent({
           className=""
         />
       </main>
-
-      {/* Draft Recovery Dialog */}
-      <RecoveryDialog
-        onRecover={draft => {
-          // Handle draft recovery
-          console.log('Recovering draft:', draft);
-          // TODO: Populate form with draft data
-        }}
-      />
     </div>
   );
 }

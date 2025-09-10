@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
 import { Activity, activityKeys } from './useActivities';
 import { ActivityFilters } from '../components/activities/FilterBar';
-{
-  /* Unused imports removed */
-}
+import {
+  getActivityTitle,
+  getActivityDescription,
+  getActivityDate,
+} from '../lib/utils/activityUtils';
 
 export interface ActivitiesListState {
   // Data
@@ -19,7 +21,6 @@ export interface ActivitiesListState {
 
   // Loading states for operations
   isDeleting: boolean;
-  isDuplicating: boolean;
 }
 
 export interface ActivitiesListActions {
@@ -29,7 +30,6 @@ export interface ActivitiesListActions {
 
   // Activity operations with optimistic updates
   deleteActivity: (activityId: number) => Promise<void>;
-  duplicateActivity: (activityId: number) => Promise<void>;
 }
 
 /**
@@ -82,6 +82,8 @@ export function useActivitiesList(petId: number): ActivitiesListState & Activiti
   }, [filters, petId]);
 
   // Fetch activities using optimized cache keys
+  console.log(`🎯 useActivitiesList called with petId: ${petId}, enabled: ${!!petId}`);
+
   const {
     data: activities = [],
     isLoading,
@@ -89,12 +91,27 @@ export function useActivitiesList(petId: number): ActivitiesListState & Activiti
   } = useQuery<Activity[]>({
     queryKey: activityKeys.list(petId),
     queryFn: async () => {
+      console.log(`🔍 [useActivitiesList] Fetching activities for pet ${petId} from backend...`);
       const result = await invoke('get_activities_for_pet', { petId });
-      return result as Activity[];
+      const activities = result as Activity[];
+      console.log(
+        `📊 [useActivitiesList] Backend returned ${activities.length} activities for pet ${petId}:`,
+        activities,
+      );
+      return activities;
     },
-    staleTime: 30000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes cache time
-    enabled: !!petId, // Prevent unnecessary calls
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
+    enabled: !!petId,
+  });
+
+  console.log(`📋 [useActivitiesList] Query state:`, {
+    petId,
+    isLoading,
+    isError: !!error,
+    dataLength: activities.length,
+    enabled: !!petId,
+    error: error?.message,
   });
 
   // Filter activities
@@ -110,16 +127,16 @@ export function useActivitiesList(petId: number): ActivitiesListState & Activiti
       const query = filters.searchQuery.toLowerCase();
       filtered = filtered.filter(
         activity =>
-          activity.title.toLowerCase().includes(query) ||
+          getActivityTitle(activity).toLowerCase().includes(query) ||
           activity.subcategory.toLowerCase().includes(query) ||
-          activity.description?.toLowerCase().includes(query),
+          getActivityDescription(activity).toLowerCase().includes(query),
       );
     }
 
     if (filters.dateRange) {
       const { start, end } = filters.dateRange;
       filtered = filtered.filter(activity => {
-        const activityDate = new Date(activity.activity_date);
+        const activityDate = getActivityDate(activity);
         if (start && activityDate < start) return false;
         if (end && activityDate > end) return false;
         return true;
@@ -148,7 +165,7 @@ export function useActivitiesList(petId: number): ActivitiesListState & Activiti
 
     // Sort by date (newest first) as default
     return [...filtered].sort((a, b) => {
-      return new Date(b.activity_date).getTime() - new Date(a.activity_date).getTime();
+      return getActivityDate(b).getTime() - getActivityDate(a).getTime();
     });
   }, [activities, filters]);
 
@@ -187,77 +204,6 @@ export function useActivitiesList(petId: number): ActivitiesListState & Activiti
     },
   });
 
-  const duplicateMutation = useMutation({
-    mutationFn: async (activityId: number) => {
-      const result = await invoke('duplicate_activity', { activityId, petId });
-      return result as Activity;
-    },
-    onMutate: async activityId => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: activityKeys.list(petId) });
-
-      // Get original activity for optimistic update
-      const originalActivity = queryClient
-        .getQueryData<Activity[]>(activityKeys.list(petId))
-        ?.find(activity => activity.id === activityId);
-
-      if (originalActivity) {
-        // Create optimistic duplicate
-        const tempDuplicate: Activity = {
-          ...originalActivity,
-          id: Date.now(), // Temporary ID
-          title: `${originalActivity.title} (Copy)`,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        // Add to cache optimistically
-        queryClient.setQueryData<Activity[]>(activityKeys.list(petId), (old = []) => [
-          tempDuplicate,
-          ...old,
-        ]);
-
-        return { originalActivity, tempDuplicate };
-      }
-
-      return {};
-    },
-    onSuccess: (newActivity, _, context) => {
-      // Replace optimistic update with real data
-      queryClient.setQueryData<Activity[]>(activityKeys.list(petId), (old = []) => {
-        if (context?.tempDuplicate) {
-          // Replace temp activity with real one
-          return old.map(activity =>
-            activity.id === context.tempDuplicate.id ? newActivity : activity,
-          );
-        } else {
-          // Fallback: just add to start
-          return [newActivity, ...old];
-        }
-      });
-
-      // Cache the individual activity
-      queryClient.setQueryData(activityKeys.detail(newActivity.id), newActivity);
-    },
-    onError: (_, __, context) => {
-      // Remove optimistic update on error
-      if (context?.tempDuplicate) {
-        queryClient.setQueryData<Activity[]>(activityKeys.list(petId), (old = []) =>
-          old.filter(activity => activity.id !== context.tempDuplicate.id),
-        );
-      }
-      // Refetch on error to ensure consistency
-      queryClient.invalidateQueries({ queryKey: activityKeys.list(petId) });
-    },
-    onSettled: newActivity => {
-      // Ensure consistency
-      queryClient.invalidateQueries({ queryKey: activityKeys.list(petId) });
-      if (newActivity) {
-        queryClient.invalidateQueries({ queryKey: activityKeys.detail(newActivity.id) });
-      }
-    },
-  });
-
   // Action implementations
   const updateFilters = useCallback((newFilters: Partial<ActivityFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -277,13 +223,6 @@ export function useActivitiesList(petId: number): ActivitiesListState & Activiti
     [deleteMutation],
   );
 
-  const duplicateActivity = useCallback(
-    async (activityId: number) => {
-      await duplicateMutation.mutateAsync(activityId);
-    },
-    [duplicateMutation],
-  );
-
   return {
     // State
     activities,
@@ -292,12 +231,10 @@ export function useActivitiesList(petId: number): ActivitiesListState & Activiti
     error: error?.message || null,
     filters,
     isDeleting: deleteMutation.isPending,
-    isDuplicating: duplicateMutation.isPending,
 
     // Actions
     updateFilters,
     clearFilters,
     deleteActivity,
-    duplicateActivity,
   };
 }

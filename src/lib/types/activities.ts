@@ -53,12 +53,11 @@ export interface ActivityTemplate {
 // Activity interaction modes
 export type ActivityMode = 'quick' | 'guided' | 'advanced';
 
-// Core activity form data structure
+// Core activity form data structure - matches backend ActivityCreateRequest
 export interface ActivityFormData {
   petId: number;
   category: ActivityCategory;
   subcategory: string;
-  templateId: string;
   blocks: Record<string, any>;
 }
 
@@ -347,26 +346,11 @@ export interface ActivityRecord {
   pet_id: number;
   category: string;
   subcategory: string;
-  title: string;
-  description?: string;
-  activity_date: string; // ISO date string
-  activity_data: {
-    templateId: string;
-    blocks: Record<string, any>;
-    mode: ActivityMode;
-  };
+  activity_data: Record<string, any>; // Contains blocks data as JSON
   created_at: string;
   updated_at: string;
 }
 
-// Activity draft for auto-save functionality
-export interface ActivityDraft {
-  id?: number;
-  pet_id: number;
-  template_id: string;
-  activity_data: Partial<ActivityFormData>;
-  updated_at: string;
-}
 
 // Activity timeline display interfaces
 export interface ActivityTimelineItem {
@@ -469,18 +453,7 @@ export const activityFormSchema = z.object({
     required_error: 'Category is required',
   }),
   subcategory: z.string().min(1, 'Subcategory is required'),
-  templateId: z.string().min(1, 'Template is required'),
-  title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
-  description: z.string().max(1000, 'Description too long').optional(),
-  activityDate: z.date({
-    required_error: 'Activity date is required',
-  }),
   blocks: z.record(z.any()).default({}),
-  measurements: z.record(measurementSchema).optional(),
-  attachments: z.array(z.any()).optional(),
-  cost: costSchema.optional(),
-  reminder: z.any().optional(),
-  recurrence: z.any().optional(),
 });
 
 export type ActivityFormSchemaType = z.infer<typeof activityFormSchema>;
@@ -511,15 +484,6 @@ export interface UseActivitiesReturn {
   getActivity: (id: number) => Promise<ActivityResponse<ActivityRecord>>;
 }
 
-export interface UseActivityDraftReturn {
-  draft: ActivityDraft | null;
-  isLoading: boolean;
-  error?: string;
-  saveDraft: (data: Partial<ActivityFormData>) => Promise<void>;
-  loadDraft: (petId: number, templateId: string) => Promise<ActivityDraft | null>;
-  deleteDraft: (id: number) => Promise<void>;
-  hasDraft: boolean;
-}
 
 export interface UseRecentTemplatesReturn {
   recentTemplates: RecentTemplate[];
@@ -545,7 +509,6 @@ export const SUPPORTED_ATTACHMENT_TYPES = [
   'application/pdf', 'text/plain'
 ];
 
-export const DRAFT_AUTO_SAVE_INTERVAL = 3000; // 3 seconds
 export const UNDO_TIMEOUT = 6000; // 6 seconds
 
 // Default configurations for blocks

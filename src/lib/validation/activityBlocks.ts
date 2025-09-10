@@ -340,43 +340,17 @@ export const blockValidationRegistry: Record<ActivityBlockType, z.ZodSchema> = {
   'recurrence': recurrenceBlockSchema,
 };
 
-// Complete activity form validation schema
+// Complete activity form validation schema - matches ActivityFormData interface
 export const activityFormValidationSchema = z.object({
   petId: z.number().min(1, 'Pet is required'),
   category: z.nativeEnum(ActivityCategory, {
     required_error: 'Category is required',
   }),
   subcategory: requiredTextSchema(1, 100),
-  templateId: requiredTextSchema(1, 100),
-  title: requiredTextSchema(1, 200),
-  description: textSchema(0, 1000).optional(),
-  activityDate: pastDateSchema,
   blocks: z.record(z.string(), z.any()).default({}),
-  
-  // Optional specific block data (validated separately)
-  measurements: z.record(measurementBlockSchema).optional(),
-  attachments: attachmentArraySchema.optional(),
-  cost: costBlockSchema.optional(),
-  reminder: reminderBlockSchema.optional(),
-  recurrence: recurrenceBlockSchema.optional(),
-}).superRefine((data, ctx) => {
-  // Custom cross-field validation
-  if (data.category === ActivityCategory.Expense && !data.cost) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Cost information is required for expense activities',
-      path: ['cost'],
-    });
-  }
-  
-  if (data.category === ActivityCategory.Health && data.activityDate > new Date()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Health activities cannot be scheduled for the future',
-      path: ['activityDate'],
-    });
-  }
 });
+
+// Simplified validation - block-level validation happens within blocks
 
 // Utility functions for block validation
 
