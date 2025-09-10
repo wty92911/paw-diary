@@ -6,7 +6,6 @@ use crate::database::{
     GetActivityDraftsResponse, SearchActivitiesRequest,
 };
 use crate::errors::ActivityError;
-use crate::validation;
 use chrono::{DateTime, Utc};
 use tauri::State;
 
@@ -18,16 +17,20 @@ pub async fn create_activity(
 ) -> Result<Activity, ActivityError> {
     log::info!(
         "Creating new activity: {} for pet {}",
-        activity_data.title,
+        activity_data
+            .activity_data
+            .as_ref()
+            .map(|v| v.to_string())
+            .unwrap_or_default(),
         activity_data.pet_id
     );
 
-    // Validate input data
-    validation::validate_activity_create_request(&activity_data)?;
-
     // Verify pet exists
-    if let Err(_) = state.database.get_pet_by_id(activity_data.pet_id).await {
-        return Err(ActivityError::validation("pet_id", "Pet not found"));
+    if let Err(e) = state.database.get_pet_by_id(activity_data.pet_id).await {
+        return Err(ActivityError::validation(
+            "pet_id",
+            &format!("Pet not found: {e}"),
+        ));
     }
 
     let activity = state.database.create_activity(activity_data).await?;
@@ -52,16 +55,13 @@ pub async fn update_activity(
         ));
     }
 
-    // Validate update data
-    validation::validate_activity_update_request(&updates)?;
-
     // Check if activity exists
     let _existing_activity = state.database.get_activity_by_id(activity_id).await?;
 
     // Update the activity
     let updated_activity = state.database.update_activity(activity_id, updates).await?;
 
-    log::info!("Activity updated successfully: {}", updated_activity.title);
+    log::info!("Activity updated successfully: {activity_id}",);
     Ok(updated_activity)
 }
 
@@ -89,9 +89,6 @@ pub async fn update_activity_for_pet(
         ));
     }
 
-    // Validate update data
-    validation::validate_activity_update_request(&updates)?;
-
     // Verify pet exists
     if let Err(_) = state.database.get_pet_by_id(pet_id).await {
         return Err(ActivityError::validation("pet_id", "Pet not found"));
@@ -116,7 +113,7 @@ pub async fn update_activity_for_pet(
     // Update the activity
     let updated_activity = state.database.update_activity(activity_id, updates).await?;
 
-    log::info!("Activity updated successfully: {}", updated_activity.title);
+    log::info!("Activity updated successfully: {}", updated_activity.id);
     Ok(updated_activity)
 }
 
@@ -137,7 +134,15 @@ pub async fn get_activity(
 
     let activity = state.database.get_activity_by_id(activity_id).await?;
 
-    log::info!("Activity retrieved: {}", activity.title);
+    log::info!(
+        "Activity retrieved: {}: {}",
+        activity.id,
+        activity
+            .activity_data
+            .as_ref()
+            .map(|v| v.to_string())
+            .unwrap_or_default(),
+    );
     Ok(activity)
 }
 
@@ -185,7 +190,15 @@ pub async fn get_activity_for_pet(
         ));
     }
 
-    log::info!("Activity retrieved: {}", activity.title);
+    log::info!(
+        "Activity retrieved: {}: {}",
+        activity.id,
+        activity
+            .activity_data
+            .as_ref()
+            .map(|v| v.to_string())
+            .unwrap_or_default(),
+    );
     Ok(activity)
 }
 
@@ -780,8 +793,11 @@ pub async fn delete_activity_draft(
     }
 
     // Verify pet exists
-    if let Err(_) = state.database.get_pet_by_id(pet_id).await {
-        return Err(ActivityError::validation("pet_id", "Pet not found"));
+    if let Err(e) = state.database.get_pet_by_id(pet_id).await {
+        return Err(ActivityError::validation(
+            "pet_id",
+            &format!("Pet not found: {e}"),
+        ));
     }
 
     // Check if draft exists and belongs to the specified pet
@@ -831,8 +847,11 @@ pub async fn convert_draft_to_activity(
     }
 
     // Verify pet exists
-    if let Err(_) = state.database.get_pet_by_id(pet_id).await {
-        return Err(ActivityError::validation("pet_id", "Pet not found"));
+    if let Err(e) = state.database.get_pet_by_id(pet_id).await {
+        return Err(ActivityError::validation(
+            "pet_id",
+            &format!("Pet not found: {e}"),
+        ));
     }
 
     // Get the draft and verify it belongs to the specified pet
@@ -865,14 +884,7 @@ pub async fn convert_draft_to_activity(
         pet_id: draft.pet_id,
         category: draft.category,
         subcategory: draft.subcategory.unwrap_or_default(),
-        title: draft.title.unwrap(),
-        description: draft.description,
-        activity_date: draft.activity_date.unwrap(),
         activity_data: draft.activity_data,
-        cost: draft.cost,
-        currency: draft.currency,
-        location: draft.location,
-        mood_rating: draft.mood_rating,
     };
 
     // Create the activity

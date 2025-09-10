@@ -126,7 +126,6 @@ export function useActivityDraftSimple({
               ...data,
               // Ensure core fields are preserved
               petId: data.petId || petId,
-              activityDate: data.activityDate || new Date(),
             },
             metadata: {
               lastSaved: new Date(),

@@ -152,9 +152,6 @@ function ActivityEditorPageContent({
         category: activity.category as any, // Category will need proper conversion
         subcategory: activity.subcategory,
         templateId: activity.activity_data?.templateId || '',
-        title: activity.title,
-        description: activity.description || '',
-        activityDate: new Date(activity.activity_date),
         blocks: activity.activity_data?.blocks || {},
       }
     : undefined;

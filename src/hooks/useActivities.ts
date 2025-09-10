@@ -75,9 +75,8 @@ export function useCreateActivity() {
           pet_id: petId,
           category: activityData.category,
           subcategory: activityData.subcategory || '',
-          title: activityData.title || '',
-          description: activityData.description,
-          activity_date: activityData.activityDate.toISOString(),
+          title: 'Saving...', // Temporary title
+          activity_date: new Date().toISOString(), // Temporary date
           activity_data: {
             templateId: activityData.templateId || 'default',
             blocks: activityData.blocks || {},

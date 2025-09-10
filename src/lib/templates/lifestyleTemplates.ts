@@ -2,7 +2,6 @@ import {
   ActivityTemplate, 
   ActivityCategory, 
   ActivityBlockType,
-  QuickLogTemplate,
   DEFAULT_RATING_CONFIG,
   DEFAULT_ATTACHMENT_CONFIG
 } from '../types/activities';
@@ -416,69 +415,5 @@ export const lifestyleTemplates: ActivityTemplate[] = [
   }
 ];
 
-// Lifestyle quick log templates
-export const lifestyleQuickLogTemplates: QuickLogTemplate[] = [
-  {
-    templateId: 'lifestyle.walk',
-    category: ActivityCategory.Lifestyle,
-    subcategory: 'Walk',
-    label: 'Quick Walk',
-    icon: '🚶',
-    blocks: [
-      {
-        id: 'timer',
-        type: 'timer' as ActivityBlockType,
-        label: 'Duration',
-        required: true,
-        config: {
-          timerType: 'duration',
-          showPresets: true,
-          presets: [15, 30, 45, 60]
-        }
-      },
-      {
-        id: 'energy_rating',
-        type: 'rating' as ActivityBlockType,
-        label: 'Energy',
-        required: false,
-        config: {
-          ...DEFAULT_RATING_CONFIG,
-          ratingType: 'energy',
-          scale: 5
-        }
-      }
-    ]
-  },
-  {
-    templateId: 'lifestyle.play',
-    category: ActivityCategory.Lifestyle,
-    subcategory: 'Play',
-    label: 'Quick Play',
-    icon: '🎾',
-    blocks: [
-      {
-        id: 'title',
-        type: 'title' as ActivityBlockType,
-        label: 'Activity',
-        required: true,
-        config: {
-          placeholder: 'What did you play?',
-          maxLength: 50
-        }
-      },
-      {
-        id: 'timer',
-        type: 'timer' as ActivityBlockType,
-        label: 'Duration',
-        required: true,
-        config: {
-          timerType: 'duration',
-          showPresets: true,
-          presets: [5, 10, 15, 30]
-        }
-      }
-    ]
-  }
-];
 
 export default lifestyleTemplates;

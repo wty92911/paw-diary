@@ -115,14 +115,7 @@ pub struct Activity {
     pub pet_id: i64,
     pub category: ActivityCategory,
     pub subcategory: String,
-    pub title: String,
-    pub description: Option<String>,
-    pub activity_date: DateTime<Utc>,
     pub activity_data: Option<serde_json::Value>,
-    pub cost: Option<f32>,
-    pub currency: Option<String>,
-    pub location: Option<String>,
-    pub mood_rating: Option<i32>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -214,14 +207,7 @@ pub struct ActivityCreateRequest {
     pub pet_id: i64,
     pub category: ActivityCategory,
     pub subcategory: String,
-    pub title: String,
-    pub description: Option<String>,
-    pub activity_date: DateTime<Utc>,
     pub activity_data: Option<serde_json::Value>,
-    pub cost: Option<f32>,
-    pub currency: Option<String>,
-    pub location: Option<String>,
-    pub mood_rating: Option<i32>,
 }
 
 /// Request structure for updating an activity
@@ -229,14 +215,7 @@ pub struct ActivityCreateRequest {
 pub struct ActivityUpdateRequest {
     pub category: Option<ActivityCategory>,
     pub subcategory: Option<String>,
-    pub title: Option<String>,
-    pub description: Option<String>,
-    pub activity_date: Option<DateTime<Utc>>,
     pub activity_data: Option<serde_json::Value>,
-    pub cost: Option<f32>,
-    pub currency: Option<String>,
-    pub location: Option<String>,
-    pub mood_rating: Option<i32>,
 }
 
 /// Filters for activity queries

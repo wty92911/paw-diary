@@ -60,18 +60,6 @@ export interface ActivityFormData {
   subcategory: string;
   templateId: string;
   blocks: Record<string, any>;
-  
-  // Common fields
-  title: string;
-  description?: string;
-  activityDate: Date;
-  
-  // Optional block-specific data
-  measurements?: Record<string, MeasurementData>;
-  attachments?: AttachmentData[];
-  cost?: CostData;
-  reminder?: ReminderData;
-  recurrence?: RecurrenceData;
 }
 
 // Block-specific data types

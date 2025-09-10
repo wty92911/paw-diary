@@ -16,28 +16,15 @@ impl super::PetDatabase {
         let result = sqlx::query(
             r#"
             INSERT INTO activities (
-                pet_id, category, subcategory, title, description, activity_date, 
-                activity_data, cost, currency, location, mood_rating, created_at, updated_at
+                pet_id, category, subcategory, activity_data, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
             "#,
         )
         .bind(activity_data.pet_id)
         .bind(activity_data.category.to_string())
         .bind(&activity_data.subcategory)
-        .bind(&activity_data.title)
-        .bind(&activity_data.description)
-        .bind(
-            activity_data
-                .activity_date
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string(),
-        )
         .bind(activity_data.activity_data.as_ref().map(|v| v.to_string()))
-        .bind(activity_data.cost)
-        .bind(&activity_data.currency)
-        .bind(&activity_data.location)
-        .bind(activity_data.mood_rating)
         .bind(now)
         .bind(now)
         .execute(&self.pool)
@@ -64,32 +51,11 @@ impl super::PetDatabase {
         // Build dynamic update query
         let mut updates = Vec::new();
 
-        if activity_data.title.is_some() {
-            updates.push("title = ?");
-        }
         if activity_data.subcategory.is_some() {
             updates.push("subcategory = ?");
         }
-        if activity_data.description.is_some() {
-            updates.push("description = ?");
-        }
-        if activity_data.activity_date.is_some() {
-            updates.push("activity_date = ?");
-        }
         if activity_data.activity_data.is_some() {
             updates.push("activity_data = ?");
-        }
-        if activity_data.cost.is_some() {
-            updates.push("cost = ?");
-        }
-        if activity_data.currency.is_some() {
-            updates.push("currency = ?");
-        }
-        if activity_data.location.is_some() {
-            updates.push("location = ?");
-        }
-        if activity_data.mood_rating.is_some() {
-            updates.push("mood_rating = ?");
         }
 
         if !updates.is_empty() {
@@ -101,32 +67,11 @@ impl super::PetDatabase {
             let mut query = sqlx::query(&query_sql);
 
             // Add bindings in the same order as updates
-            if let Some(title) = activity_data.title {
-                query = query.bind(title);
-            }
             if let Some(subcategory) = activity_data.subcategory {
                 query = query.bind(subcategory);
             }
-            if let Some(description) = activity_data.description {
-                query = query.bind(description);
-            }
-            if let Some(activity_date) = activity_data.activity_date {
-                query = query.bind(activity_date.format("%Y-%m-%d %H:%M:%S").to_string());
-            }
             if let Some(activity_data_json) = activity_data.activity_data {
                 query = query.bind(activity_data_json.to_string());
-            }
-            if let Some(cost) = activity_data.cost {
-                query = query.bind(cost);
-            }
-            if let Some(currency) = activity_data.currency {
-                query = query.bind(currency);
-            }
-            if let Some(location) = activity_data.location {
-                query = query.bind(location);
-            }
-            if let Some(mood_rating) = activity_data.mood_rating {
-                query = query.bind(mood_rating);
             }
 
             query = query.bind(now).bind(id);
@@ -445,19 +390,6 @@ impl super::PetDatabase {
         &self,
         row: &sqlx::sqlite::SqliteRow,
     ) -> Result<Activity, ActivityError> {
-        let activity_date_str: String =
-            row.try_get("activity_date")
-                .map_err(|e| ActivityError::InvalidData {
-                    message: format!("Invalid activity_date: {e}"),
-                })?;
-
-        let activity_date = DateTime::parse_from_str(&activity_date_str, "%Y-%m-%d %H:%M:%S")
-            .or_else(|_| DateTime::parse_from_str(&activity_date_str, "%Y-%m-%d %H:%M:%S%.f"))
-            .map_err(|_| ActivityError::InvalidData {
-                message: format!("Invalid activity_date format: {activity_date_str}"),
-            })?
-            .with_timezone(&Utc);
-
         let category_str: String =
             row.try_get("category")
                 .map_err(|e| ActivityError::InvalidData {
@@ -481,19 +413,6 @@ impl super::PetDatabase {
                     message: format!("Invalid updated_at: {e}"),
                 })?;
 
-        // Parse JSON data if present
-        let activity_data = if let Ok(data_str) = row.try_get::<String, _>("activity_data") {
-            if !data_str.is_empty() {
-                serde_json::from_str(&data_str).map_err(|e| ActivityError::InvalidData {
-                    message: format!("Invalid activity_data JSON: {e}"),
-                })?
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-
         Ok(Activity {
             id: row.try_get("id").map_err(|e| ActivityError::InvalidData {
                 message: format!("Invalid id: {e}"),
@@ -509,18 +428,11 @@ impl super::PetDatabase {
                 .map_err(|e| ActivityError::InvalidData {
                     message: format!("Invalid subcategory: {e}"),
                 })?,
-            title: row
-                .try_get("title")
-                .map_err(|e| ActivityError::InvalidData {
-                    message: format!("Invalid title: {e}"),
-                })?,
-            description: row.try_get("description").ok(),
-            activity_date,
-            activity_data,
-            cost: row.try_get("cost").ok(),
-            currency: row.try_get("currency").ok(),
-            location: row.try_get("location").ok(),
-            mood_rating: row.try_get("mood_rating").ok(),
+            activity_data: row.try_get("activity_data").map_err(|e| {
+                ActivityError::InvalidData {
+                    message: format!("Invalid activity_data: {e}"),
+                }
+            })?,
             created_at,
             updated_at,
         })

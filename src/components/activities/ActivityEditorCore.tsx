@@ -78,9 +78,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
       category: selectedTemplate?.category || ActivityCategory.Diet,
       subcategory: selectedTemplate?.subcategory || '',
       templateId: selectedTemplate?.id || '',
-      title: selectedTemplate?.label || '',
-      description: '',
-      activityDate: new Date(),
       blocks: {},
       ...initialData,
       // ...draftData, // Apply draft data if available
@@ -105,11 +102,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
       if (newTemplate) {
         setValue('category', newTemplate.category);
         setValue('subcategory', newTemplate.subcategory);
-        // Auto-fill title with template label if current title is empty
-        const currentTitle = getValues('title');
-        if (!currentTitle || currentTitle.trim() === '') {
-          setValue('title', newTemplate.label);
-        }
         
         // Trigger form validation after template change
         setTimeout(() => {
@@ -455,25 +447,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
                         </div>
                       )}
                       
-                      {/* 6. Title validation */}
-                      {selectedTemplate && errors.title && (
-                        <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded">
-                          <span className="text-red-500">✗</span>
-                          <span className="text-sm text-red-700">
-                            <strong>Title Error:</strong> {(errors.title as any)?.message || 'Activity title is required (1-200 characters)'}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* 7. Activity Date validation */}
-                      {errors.activityDate && (
-                        <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded">
-                          <span className="text-red-500">✗</span>
-                          <span className="text-sm text-red-700">
-                            <strong>Date Error:</strong> {(errors.activityDate as any)?.message || 'Activity date cannot be in the future'}
-                          </span>
-                        </div>
-                      )}
                       
                       {/* 8. Required template blocks validation */}
                       {selectedTemplate && selectedTemplate.blocks
