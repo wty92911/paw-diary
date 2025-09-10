@@ -218,13 +218,18 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   }
 
   // Extract field error for this specific block
-  const fieldError = errors?.[block.id];
+  const fieldError = errors?.blocks?.[block.id];
   const hasError = !!fieldError;
+  
+  // Check if field has been touched and get current value
+  const currentValue = watch ? watch(`blocks.${block.id}` as any) : undefined;
+  const isEmpty = currentValue === undefined || currentValue === null || currentValue === '';
+  const showRequiredHint = block.required && isEmpty && hasError;
 
   const handleRetry = () => {
     // Clear any errors and re-render the component
     if (setValue) {
-      setValue(block.id, undefined);
+      setValue(`blocks.${block.id}` as any, undefined);
     }
     window.location.reload(); // Simple retry mechanism
   };
@@ -241,7 +246,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         >
           <BlockComponent
             control={control}
-            name={block.id}
+            name={`blocks.${block.id}`}
             label={block.label}
             required={block.required}
             config={block.config}
@@ -251,10 +256,33 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           />
         </Suspense>
       </BlockErrorBoundary>
-      {hasError && fieldError && (
-        <p className="text-sm text-destructive mt-1" role="alert">
-          {fieldError.message || 'This field has an error'}
-        </p>
+      {/* Required field hint */}
+      {showRequiredHint && (
+        <motion.div 
+          className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-md mt-2"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+        >
+          <span className="text-amber-600 text-xs">⚠️</span>
+          <p className="text-xs text-amber-700">
+            This field is required - please fill it out to continue
+          </p>
+        </motion.div>
+      )}
+      
+      {/* General field errors */}
+      {hasError && fieldError && !showRequiredHint && (
+        <motion.div
+          className="mt-2"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+        >
+          <p className="text-sm text-destructive" role="alert">
+            {fieldError.message || 'This field has an error'}
+          </p>
+        </motion.div>
       )}
     </BlockWrapper>
   );

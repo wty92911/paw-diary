@@ -2,12 +2,19 @@ import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Input } from '../../ui/input';
 import { Badge } from '../../ui/badge';
-import { BlockProps, TimeConfig } from '../../../lib/types/activities';
+import { BlockProps } from '../../../lib/types/activities';
 import { timeBlockSchema } from '../../../lib/validation/activityBlocks';
 
 
+interface TimeBlockConfig {
+  showDate?: boolean;
+  showTime?: boolean;
+  allowFuture?: boolean;
+  defaultToNow?: boolean;
+}
+
 // TimeBlock component for handling date and time input
-const TimeBlock: React.FC<BlockProps<TimeConfig>> = ({
+const TimeBlock: React.FC<BlockProps<TimeBlockConfig>> = ({
   control,
   name,
   label = 'Date & Time',
@@ -15,8 +22,8 @@ const TimeBlock: React.FC<BlockProps<TimeConfig>> = ({
   config = {},
 }) => {
   const {
-    showDate = true,
-    showTime = true,
+    showDate = false,
+    showTime = false,
     allowFuture = false,
     defaultToNow = true,
   } = config;
@@ -113,7 +120,7 @@ const TimeBlock: React.FC<BlockProps<TimeConfig>> = ({
       }}
       render={({ field, fieldState }) => {
         const inputValue = field.value 
-          ? formatDateForInput(field.value instanceof Date ? field.value : new Date(field.value))
+          ? formatDateForInput(field.value instanceof Date ? field.value : (typeof field.value === 'string' ? new Date(field.value) : new Date()))
           : '';
 
         const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,7 +129,8 @@ const TimeBlock: React.FC<BlockProps<TimeConfig>> = ({
             const parsedDate = parseInputToDate(inputValue);
             field.onChange(parsedDate);
           } else {
-            field.onChange(null);
+            // Don't set to null if required, use undefined for optional fields
+            field.onChange(required ? new Date() : undefined);
           }
         };
 

@@ -2,7 +2,6 @@ import {
   ActivityTemplate, 
   ActivityCategory, 
   ActivityBlockType,
-  QuickLogTemplate,
   DEFAULT_ATTACHMENT_CONFIG
 } from '../types/activities';
 
@@ -434,70 +433,5 @@ export const expenseTemplates: ActivityTemplate[] = [
   }
 ];
 
-// Expense quick log templates
-export const expenseQuickLogTemplates: QuickLogTemplate[] = [
-  {
-    templateId: 'expense.purchase',
-    category: ActivityCategory.Expense,
-    subcategory: 'Purchase',
-    label: 'Quick Purchase',
-    icon: '💰',
-    blocks: [
-      {
-        id: 'title',
-        type: 'title' as ActivityBlockType,
-        label: 'Item',
-        required: true,
-        config: {
-          placeholder: 'What did you buy?',
-          maxLength: 50
-        }
-      },
-      {
-        id: 'cost',
-        type: 'cost' as ActivityBlockType,
-        label: 'Cost',
-        required: true,
-        config: {
-          currencies: ['USD', 'CNY', 'EUR', 'GBP'],
-          defaultCurrency: 'USD',
-          showCategory: false,
-          allowReceipt: false
-        }
-      }
-    ]
-  },
-  {
-    templateId: 'expense.grooming',
-    category: ActivityCategory.Expense,
-    subcategory: 'Grooming',
-    label: 'Quick Grooming',
-    icon: '✂️',
-    blocks: [
-      {
-        id: 'cost',
-        type: 'cost' as ActivityBlockType,
-        label: 'Cost',
-        required: true,
-        config: {
-          currencies: ['USD', 'CNY', 'EUR', 'GBP'],
-          defaultCurrency: 'USD',
-          showCategory: false,
-          allowReceipt: false
-        }
-      },
-      {
-        id: 'rating',
-        type: 'rating' as ActivityBlockType,
-        label: 'Quality',
-        required: false,
-        config: {
-          scale: 5,
-          ratingType: 'quality'
-        }
-      }
-    ]
-  }
-];
 
 export default expenseTemplates;

@@ -1,9 +1,9 @@
 // Central export file for all activity templates
-export { default as dietTemplates, dietQuickLogTemplates } from './dietTemplates';
-export { default as growthTemplates, growthQuickLogTemplates } from './growthTemplates';
-export { default as healthTemplates, healthQuickLogTemplates } from './healthTemplates';
-export { default as lifestyleTemplates, lifestyleQuickLogTemplates } from './lifestyleTemplates';
-export { default as expenseTemplates, expenseQuickLogTemplates } from './expenseTemplates';
+export { default as dietTemplates } from './dietTemplates';
+export { default as growthTemplates } from './growthTemplates';
+export { default as healthTemplates } from './healthTemplates';
+export { default as lifestyleTemplates } from './lifestyleTemplates';
+export { default as expenseTemplates } from './expenseTemplates';
 
 // Re-export types
-export type { ActivityTemplate, QuickLogTemplate } from '../types/activities';
+export type { ActivityTemplate } from '../types/activities';

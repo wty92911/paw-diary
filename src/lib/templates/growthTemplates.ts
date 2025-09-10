@@ -2,7 +2,6 @@ import {
   ActivityTemplate, 
   ActivityCategory, 
   ActivityBlockType,
-  QuickLogTemplate,
   DEFAULT_MEASUREMENT_CONFIG,
   DEFAULT_ATTACHMENT_CONFIG
 } from '../types/activities';
@@ -208,51 +207,6 @@ export const growthTemplates: ActivityTemplate[] = [
           ...DEFAULT_ATTACHMENT_CONFIG,
           maxFiles: 5,
           showOCR: false
-        }
-      }
-    ]
-  }
-];
-
-// Growth quick log templates
-export const growthQuickLogTemplates: QuickLogTemplate[] = [
-  {
-    templateId: 'growth.weight',
-    category: ActivityCategory.Growth,
-    subcategory: 'Weight',
-    label: 'Quick Weight',
-    icon: '⚖️',
-    blocks: [
-      {
-        id: 'weight',
-        type: 'measurement' as ActivityBlockType,
-        label: 'Weight',
-        required: true,
-        config: {
-          ...DEFAULT_MEASUREMENT_CONFIG,
-          measurementType: 'weight',
-          units: ['kg', 'lbs'],
-          defaultUnit: 'kg'
-        }
-      }
-    ]
-  },
-  {
-    templateId: 'growth.height',
-    category: ActivityCategory.Growth,
-    subcategory: 'Height',
-    label: 'Quick Measurement',
-    icon: '📏',
-    blocks: [
-      {
-        id: 'height',
-        type: 'measurement' as ActivityBlockType,
-        label: 'Height',
-        required: true,
-        config: {
-          measurementType: 'height',
-          units: ['cm', 'in'],
-          defaultUnit: 'cm'
         }
       }
     ]

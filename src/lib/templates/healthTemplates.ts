@@ -2,7 +2,6 @@ import {
   ActivityTemplate, 
   ActivityCategory, 
   ActivityBlockType,
-  QuickLogTemplate,
   DEFAULT_ATTACHMENT_CONFIG
 } from '../types/activities';
 
@@ -287,67 +286,5 @@ export const healthTemplates: ActivityTemplate[] = [
   }
 ];
 
-// Health quick log templates
-export const healthQuickLogTemplates: QuickLogTemplate[] = [
-  {
-    templateId: 'health.medication',
-    category: ActivityCategory.Health,
-    subcategory: 'Medication',
-    label: 'Quick Medication',
-    icon: '💊',
-    blocks: [
-      {
-        id: 'title',
-        type: 'title' as ActivityBlockType,
-        label: 'Medication',
-        required: true,
-        config: {
-          placeholder: 'Medicine name...',
-          maxLength: 100
-        }
-      },
-      {
-        id: 'portion',
-        type: 'portion' as ActivityBlockType,
-        label: 'Dose',
-        required: true,
-        config: {
-          portionTypes: ['tablet', 'liquid'],
-          units: ['mg', 'ml', 'tablets'],
-          defaultUnit: 'mg'
-        }
-      }
-    ]
-  },
-  {
-    templateId: 'health.symptom',
-    category: ActivityCategory.Health,
-    subcategory: 'Symptom',
-    label: 'Quick Symptom',
-    icon: '🌡️',
-    blocks: [
-      {
-        id: 'title',
-        type: 'title' as ActivityBlockType,
-        label: 'Symptom',
-        required: true,
-        config: {
-          placeholder: 'What did you observe?',
-          maxLength: 100
-        }
-      },
-      {
-        id: 'rating',
-        type: 'rating' as ActivityBlockType,
-        label: 'Severity',
-        required: true,
-        config: {
-          scale: 5,
-          ratingType: 'severity'
-        }
-      }
-    ]
-  }
-];
 
 export default healthTemplates;

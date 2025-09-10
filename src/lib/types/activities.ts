@@ -306,28 +306,6 @@ export interface RecurrenceData {
   notes?: string;
 }
 
-// Time block configuration and data
-export interface TimeConfig {
-  showDate: boolean;
-  showTime: boolean;
-  allowFuture: boolean;
-  defaultToNow: boolean;
-  showPresets?: boolean;
-  presets?: TimePreset[];
-}
-
-export interface TimePreset {
-  id: string;
-  label: string;
-  offset: number; // Minutes from now
-}
-
-export interface TimeData {
-  date: Date;
-  time?: string;
-  timezone?: string;
-  notes?: string;
-}
 
 // Subcategory block configuration
 export interface SubcategoryConfig {
@@ -464,7 +442,6 @@ export interface TemplateRegistry {
   categories: ActivityCategory[];
   getTemplate(id: string): ActivityTemplate | undefined;
   getTemplatesByCategory(category: ActivityCategory): ActivityTemplate[];
-  getQuickLogTemplates(): QuickLogTemplate[];
 }
 
 // Form validation schemas

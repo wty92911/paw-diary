@@ -1,22 +1,12 @@
-import {
-  ActivityTemplate,
-  ActivityCategory,
-  TemplateRegistry,
-  QuickLogTemplate,
-} from './types/activities';
+import { ActivityTemplate, ActivityCategory, TemplateRegistry } from './types/activities';
 
 // Import templates from separate category files
 import {
   dietTemplates,
-  dietQuickLogTemplates,
   growthTemplates,
-  growthQuickLogTemplates,
   healthTemplates,
-  healthQuickLogTemplates,
   lifestyleTemplates,
-  lifestyleQuickLogTemplates,
   expenseTemplates,
-  expenseQuickLogTemplates,
 } from './templates';
 
 // Combine all templates from separate files
@@ -26,15 +16,6 @@ export const ACTIVITY_TEMPLATES: ActivityTemplate[] = [
   ...healthTemplates,
   ...lifestyleTemplates,
   ...expenseTemplates,
-];
-
-// Combine all quick log templates
-export const QUICK_LOG_TEMPLATES: QuickLogTemplate[] = [
-  ...dietQuickLogTemplates,
-  ...growthQuickLogTemplates,
-  ...healthQuickLogTemplates,
-  ...lifestyleQuickLogTemplates,
-  ...expenseQuickLogTemplates,
 ];
 
 // Template registry implementation
@@ -50,10 +31,6 @@ export class ActivityTemplateRegistry implements TemplateRegistry {
     return this.templates.filter(template => template.category === category);
   }
 
-  getQuickLogTemplates(): QuickLogTemplate[] {
-    return QUICK_LOG_TEMPLATES;
-  }
-
   getAllTemplates(): ActivityTemplate[] {
     return this.templates;
   }
@@ -62,10 +39,6 @@ export class ActivityTemplateRegistry implements TemplateRegistry {
     return this.templates.filter(
       template => template.category === category && template.subcategory === subcategory,
     );
-  }
-
-  getQuickLogEnabledTemplates(): ActivityTemplate[] {
-    return this.templates.filter(template => template.isQuickLogEnabled);
   }
 
   searchTemplates(query: string): ActivityTemplate[] {
@@ -90,10 +63,6 @@ export function getTemplateById(id: string): ActivityTemplate | undefined {
 
 export function getTemplatesByCategory(category: ActivityCategory): ActivityTemplate[] {
   return templateRegistry.getTemplatesByCategory(category);
-}
-
-export function getQuickLogTemplates(): QuickLogTemplate[] {
-  return templateRegistry.getQuickLogTemplates();
 }
 
 export function getAllCategories(): ActivityCategory[] {

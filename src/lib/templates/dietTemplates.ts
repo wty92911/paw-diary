@@ -2,7 +2,6 @@ import {
   ActivityTemplate, 
   ActivityCategory, 
   ActivityBlockType,
-  QuickLogTemplate,
   DEFAULT_PORTION_CONFIG,
   DEFAULT_ATTACHMENT_CONFIG
 } from '../types/activities';
@@ -184,62 +183,6 @@ export const dietTemplates: ActivityTemplate[] = [
         config: {
           placeholder: 'Training session, good behavior, special occasion...',
           maxLength: 200
-        }
-      }
-    ]
-  }
-];
-
-// Diet quick log templates
-export const dietQuickLogTemplates: QuickLogTemplate[] = [
-  {
-    templateId: 'diet.feeding',
-    category: ActivityCategory.Diet,
-    subcategory: 'Feeding',
-    label: 'Quick Feed',
-    icon: '🍽️',
-    blocks: [
-      {
-        id: 'portion',
-        type: 'portion' as ActivityBlockType,
-        label: 'Amount',
-        required: true,
-        config: {
-          ...DEFAULT_PORTION_CONFIG,
-          portionTypes: ['meal', 'snack'],
-          units: ['g', 'cups'],
-          defaultUnit: 'g'
-        }
-      },
-      {
-        id: 'notes',
-        type: 'notes' as ActivityBlockType,
-        label: 'Notes',
-        required: false,
-        config: {
-          placeholder: 'Food type, appetite...',
-          maxLength: 100
-        }
-      }
-    ]
-  },
-  {
-    templateId: 'diet.water',
-    category: ActivityCategory.Diet,
-    subcategory: 'Water',
-    label: 'Quick Water',
-    icon: '💧',
-    blocks: [
-      {
-        id: 'portion',
-        type: 'portion' as ActivityBlockType,
-        label: 'Amount',
-        required: true,
-        config: {
-          portionTypes: ['bowl'],
-          units: ['ml', 'cups'],
-          defaultUnit: 'ml',
-          showBrand: false
         }
       }
     ]
