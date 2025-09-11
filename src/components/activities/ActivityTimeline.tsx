@@ -1,5 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, Calendar, SortDesc } from 'lucide-react';
 import { Input } from '../ui/input';
@@ -72,9 +71,6 @@ export default function ActivityTimeline({
   const [filters, setFilters] = useState<TimelineFilters>(DEFAULT_FILTERS);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [groupingMode, setGroupingMode] = useState<GroupingMode>('daily');
-  
-  // Ref for the scrollable container
-  const parentRef = useRef<HTMLDivElement>(null);
 
   // Filter and sort activities
   const filteredActivities = useMemo(() => {
@@ -255,20 +251,6 @@ export default function ActivityTimeline({
   const handleGroupingChange = useCallback((mode: GroupingMode) => {
     setGroupingMode(mode);
   }, []);
-
-  // Setup virtualization
-  const virtualizer = useVirtualizer({
-    count: virtualItems.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: useCallback((index) => {
-      const item = virtualItems[index];
-      if ('type' in item && item.type === 'header') {
-        return 60; // Height for group headers
-      }
-      return 120; // Estimated height for activity cards
-    }, [virtualItems]),
-    overscan: 5,
-  });
 
   // Calculate summary statistics
   const stats = useMemo(() => {
@@ -569,7 +551,7 @@ export default function ActivityTimeline({
         )}
       </AnimatePresence>
 
-      {/* Virtualized Timeline content */}
+      {/* Timeline content - without virtualization to avoid double scrollbars */}
       {virtualItems.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
@@ -591,96 +573,48 @@ export default function ActivityTimeline({
           </CardContent>
         </Card>
       ) : (
-        <div
-          ref={parentRef}
-          className="h-[600px] overflow-auto"
-          style={{
-            contain: 'strict',
-          }}
-        >
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const item = virtualItems[virtualRow.index];
-              const isHeader = 'type' in item && item.type === 'header';
-              
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  {isHeader ? (
-                    // Group header with animation
-                    <motion.div 
-                      className="flex items-center gap-3 py-4"
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: virtualRow.index * 0.02 }}
-                    >
-                      <motion.h3 
-                        className="font-semibold text-foreground"
-                        initial={{ x: -20 }}
-                        animate={{ x: 0 }}
-                        transition={{ duration: 0.3, delay: virtualRow.index * 0.02 + 0.1 }}
-                      >
+        <div className="space-y-6">
+          {virtualItems.map((item, index) => {
+            const isHeader = 'type' in item && item.type === 'header';
+            
+            return (
+              <div key={isHeader ? (item as TimelineGroup).id : (item as ActivityTimelineItem).id}>
+                {isHeader ? (
+                  // Group header with improved spacing
+                  <div className="relative mb-4 mt-8 first:mt-0">
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-semibold text-foreground whitespace-nowrap bg-background px-2">
                         {(item as TimelineGroup).title}
-                      </motion.h3>
-                      <motion.div 
-                        className="flex-1 h-px bg-border"
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: 1 }}
-                        transition={{ duration: 0.4, delay: virtualRow.index * 0.02 + 0.15 }}
-                        style={{ originX: 0 }}
-                      />
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.2, delay: virtualRow.index * 0.02 + 0.2 }}
-                      >
-                        <Badge variant="outline" className="text-xs">
-                          {(item as TimelineGroup).items.length} {(item as TimelineGroup).items.length === 1 ? 'activity' : 'activities'}
-                        </Badge>
-                      </motion.div>
-                    </motion.div>
-                  ) : (
-                    // Activity card with stagger animation
-                    <motion.div 
-                      className={cn(
-                        'py-2',
-                        groupingMode !== 'none' && 'pl-4'
-                      )}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ 
-                        duration: 0.3, 
-                        delay: Math.min(virtualRow.index * 0.03, 0.5) 
-                      }}
-                    >
-                      <ActivityCard
-                        activity={item as ActivityTimelineItem}
-                        onEdit={onActivityEdit}
-                        onDelete={onActivityDelete}
-                        onShare={onActivityShare}
-                        onViewDetails={onActivityView}
-                      />
-                    </motion.div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                      </h3>
+                      <div className="flex-1 h-px bg-border" />
+                      <Badge variant="outline" className="text-xs bg-background">
+                        {(item as TimelineGroup).items.length} {(item as TimelineGroup).items.length === 1 ? 'activity' : 'activities'}
+                      </Badge>
+                    </div>
+                  </div>
+                ) : (
+                  // Activity card with improved alignment
+                  <motion.div 
+                    className="w-full max-w-3xl mx-auto"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: 0.3, 
+                      delay: Math.min(index * 0.02, 0.3) 
+                    }}
+                  >
+                    <ActivityCard
+                      activity={item as ActivityTimelineItem}
+                      onEdit={onActivityEdit}
+                      onDelete={onActivityDelete}
+                      onShare={onActivityShare}
+                      onViewDetails={onActivityView}
+                    />
+                  </motion.div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

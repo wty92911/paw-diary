@@ -10,7 +10,6 @@ import { RouteValidator, BreadcrumbBuilder, RouteBuilder } from '../lib/types/ro
 import { convertActivitiesToTimelineItems } from '../lib/utils/activityUtils';
 import { PetContextHeader, PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
 import ActivityTimeline from '../components/activities/ActivityTimeline';
-import FilterBar from '../components/activities/FilterBar';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
@@ -59,12 +58,8 @@ export function ActivitiesListPage() {
   // Use activities list hook for better functionality
   const {
     activities = [],
-    filteredActivities,
     isLoading: isActivitiesLoading,
     error: activitiesErrorMessage,
-    filters,
-    updateFilters,
-    clearFilters,
     deleteActivity,
   } = useActivitiesList(validationError ? 0 : numericPetId); // Skip if validation error
 
@@ -75,11 +70,6 @@ export function ActivitiesListPage() {
   const timelineItems = useMemo(() => {
     return convertActivitiesToTimelineItems(activities);
   }, [activities]);
-
-  // Convert filtered activities to timeline items
-  const filteredTimelineItems = useMemo(() => {
-    return convertActivitiesToTimelineItems(filteredActivities);
-  }, [filteredActivities]);
 
   // Return validation error if present
   if (validationError) {
@@ -152,43 +142,22 @@ export function ActivitiesListPage() {
         backAction={() => navigate(RouteBuilder.petProfile(numericPetId))}
       />
 
-      <main className="max-w-4xl mx-auto px-4 py-6">
-        {/* Activities Error State */}
-        {activitiesError && (
-          <Alert className="mb-6 border-red-200 bg-red-50">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Failed to load activities. Please refresh the page or try again later.
-            </AlertDescription>
-          </Alert>
-        )}
+      <main className="container mx-auto px-4 py-6 pb-20">
+        <div className="max-w-5xl mx-auto">
+          {/* Activities Error State */}
+          {activitiesError && (
+            <Alert className="mb-6 border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Failed to load activities. Please refresh the page or try again later.
+              </AlertDescription>
+            </Alert>
+          )}
 
-        {/* Filter Bar - Show if we have activities or active filters */}
-        {(activities.length > 0 || filters.searchQuery || filters.categories.length > 0) && (
-          <FilterBar
-            filters={filters}
-            onFiltersChange={updateFilters}
-            mode="full"
-            petId={numericPetId}
-            className="mb-6"
-          />
-        )}
-
-        {/* Filter Results Count */}
-        {activities.length > 0 && filteredTimelineItems.length !== timelineItems.length && (
-          <div className="mb-4 text-sm text-gray-600">
-            Showing {filteredTimelineItems.length} of {timelineItems.length} activities
-            {filteredTimelineItems.length === 0 && (
-              <span className="ml-2 text-orange-600">- Try adjusting your filters</span>
-            )}
-          </div>
-        )}
-
-        {/* Activities Timeline or Empty States */}
-        {activities.length > 0 ? (
-          filteredTimelineItems.length > 0 ? (
+          {/* Activities Timeline or Empty States */}
+          {activities.length > 0 ? (
             <ActivityTimeline
-              activities={filteredTimelineItems}
+              activities={timelineItems}
               petId={numericPetId}
               isLoading={isActivitiesLoading}
               onActivityEdit={handleActivityEdit}
@@ -197,18 +166,13 @@ export function ActivitiesListPage() {
               className="mb-6"
             />
           ) : (
-            <NoMatchingActivitiesState
-              totalCount={timelineItems.length}
-              onClearFilters={clearFilters}
+            <EmptyActivitiesState
+              petName={pet.name}
+              onCreateFirst={handleNewActivity}
+              isLoading={isActivitiesLoading}
             />
-          )
-        ) : (
-          <EmptyActivitiesState
-            petName={pet.name}
-            onCreateFirst={handleNewActivity}
-            isLoading={isActivitiesLoading}
-          />
-        )}
+          )}
+        </div>
       </main>
 
       {/* Floating Action Button */}
@@ -256,37 +220,6 @@ function EmptyActivitiesState({
         <Button onClick={onCreateFirst} className="bg-orange-600 hover:bg-orange-700">
           <Plus className="w-4 h-4 mr-2" />
           Record First Activity
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-/**
- * Empty state when filters return no matching activities
- */
-function NoMatchingActivitiesState({
-  totalCount,
-  onClearFilters,
-}: {
-  totalCount: number;
-  onClearFilters: () => void;
-}) {
-  return (
-    <Card className="border-dashed border-2 border-orange-200 bg-orange-50/30">
-      <CardContent className="text-center py-12">
-        <div className="mb-6">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
-            <AlertCircle className="w-8 h-8 text-orange-600" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No matching activities</h3>
-          <p className="text-gray-500 mb-6 max-w-md mx-auto">
-            We found {totalCount} total activities, but none match your current filters. Try
-            adjusting your search or filter criteria.
-          </p>
-        </div>
-        <Button onClick={onClearFilters} variant="outline" className="border-orange-300">
-          Clear All Filters
         </Button>
       </CardContent>
     </Card>

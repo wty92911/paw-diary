@@ -10,6 +10,21 @@ export enum ActivityCategory {
   Expense = 'Expense',
 }
 
+// Activity filters interface (moved from FilterBar component)
+export interface ActivityFilters {
+  categories: ActivityCategory[];
+  dateRange?: {
+    start?: Date;
+    end?: Date;
+  };
+  searchQuery: string;
+  hasAttachments?: boolean;
+  costRange?: {
+    min?: number;
+    max?: number;
+  };
+}
+
 // Block type definitions for the unified activity system
 export type ActivityBlockType =
   | 'title'
