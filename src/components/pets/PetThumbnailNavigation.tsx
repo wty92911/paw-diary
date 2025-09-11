@@ -12,8 +12,6 @@ interface PetThumbnailNavigationProps {
   pets: Pet[];
   onPetSelect?: (pet: Pet) => void;
   onAddPet?: () => void;
-  onEditPet?: (pet: Pet) => void;
-  onAddActivity?: () => void;
   className?: string;
   showAddPetCard?: boolean;
   enableElasticFeedback?: boolean;

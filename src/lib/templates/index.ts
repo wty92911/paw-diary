@@ -1,0 +1,9 @@
+// Central export file for all activity templates
+export { default as dietTemplates } from './dietTemplates';
+export { default as growthTemplates } from './growthTemplates';
+export { default as healthTemplates } from './healthTemplates';
+export { default as lifestyleTemplates } from './lifestyleTemplates';
+export { default as expenseTemplates } from './expenseTemplates';
+
+// Re-export types
+export type { ActivityTemplate } from '../types/activities';

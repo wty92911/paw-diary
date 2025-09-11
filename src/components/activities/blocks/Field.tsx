@@ -1,0 +1,230 @@
+import React from 'react';
+import { Label } from '../../ui/label';
+import { Badge } from '../../ui/badge';
+import { cn } from '../../../lib/utils';
+
+// Common field wrapper props
+export interface FieldProps {
+  children: React.ReactNode;
+  label?: string;
+  required?: boolean;
+  error?: string;
+  hint?: string;
+  blockType?: string;
+  className?: string;
+  showBlockType?: boolean;
+  id?: string;
+}
+
+// Common field wrapper component for consistent styling across all blocks
+export const Field: React.FC<FieldProps> = ({
+  children,
+  label,
+  required = false,
+  error,
+  hint,
+  blockType,
+  className,
+  showBlockType = true,
+  id,
+}) => {
+  const fieldId = id || `field-${Math.random().toString(36).substr(2, 9)}`;
+
+  return (
+    <div className={cn('space-y-2', className, error && 'ring-2 ring-destructive ring-offset-2 rounded-md p-2')}>
+      {/* Label with required indicator and block type badge */}
+      {label && (
+        <div className="flex items-center justify-between">
+          <Label 
+            htmlFor={fieldId}
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            {label}
+            {required && (
+              <span className="text-destructive ml-1" aria-label="required">*</span>
+            )}
+          </Label>
+          {showBlockType && blockType && (
+            <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+              {blockType}
+            </Badge>
+          )}
+        </div>
+      )}
+
+      {/* Hint text */}
+      {hint && !error && (
+        <p className="text-xs text-muted-foreground" id={`${fieldId}-hint`}>
+          {hint}
+        </p>
+      )}
+
+      {/* Field content */}
+      <div className="relative">
+        {React.isValidElement(children) ? 
+          React.cloneElement(children, {
+            id: fieldId,
+            'aria-describedby': error 
+              ? `${fieldId}-error` 
+              : hint 
+              ? `${fieldId}-hint` 
+              : undefined,
+            'aria-invalid': error ? 'true' : 'false',
+          } as any) : children
+        }
+      </div>
+
+      {/* Error message */}
+      {error && (
+        <p 
+          className="text-sm text-destructive mt-1" 
+          id={`${fieldId}-error`}
+          role="alert"
+        >
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
+// Field group component for related fields
+export interface FieldGroupProps {
+  children: React.ReactNode;
+  legend?: string;
+  description?: string;
+  className?: string;
+}
+
+export const FieldGroup: React.FC<FieldGroupProps> = ({
+  children,
+  legend,
+  description,
+  className,
+}) => {
+  return (
+    <fieldset className={cn('space-y-4', className)}>
+      {legend && (
+        <legend className="text-base font-semibold leading-6 text-foreground">
+          {legend}
+        </legend>
+      )}
+      {description && (
+        <p className="text-sm text-muted-foreground">
+          {description}
+        </p>
+      )}
+      <div className="space-y-3">
+        {children}
+      </div>
+    </fieldset>
+  );
+};
+
+// Field array component for dynamic field lists
+export interface FieldArrayProps {
+  children: React.ReactNode;
+  label?: string;
+  description?: string;
+  className?: string;
+  onAdd?: () => void;
+  canAdd?: boolean;
+  addLabel?: string;
+  maxItems?: number;
+  currentCount?: number;
+}
+
+export const FieldArray: React.FC<FieldArrayProps> = ({
+  children,
+  label,
+  description,
+  className,
+  onAdd,
+  canAdd = true,
+  addLabel = 'Add item',
+  maxItems,
+  currentCount = 0,
+}) => {
+  const canAddMore = !maxItems || currentCount < maxItems;
+
+  return (
+    <div className={cn('space-y-3', className)}>
+      {label && (
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium">
+            {label}
+            {maxItems && (
+              <span className="text-muted-foreground ml-1">
+                ({currentCount}/{maxItems})
+              </span>
+            )}
+          </Label>
+        </div>
+      )}
+      
+      {description && (
+        <p className="text-xs text-muted-foreground">
+          {description}
+        </p>
+      )}
+
+      <div className="space-y-2">
+        {children}
+      </div>
+
+      {canAdd && onAdd && canAddMore && (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="text-sm text-primary hover:text-primary/80 font-medium"
+        >
+          + {addLabel}
+        </button>
+      )}
+    </div>
+  );
+};
+
+// Helper component for inline field errors
+export const FieldError: React.FC<{ error?: string; fieldId?: string }> = ({ 
+  error, 
+  fieldId 
+}) => {
+  if (!error) return null;
+  
+  return (
+    <p 
+      className="text-sm text-destructive mt-1" 
+      id={fieldId ? `${fieldId}-error` : undefined}
+      role="alert"
+    >
+      {error}
+    </p>
+  );
+};
+
+// Helper component for field hints
+export const FieldHint: React.FC<{ hint?: string; fieldId?: string }> = ({ 
+  hint, 
+  fieldId 
+}) => {
+  if (!hint) return null;
+  
+  return (
+    <p 
+      className="text-xs text-muted-foreground mt-1" 
+      id={fieldId ? `${fieldId}-hint` : undefined}
+    >
+      {hint}
+    </p>
+  );
+};
+
+// Utility function to get field props from React Hook Form
+export const getFieldProps = (field: any, fieldState: any) => ({
+  error: fieldState.error?.message,
+  'aria-invalid': fieldState.error ? 'true' : 'false',
+  'aria-describedby': fieldState.error ? `${field.name}-error` : undefined,
+});
+
+export default Field;
