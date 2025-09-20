@@ -1,4 +1,5 @@
 pub mod activities;
+pub mod fts;
 pub mod models;
 pub mod pets;
 

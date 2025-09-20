@@ -115,14 +115,7 @@ pub struct Activity {
     pub pet_id: i64,
     pub category: ActivityCategory,
     pub subcategory: String,
-    pub title: String,
-    pub description: Option<String>,
-    pub activity_date: DateTime<Utc>,
     pub activity_data: Option<serde_json::Value>,
-    pub cost: Option<f32>,
-    pub currency: Option<String>,
-    pub location: Option<String>,
-    pub mood_rating: Option<i32>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -214,14 +207,7 @@ pub struct ActivityCreateRequest {
     pub pet_id: i64,
     pub category: ActivityCategory,
     pub subcategory: String,
-    pub title: String,
-    pub description: Option<String>,
-    pub activity_date: DateTime<Utc>,
     pub activity_data: Option<serde_json::Value>,
-    pub cost: Option<f32>,
-    pub currency: Option<String>,
-    pub location: Option<String>,
-    pub mood_rating: Option<i32>,
 }
 
 /// Request structure for updating an activity
@@ -229,14 +215,7 @@ pub struct ActivityCreateRequest {
 pub struct ActivityUpdateRequest {
     pub category: Option<ActivityCategory>,
     pub subcategory: Option<String>,
-    pub title: Option<String>,
-    pub description: Option<String>,
-    pub activity_date: Option<DateTime<Utc>>,
     pub activity_data: Option<serde_json::Value>,
-    pub cost: Option<f32>,
-    pub currency: Option<String>,
-    pub location: Option<String>,
-    pub mood_rating: Option<i32>,
 }
 
 /// Filters for activity queries
@@ -285,4 +264,51 @@ pub struct CleanupReport {
     pub orphaned_attachments_removed: i64,
     pub invalid_activities_fixed: i64,
     pub fts_entries_rebuilt: i64,
+}
+
+// Request/Response Types for Activity Operations
+
+/// Request structure for getting activities with filtering and pagination
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct GetActivitiesRequest {
+    pub pet_id: Option<i64>,
+    pub category: Option<ActivityCategory>,
+    pub start_date: Option<DateTime<Utc>>,
+    pub end_date: Option<DateTime<Utc>>,
+    pub sort_by: Option<String>, // "created_at", "updated_at"
+    pub sort_desc: Option<bool>,
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}
+
+/// Response structure for getting activities
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetActivitiesResponse {
+    pub activities: Vec<Activity>,
+    pub total_count: i64,
+    pub has_more: bool,
+}
+
+/// Request structure for searching activities
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchActivitiesRequest {
+    pub pet_id: Option<i64>,
+    pub query: String,
+    pub limit: Option<i64>,
+}
+
+/// Request structure for exporting activities
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ExportActivitiesRequest {
+    pub pet_id: Option<i64>,
+    pub format: Option<String>, // "json", "csv", "backup"
+}
+
+/// Response structure for activity statistics
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActivityStatsResponse {
+    pub total_activities: i64,
+    pub category_counts: std::collections::HashMap<String, i64>,
+    pub recent_activities: Vec<Activity>,
+    pub date_range_days: i64,
 }

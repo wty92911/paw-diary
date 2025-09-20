@@ -115,6 +115,11 @@ export default {
         'scale-in': 'scaleIn 0.2s ease-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'paw-wiggle': 'pawWiggle 0.5s ease-in-out',
+        // Save feedback animations
+        'save-flash': 'saveFlash 1.5s ease-out',
+        'success-glow': 'successGlow 2s ease-out',
+        'error-shake': 'errorShake 0.5s ease-in-out',
+        'highlight-fade': 'highlightFade 2s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -132,6 +137,48 @@ export default {
         pawWiggle: {
           '0%, 100%': { transform: 'rotate(-3deg)' },
           '50%': { transform: 'rotate(3deg)' },
+        },
+        // Save feedback keyframes
+        saveFlash: {
+          '0%': { backgroundColor: 'rgba(59, 130, 246, 0.1)', transform: 'scale(1)' },
+          '50%': { backgroundColor: 'rgba(59, 130, 246, 0.2)', transform: 'scale(1.02)' },
+          '100%': { backgroundColor: 'transparent', transform: 'scale(1)' },
+        },
+        successGlow: {
+          '0%': { 
+            backgroundColor: 'rgba(34, 197, 94, 0.1)', 
+            boxShadow: '0 0 0 rgba(34, 197, 94, 0.4)',
+            transform: 'scale(1)' 
+          },
+          '30%': { 
+            backgroundColor: 'rgba(34, 197, 94, 0.15)', 
+            boxShadow: '0 0 20px rgba(34, 197, 94, 0.3)',
+            transform: 'scale(1.01)' 
+          },
+          '100%': { 
+            backgroundColor: 'transparent', 
+            boxShadow: '0 0 0 rgba(34, 197, 94, 0)',
+            transform: 'scale(1)' 
+          },
+        },
+        errorShake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-2px)' },
+          '20%, 40%, 60%, 80%': { transform: 'translateX(2px)' },
+        },
+        highlightFade: {
+          '0%': { 
+            backgroundColor: 'rgba(249, 250, 251, 1)',
+            borderColor: 'rgba(59, 130, 246, 0.5)' 
+          },
+          '50%': { 
+            backgroundColor: 'rgba(59, 130, 246, 0.05)',
+            borderColor: 'rgba(59, 130, 246, 0.3)' 
+          },
+          '100%': { 
+            backgroundColor: 'transparent',
+            borderColor: 'transparent' 
+          },
         },
       },
       spacing: {

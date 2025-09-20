@@ -1,9 +1,6 @@
 use super::AppState;
-use crate::database::{
-    Activity, ActivityAttachment, ActivityAttachmentType, ActivityCreateRequest, ActivityFilters,
-    ActivitySearchResult, ActivityUpdateRequest,
-};
-use crate::errors::PetError;
+use crate::database::{Activity, ActivityCreateRequest, ActivityUpdateRequest};
+use crate::errors::ActivityError;
 use tauri::State;
 
 /// Create a new activity
@@ -11,392 +8,250 @@ use tauri::State;
 pub async fn create_activity(
     state: State<'_, AppState>,
     activity_data: ActivityCreateRequest,
-) -> Result<Activity, PetError> {
-    log::info!("Creating new activity: {}", activity_data.title);
+) -> Result<Activity, ActivityError> {
+    log::info!("[CREATE_ACTIVITY] Starting activity creation");
+    log::debug!("[CREATE_ACTIVITY] Request params: {{\"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"activity_data\": {}}}",
+        activity_data.pet_id,
+        activity_data.category,
+        activity_data.subcategory,
+        activity_data.activity_data.as_ref().map(|v| v.to_string()).unwrap_or("null".to_string())
+    );
 
-    // Validate input data
-    if activity_data.pet_id <= 0 {
-        return Err(PetError::validation("pet_id", "Pet ID must be positive"));
+    // Verify pet exists
+    if let Err(e) = state.database.get_pet_by_id(activity_data.pet_id).await {
+        log::error!(
+            "[CREATE_ACTIVITY] Pet validation failed: pet_id={}, error={}",
+            activity_data.pet_id,
+            e
+        );
+        return Err(ActivityError::validation(
+            "pet_id",
+            &format!("Pet not found: {e}"),
+        ));
     }
 
-    if activity_data.title.trim().is_empty() {
-        return Err(PetError::validation(
-            "title",
-            "Activity title cannot be empty",
+    match state.database.create_activity(activity_data).await {
+        Ok(activity) => {
+            log::info!(
+                "[CREATE_ACTIVITY] Success: created activity_id={} for pet_id={}",
+                activity.id,
+                activity.pet_id
+            );
+            log::debug!("[CREATE_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"created_at\": \"{}\"}}", 
+                activity.id, activity.pet_id, activity.category, activity.subcategory, activity.created_at
+            );
+            Ok(activity)
+        }
+        Err(e) => {
+            log::error!("[CREATE_ACTIVITY] Database error: {e}");
+            Err(e)
+        }
+    }
+}
+
+/// Update an existing activity - backward compatible version (less secure)
+#[tauri::command]
+pub async fn update_activity(
+    state: State<'_, AppState>,
+    activity_id: i64,
+    updates: ActivityUpdateRequest,
+) -> Result<Activity, ActivityError> {
+    log::info!("[UPDATE_ACTIVITY] Starting activity update (legacy API)");
+    log::debug!("[UPDATE_ACTIVITY] Request params: {{\"activity_id\": {}, \"updates\": {{\"category\": {:?}, \"subcategory\": {:?}, \"activity_data\": {}}}}}",
+        activity_id,
+        updates.category,
+        updates.subcategory,
+        updates.activity_data.as_ref().map(|v| v.to_string()).unwrap_or("null".to_string())
+    );
+
+    if activity_id <= 0 {
+        log::error!("[UPDATE_ACTIVITY] Invalid activity_id: {activity_id}");
+        return Err(ActivityError::validation(
+            "activity_id",
+            "Activity ID must be positive",
+        ));
+    }
+
+    // Check if activity exists
+    let _existing_activity = match state.database.get_activity_by_id(activity_id).await {
+        Ok(activity) => {
+            log::debug!(
+                "[UPDATE_ACTIVITY] Found existing activity: id={}, pet_id={}, category={}",
+                activity.id,
+                activity.pet_id,
+                activity.category
+            );
+            activity
+        }
+        Err(e) => {
+            log::error!(
+                "[UPDATE_ACTIVITY] Activity not found: activity_id={activity_id}, error={e}"
+            );
+            return Err(e);
+        }
+    };
+
+    // Update the activity
+    match state.database.update_activity(activity_id, updates).await {
+        Ok(updated_activity) => {
+            log::info!(
+                "[UPDATE_ACTIVITY] Success: updated activity_id={} for pet_id={}",
+                activity_id,
+                updated_activity.pet_id
+            );
+            log::debug!("[UPDATE_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"updated_at\": \"{}\"}}", 
+                updated_activity.id, updated_activity.pet_id, updated_activity.category, updated_activity.subcategory, updated_activity.updated_at
+            );
+            Ok(updated_activity)
+        }
+        Err(e) => {
+            log::error!("[UPDATE_ACTIVITY] Database error: {e}");
+            Err(e)
+        }
+    }
+}
+
+/// Get an activity by ID - backward compatible version (less secure)
+#[tauri::command]
+pub async fn get_activity(
+    state: State<'_, AppState>,
+    activity_id: i64,
+) -> Result<Activity, ActivityError> {
+    log::info!("[GET_ACTIVITY] Starting activity retrieval (legacy API)");
+    log::debug!("[GET_ACTIVITY] Request params: {{\"activity_id\": {activity_id}}}");
+
+    if activity_id <= 0 {
+        log::error!("[GET_ACTIVITY] Invalid activity_id: {activity_id}");
+        return Err(ActivityError::validation(
+            "activity_id",
+            "Activity ID must be positive",
+        ));
+    }
+
+    match state.database.get_activity_by_id(activity_id).await {
+        Ok(activity) => {
+            log::info!(
+                "[GET_ACTIVITY] Success: retrieved activity_id={} for pet_id={}",
+                activity.id,
+                activity.pet_id
+            );
+            log::debug!("[GET_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"created_at\": \"{}\", \"activity_data_size\": {}}}", 
+                activity.id, activity.pet_id, activity.category, activity.subcategory, activity.created_at,
+                activity.activity_data.as_ref().map(|v| v.to_string().len()).unwrap_or(0)
+            );
+            Ok(activity)
+        }
+        Err(e) => {
+            log::error!("[GET_ACTIVITY] Database error: activity_id={activity_id}, error={e}");
+            Err(e)
+        }
+    }
+}
+
+/// Get activities for a specific pet (frontend-friendly version)
+#[tauri::command]
+pub async fn get_activities_for_pet(
+    state: State<'_, AppState>,
+    pet_id: i64,
+) -> Result<Vec<Activity>, ActivityError> {
+    log::info!("[GET_ACTIVITIES_FOR_PET] Starting activities retrieval for pet");
+    log::debug!("[GET_ACTIVITIES_FOR_PET] Request params: {{\"pet_id\": {pet_id}}}");
+
+    if pet_id <= 0 {
+        log::error!("[GET_ACTIVITIES_FOR_PET] Invalid pet_id: {pet_id}");
+        return Err(ActivityError::validation(
+            "pet_id",
+            "Pet ID must be positive",
         ));
     }
 
     // Verify pet exists
-    let _pet = state.database.get_pet_by_id(activity_data.pet_id).await?;
+    if let Err(e) = state.database.get_pet_by_id(pet_id).await {
+        log::error!("[GET_ACTIVITIES_FOR_PET] Pet not found: pet_id={pet_id}, error={e}");
+        return Err(ActivityError::validation("pet_id", "Pet not found"));
+    }
 
-    // Create the activity
-    let activity = state.database.create_activity(activity_data).await?;
+    let request = crate::database::GetActivitiesRequest {
+        pet_id: Some(pet_id),
+        category: None,
+        start_date: None,
+        end_date: None,
+        sort_by: Some("created_at".to_string()),
+        sort_desc: Some(true),
+        limit: Some(100), // Default limit for frontend
+        offset: Some(0),
+    };
 
-    log::info!("Activity created successfully with ID: {}", activity.id);
-    Ok(activity)
+    match state.database.get_activities(request).await {
+        Ok(result) => {
+            log::info!(
+                "[GET_ACTIVITIES_FOR_PET] Success: retrieved {} activities for pet_id={}",
+                result.activities.len(),
+                pet_id
+            );
+            log::debug!("[GET_ACTIVITIES_FOR_PET] Response: {{\"activities_count\": {}, \"activity_ids\": {:?}}}",
+                result.activities.len(),
+                result.activities.iter().take(5).map(|a| a.id).collect::<Vec<_>>()
+            );
+            Ok(result.activities)
+        }
+        Err(e) => {
+            log::error!("[GET_ACTIVITIES_FOR_PET] Database error: pet_id={pet_id}, error={e}");
+            Err(e)
+        }
+    }
 }
 
-/// Get activities with optional filtering
+/// Delete an activity - backward compatible version (less secure)
 #[tauri::command]
-pub async fn get_activities(
-    state: State<'_, AppState>,
-    pet_id: Option<i64>,
-    filters: Option<ActivityFilters>,
-    limit: Option<i64>,
-    offset: Option<i64>,
-) -> Result<ActivitySearchResult, PetError> {
-    log::info!("Getting activities - pet_id: {pet_id:?}, limit: {limit:?}, offset: {offset:?}");
-
-    // Validate pagination parameters
-    if let Some(limit_val) = limit {
-        if limit_val <= 0 {
-            return Err(PetError::validation("limit", "Limit must be positive"));
-        }
-        if limit_val > 1000 {
-            return Err(PetError::validation("limit", "Limit cannot exceed 1000"));
-        }
-    }
-
-    if let Some(offset_val) = offset {
-        if offset_val < 0 {
-            return Err(PetError::validation("offset", "Offset cannot be negative"));
-        }
-    }
-
-    let result = state
-        .database
-        .get_activities(pet_id, filters, limit, offset)
-        .await?;
-
-    log::info!("Retrieved {} activities", result.activities.len());
-    Ok(result)
-}
-
-/// Get activity by ID
-#[tauri::command]
-pub async fn get_activity_by_id(state: State<'_, AppState>, id: i64) -> Result<Activity, PetError> {
-    log::info!("Getting activity with ID: {id}");
-
-    if id <= 0 {
-        return Err(PetError::validation("id", "Activity ID must be positive"));
-    }
-
-    let activity = state.database.get_activity_by_id(id).await?;
-
-    log::info!("Activity retrieved: {}", activity.title);
-    Ok(activity)
-}
-
-/// Update an activity
-#[tauri::command]
-pub async fn update_activity(
-    state: State<'_, AppState>,
-    id: i64,
-    activity_data: ActivityUpdateRequest,
-) -> Result<Activity, PetError> {
-    log::info!("Updating activity with ID: {id}");
-
-    if id <= 0 {
-        return Err(PetError::validation("id", "Activity ID must be positive"));
-    }
-
-    // Validate title if provided
-    if let Some(ref title) = activity_data.title {
-        if title.trim().is_empty() {
-            return Err(PetError::validation(
-                "title",
-                "Activity title cannot be empty",
-            ));
-        }
-    }
-
-    // Verify activity exists
-    let _existing_activity = state.database.get_activity_by_id(id).await?;
-
-    let activity = state.database.update_activity(id, activity_data).await?;
-
-    log::info!("Activity updated successfully: {}", activity.title);
-    Ok(activity)
-}
-
-/// Delete an activity
-#[tauri::command]
-pub async fn delete_activity(state: State<'_, AppState>, id: i64) -> Result<(), PetError> {
-    log::info!("Deleting activity with ID: {id}");
-
-    if id <= 0 {
-        return Err(PetError::validation("id", "Activity ID must be positive"));
-    }
-
-    // Verify activity exists
-    let _activity = state.database.get_activity_by_id(id).await?;
-
-    state.database.delete_activity(id).await?;
-
-    log::info!("Activity deleted successfully");
-    Ok(())
-}
-
-/// Search activities using full-text search
-#[tauri::command]
-pub async fn search_activities(
-    state: State<'_, AppState>,
-    search_query: String,
-    pet_id: Option<i64>,
-    limit: Option<i64>,
-    offset: Option<i64>,
-) -> Result<ActivitySearchResult, PetError> {
-    log::info!("Searching activities - query: '{search_query}', pet_id: {pet_id:?}");
-
-    if search_query.trim().is_empty() {
-        return Err(PetError::validation(
-            "search_query",
-            "Search query cannot be empty",
-        ));
-    }
-
-    // Validate pagination parameters
-    if let Some(limit_val) = limit {
-        if limit_val <= 0 {
-            return Err(PetError::validation("limit", "Limit must be positive"));
-        }
-        if limit_val > 1000 {
-            return Err(PetError::validation("limit", "Limit cannot exceed 1000"));
-        }
-    }
-
-    if let Some(offset_val) = offset {
-        if offset_val < 0 {
-            return Err(PetError::validation("offset", "Offset cannot be negative"));
-        }
-    }
-
-    let result = state
-        .database
-        .search_activities(&search_query, pet_id, limit, offset)
-        .await?;
-
-    log::info!(
-        "Found {} activities matching search",
-        result.activities.len()
-    );
-    Ok(result)
-}
-
-// ==================== ACTIVITY ATTACHMENT COMMANDS ====================
-
-/// Upload an attachment for an activity (photo or document)
-#[tauri::command]
-pub async fn upload_activity_attachment(
+pub async fn delete_activity(
     state: State<'_, AppState>,
     activity_id: i64,
-    filename: String,
-    file_bytes: Vec<u8>,
-    file_type: ActivityAttachmentType,
-    metadata: Option<serde_json::Value>,
-) -> Result<ActivityAttachment, PetError> {
-    log::info!(
-        "Uploading attachment for activity {}: {} ({} bytes, type: {:?})",
-        activity_id,
-        filename,
-        file_bytes.len(),
-        file_type
-    );
+) -> Result<(), ActivityError> {
+    log::info!("[DELETE_ACTIVITY] Starting activity deletion (legacy API)");
+    log::debug!("[DELETE_ACTIVITY] Request params: {{\"activity_id\": {activity_id}}}");
 
-    // Validate input data
     if activity_id <= 0 {
-        return Err(PetError::validation(
+        log::error!("[DELETE_ACTIVITY] Invalid activity_id: {activity_id}");
+        return Err(ActivityError::validation(
             "activity_id",
             "Activity ID must be positive",
         ));
     }
 
-    if filename.trim().is_empty() {
-        return Err(PetError::validation("filename", "Filename cannot be empty"));
+    // Check if activity exists
+    let activity = match state.database.get_activity_by_id(activity_id).await {
+        Ok(activity) => {
+            log::debug!(
+                "[DELETE_ACTIVITY] Found activity: id={}, pet_id={}, category={}",
+                activity.id,
+                activity.pet_id,
+                activity.category
+            );
+            activity
+        }
+        Err(e) => {
+            log::error!(
+                "[DELETE_ACTIVITY] Activity not found: activity_id={activity_id}, error={e}"
+            );
+            return Err(e);
+        }
+    };
+
+    // Delete the activity
+    match state.database.delete_activity(activity_id).await {
+        Ok(_) => {
+            log::info!(
+                "[DELETE_ACTIVITY] Success: deleted activity_id={} for pet_id={}",
+                activity_id,
+                activity.pet_id
+            );
+            log::debug!("[DELETE_ACTIVITY] Response: {{\"deleted\": true}}");
+            Ok(())
+        }
+        Err(e) => {
+            log::error!("[DELETE_ACTIVITY] Database error: activity_id={activity_id}, error={e}");
+            Err(e)
+        }
     }
-
-    if file_bytes.is_empty() {
-        return Err(PetError::validation(
-            "file_bytes",
-            "File data cannot be empty",
-        ));
-    }
-
-    // Verify activity exists
-    let _activity = state.database.get_activity_by_id(activity_id).await?;
-
-    // Store the file using PhotoService
-    let file_id = state
-        .photo_service
-        .store_photo_from_bytes(&file_bytes, Some(&filename))?;
-
-    // Create the attachment record in database
-    let attachment = state
-        .database
-        .create_activity_attachment(
-            activity_id,
-            file_id.clone(),
-            file_type,
-            Some(file_bytes.len() as i64),
-            None, // thumbnail_path - could be generated for photos
-            metadata,
-        )
-        .await?;
-
-    log::info!(
-        "Activity attachment uploaded successfully with ID: {}",
-        attachment.id
-    );
-    Ok(attachment)
-}
-
-/// Upload an attachment from file path
-#[tauri::command]
-pub async fn upload_activity_attachment_from_path(
-    state: State<'_, AppState>,
-    activity_id: i64,
-    file_path: String,
-    file_type: ActivityAttachmentType,
-    metadata: Option<serde_json::Value>,
-) -> Result<ActivityAttachment, PetError> {
-    log::info!(
-        "Uploading attachment from path for activity {activity_id}: {file_path} (type: {file_type:?})"
-    );
-
-    // Validate input data
-    if activity_id <= 0 {
-        return Err(PetError::validation(
-            "activity_id",
-            "Activity ID must be positive",
-        ));
-    }
-
-    if file_path.trim().is_empty() {
-        return Err(PetError::validation(
-            "file_path",
-            "File path cannot be empty",
-        ));
-    }
-
-    let path = std::path::PathBuf::from(&file_path);
-    if !path.exists() {
-        return Err(PetError::validation("file_path", "File does not exist"));
-    }
-
-    // Verify activity exists
-    let _activity = state.database.get_activity_by_id(activity_id).await?;
-
-    // Store the file using PhotoService
-    let file_id = state.photo_service.store_photo(&path)?;
-
-    // Get file metadata
-    let file_size = std::fs::metadata(&path).map(|m| m.len() as i64).ok();
-
-    // Create the attachment record in database
-    let attachment = state
-        .database
-        .create_activity_attachment(
-            activity_id,
-            file_id.clone(),
-            file_type,
-            file_size,
-            None, // thumbnail_path
-            metadata,
-        )
-        .await?;
-
-    log::info!(
-        "Activity attachment uploaded successfully with ID: {}",
-        attachment.id
-    );
-    Ok(attachment)
-}
-
-/// Get attachments for an activity
-#[tauri::command]
-pub async fn get_activity_attachments(
-    state: State<'_, AppState>,
-    activity_id: i64,
-) -> Result<Vec<ActivityAttachment>, PetError> {
-    log::info!("Getting attachments for activity: {activity_id}");
-
-    if activity_id <= 0 {
-        return Err(PetError::validation(
-            "activity_id",
-            "Activity ID must be positive",
-        ));
-    }
-
-    // Verify activity exists
-    let _activity = state.database.get_activity_by_id(activity_id).await?;
-
-    let attachments = state.database.get_activity_attachments(activity_id).await?;
-
-    log::info!(
-        "Retrieved {} attachments for activity {}",
-        attachments.len(),
-        activity_id
-    );
-    Ok(attachments)
-}
-
-/// Get attachment by ID
-#[tauri::command]
-pub async fn get_activity_attachment_by_id(
-    state: State<'_, AppState>,
-    attachment_id: i64,
-) -> Result<ActivityAttachment, PetError> {
-    log::info!("Getting attachment with ID: {attachment_id}");
-
-    if attachment_id <= 0 {
-        return Err(PetError::validation(
-            "attachment_id",
-            "Attachment ID must be positive",
-        ));
-    }
-
-    let attachment = state
-        .database
-        .get_activity_attachment_by_id(attachment_id)
-        .await?;
-
-    log::info!("Retrieved attachment: {}", attachment.file_path);
-    Ok(attachment)
-}
-
-/// Delete an activity attachment
-#[tauri::command]
-pub async fn delete_activity_attachment(
-    state: State<'_, AppState>,
-    attachment_id: i64,
-) -> Result<(), PetError> {
-    log::info!("Deleting activity attachment with ID: {attachment_id}");
-
-    if attachment_id <= 0 {
-        return Err(PetError::validation(
-            "attachment_id",
-            "Attachment ID must be positive",
-        ));
-    }
-
-    // Get attachment info before deletion
-    let attachment = state
-        .database
-        .get_activity_attachment_by_id(attachment_id)
-        .await?;
-
-    // Delete the file using PhotoService
-    match state.photo_service.delete_photo(&attachment.file_path) {
-        Ok(_) => log::info!("File deleted successfully: {}", attachment.file_path),
-        Err(e) => log::warn!("Failed to delete file {}: {}", attachment.file_path, e),
-    }
-
-    // Delete the attachment record from database
-    state
-        .database
-        .delete_activity_attachment(attachment_id)
-        .await?;
-
-    log::info!("Activity attachment deleted successfully");
-    Ok(())
 }

@@ -1,23 +1,19 @@
-import { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Loader2, AlertTriangle, ArrowLeft, Plus, Calendar, Edit } from 'lucide-react';
+import { Heart, Loader2, AlertTriangle, ArrowLeft, Activity, Plus } from 'lucide-react';
 import { usePets } from '../hooks/usePets';
-import { usePetActivities } from '../hooks/useActivities';
 import { useRouterNavigation } from '../hooks/usePetProfileNavigation';
-import { PetProfilePhoto } from '../components/pets/PetProfilePhoto';
-import { calculateAge } from '../lib/utils';
-import { ActivityTimeline } from '../components/activities/ActivityTimeline';
-// Removed ActivityForm import - now navigates to separate page
+import { useActivitiesList } from '../hooks/useActivitiesList';
+import { PetProfileHeader } from '../components/pets/PetProfileHeader';
+import { ActivityPreviewSection } from '../components/activities/ActivityPreviewSection';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
+import { convertActivitiesToTimelineItems } from '../lib/utils/activityUtils';
 
 /**
- * PetProfilePage - Comprehensive pet profile with activity timeline
+ * PetProfilePage - Comprehensive pet profile
  *
  * Features:
  * - Displays pet profile information
- * - Shows pet-specific activity timeline
- * - Allows activity creation bound to current pet
  * - Handles loading, error, and not found states
  * - Integrates with router for navigation
  */
@@ -26,42 +22,18 @@ export function PetProfilePage() {
   const { pets, isLoading: petsLoading, error: petsError, refetch: refetchPets } = usePets();
   const navigate = useNavigate();
 
-  // Removed inline activity form state - will navigate to separate page instead
-
   // Get pet ID from URL
   const petId = getCurrentPetIdFromUrl();
 
   // Find the current pet
   const currentPet = petId ? pets.find(p => p.id === petId) : null;
 
-  // Use pet-specific activities hook
+  // Get activities for preview
   const {
-    activities,
-    isLoading: activitiesLoading,
-    error: activitiesError,
-    hasMore,
-    fetchActivities,
-    loadMore,
-    refetch: refetchActivities,
-  } = usePetActivities(petId || 0); // Fallback to 0, but will be handled by loading states
-
-  // Auto-load activities on mount - only when pet is available
-  useEffect(() => {
-    if (petId && currentPet) {
-      fetchActivities();
-    }
-  }, [petId]); // Remove fetchActivities and currentPet from dependencies to prevent infinite loops
-
-  // Handle load more activities
-  const handleLoadMore = useCallback(
-    async (_offset: number, limit: number) => {
-      if (!hasMore) return { activities: [], total_count: 0, has_more: false };
-
-      await loadMore(limit);
-      return { activities, total_count: activities.length, has_more: hasMore };
-    },
-    [hasMore, loadMore, activities],
-  );
+    activities = [],
+    isLoading: isActivitiesLoading,
+    error: activitiesErrorMessage,
+  } = useActivitiesList(petId || 0);
 
   // Loading state while pets are loading or pet not found yet
   if (petsLoading && pets.length === 0) {
@@ -151,8 +123,6 @@ export function PetProfilePage() {
                 <p className="text-xs text-orange-600 -mt-1">Pet Profile</p>
               </div>
             </div>
-
-            {/* Header actions - removed Add Activity from here */}
           </div>
         </div>
       </header>
@@ -161,138 +131,45 @@ export function PetProfilePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Pet Profile Section */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
+            <PetProfileHeader
+              pet={currentPet}
+              onEdit={() => navigate(`/pets/${currentPet.id}/edit`)}
+              size="full"
+              className="shadow-lg"
+            />
+
+            {/* Activities Navigation */}
             <Card className="bg-white shadow-lg">
-              <CardContent className="p-6">
-                {/* Pet Photo and Name */}
-                <div className="text-center mb-6">
-                  <PetProfilePhoto pet={currentPet} size="large" className="mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-orange-900 mb-2">{currentPet.name}</h2>
-                  <div className="flex items-center justify-center gap-2 text-orange-700 mb-2">
-                    <Heart className="w-4 h-4 fill-current" />
-                    <span className="capitalize font-medium">
-                      {currentPet.species.toLowerCase()}
-                    </span>
-                  </div>
-                  <p className="text-lg text-orange-600">{calculateAge(currentPet.birth_date)}</p>
-
-                  {/* Edit Button */}
+              <CardContent className="p-4">
+                <div className="text-center">
                   <Button
-                    onClick={() => {
-                      // Navigate to EditPetPage
-                      navigate(`/pets/${currentPet.id}/edit`);
-                    }}
+                    onClick={() => navigate(`/pets/${currentPet.id}/activities`)}
                     variant="outline"
-                    className="mt-4 border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+                    className="w-full border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
                   >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                </div>
-
-                {/* Pet Details */}
-                <div className="space-y-4">
-                  {currentPet.breed && (
-                    <div className="flex items-center justify-between py-2 border-b border-orange-100">
-                      <span className="text-sm font-medium text-orange-700">Breed</span>
-                      <span className="text-sm text-orange-900">{currentPet.breed}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between py-2 border-b border-orange-100">
-                    <span className="text-sm font-medium text-orange-700">Gender</span>
-                    <span className="text-sm text-orange-900 capitalize">
-                      {currentPet.gender.toLowerCase()}
-                    </span>
-                  </div>
-
-                  {currentPet.color && (
-                    <div className="flex items-center justify-between py-2 border-b border-orange-100">
-                      <span className="text-sm font-medium text-orange-700">Color</span>
-                      <span className="text-sm text-orange-900">{currentPet.color}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between py-2 border-b border-orange-100">
-                    <span className="text-sm font-medium text-orange-700 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Born
-                    </span>
-                    <span className="text-sm text-orange-900">
-                      {new Date(currentPet.birth_date).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  {currentPet.weight_kg && (
-                    <div className="flex items-center justify-between py-2 border-b border-orange-100">
-                      <span className="text-sm font-medium text-orange-700">Weight</span>
-                      <span className="text-sm text-orange-900">{currentPet.weight_kg} kg</span>
-                    </div>
-                  )}
-
-                  {/* Notes */}
-                  {currentPet.notes && (
-                    <div className="mt-4 p-4 bg-orange-50 rounded-lg">
-                      <h3 className="text-sm font-semibold text-orange-900 mb-2">Notes</h3>
-                      <p className="text-sm text-orange-800 whitespace-pre-wrap">
-                        {currentPet.notes}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Add Activity Button - moved from header */}
-                <div className="mt-6">
-                  <Button
-                    onClick={() => {
-                      // Navigate to AddActivityPage instead of showing inline form
-                      navigate(`/pets/${currentPet.id}/activities/new`);
-                    }}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-                    size="lg"
-                  >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Add New Activity
+                    <Activity className="w-4 h-4 mr-2" />
+                    View All Activities
                   </Button>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Activity Timeline Section */}
+          {/* Recent Activities Preview */}
           <div className="lg:col-span-2">
-            {/* Activity Timeline Card */}
-            <Card className="bg-white shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-orange-500" />
-                  Activity Timeline
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 pt-0">
-                {activitiesError && (
-                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm">{activitiesError}</p>
-                  </div>
-                )}
-
-                <ActivityTimeline
-                  petId={petId}
-                  activities={activities}
-                  onLoadMore={handleLoadMore}
-                  onRefresh={refetchActivities}
-                  isLoading={activitiesLoading}
-                  error={activitiesError}
-                  hasMore={hasMore}
-                  className="border-none"
-                />
-              </CardContent>
-            </Card>
+            <ActivityPreviewSection
+              activities={convertActivitiesToTimelineItems(activities.slice(0, 3))}
+              petId={currentPet.id}
+              isLoading={isActivitiesLoading}
+              error={activitiesErrorMessage || undefined}
+              maxActivities={3}
+              className="shadow-lg"
+              emptyStateMessage={`Start tracking ${currentPet.name}'s activities`}
+            />
           </div>
         </div>
       </main>
-
-      {/* Activity form now navigates to separate AddActivityPage */}
     </div>
   );
 }

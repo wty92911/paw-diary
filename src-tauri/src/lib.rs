@@ -5,6 +5,7 @@ pub mod errors;
 pub mod logger;
 pub mod photo;
 pub mod protocol;
+pub mod validation;
 
 use commands::*;
 use tauri::http::Response;
@@ -32,26 +33,19 @@ pub fn run() {
             update_pet,
             delete_pet,
             reorder_pets,
-            // Activity management commands
-            create_activity,
-            get_activities,
-            get_activity_by_id,
-            update_activity,
-            delete_activity,
-            search_activities,
-            // Activity attachment commands
-            upload_activity_attachment,
-            upload_activity_attachment_from_path,
-            get_activity_attachments,
-            get_activity_attachment_by_id,
-            delete_activity_attachment,
             // Photo management commands
             upload_pet_photo,
             upload_pet_photo_from_path,
             delete_pet_photo,
             get_pet_photo_info,
             list_pet_photos,
-            get_photo_storage_stats
+            get_photo_storage_stats,
+            // Activity management commands
+            create_activity,
+            update_activity,
+            get_activity,
+            get_activities_for_pet,
+            delete_activity,
         ])
         .register_asynchronous_uri_scheme_protocol("photos", move |app, request, responder| {
             let app_handle = app.app_handle().clone();

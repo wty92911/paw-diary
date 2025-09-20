@@ -1,29 +1,45 @@
+import React from 'react';
 import { Pet } from '../../lib/types';
+import { useActivitiesList } from '../../hooks/useActivitiesList';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { PetProfilePhoto } from './PetProfilePhoto';
-import { PetActivityPreview } from './PetActivityPreview';
 import { cn, calculateAge } from '../../lib/utils';
+import { convertActivitiesToTimelineItems } from '../../lib/utils/activityUtils';
+import { ActivityPreviewSection } from '../activities/ActivityPreviewSection';
 import { Edit, Heart, Calendar } from 'lucide-react';
 
 interface PetProfileProps {
   pet: Pet;
   onEdit?: (pet: Pet) => void;
-  onAddActivity?: () => void;
-  onViewAllActivities?: (petId: number) => void;
   className?: string;
   disableVerticalScroll?: boolean;
 }
 
+
 export function PetProfile({
   pet,
   onEdit,
-  onAddActivity,
-  onViewAllActivities,
   className,
   disableVerticalScroll = false,
 }: PetProfileProps) {
   const age = calculateAge(pet.birth_date);
+
+  // Fetch recent activities for this pet using hook
+  const {
+    activities = [],
+    isLoading: isActivitiesLoading,
+    error: activitiesErrorMessage,
+  } = useActivitiesList(pet.id);
+  
+  const activitiesError = activitiesErrorMessage ? new Error(activitiesErrorMessage) : null;
+
+  // Convert activities to timeline items for display
+  const timelineItems = React.useMemo(() => {
+    if (!activities || activities.length === 0) return [];
+    return convertActivitiesToTimelineItems(activities)
+      .sort((a, b) => new Date(b.activityDate).getTime() - new Date(a.activityDate).getTime());
+  }, [activities]);
 
   return (
     <div
@@ -118,15 +134,15 @@ export function PetProfile({
           </Card>
         )}
 
-        {/* Activity Preview Section */}
-        <section aria-labelledby={`pet-name-${pet.id}`}>
-          <h2 className="text-xl font-bold text-orange-900 mb-4">Activities & Health</h2>
-          <PetActivityPreview
-            pet={pet}
-            onAddActivity={onAddActivity}
-            onViewAllActivities={onViewAllActivities}
-          />
-        </section>
+        {/* Recent Activities Preview */}
+        <ActivityPreviewSection
+          activities={timelineItems}
+          petId={pet.id}
+          isLoading={isActivitiesLoading}
+          error={activitiesError ? 'Unable to load activities. Please try again later.' : undefined}
+          maxActivities={3}
+          className=""
+        />
 
         {/* Bottom spacing for safe area */}
         <div className="h-8" />
@@ -178,23 +194,6 @@ export function PetProfileSkeleton({ className }: { className?: string }) {
           ))}
         </div>
 
-        {/* Activity preview skeleton */}
-        <div className="space-y-4">
-          <div className="w-32 h-6 bg-gray-200 rounded" />
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="h-20 bg-gray-200 rounded-lg" />
-              <div className="h-20 bg-gray-200 rounded-lg" />
-            </div>
-            <div className="h-12 bg-gray-200 rounded-xl" />
-            <div className="grid grid-cols-2 gap-3">
-              {Array.from({ length: 4 }, (_, i) => (
-                <div key={i} className="h-16 bg-gray-200 rounded-lg" />
-              ))}
-            </div>
-            <div className="h-32 bg-gray-200 rounded-lg" />
-          </div>
-        </div>
       </div>
     </div>
   );

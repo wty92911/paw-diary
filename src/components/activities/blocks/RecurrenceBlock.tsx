@@ -1,0 +1,526 @@
+import React from 'react';
+import { Control, FieldError } from 'react-hook-form';
+import { Input } from '../../ui/input';
+import { Button } from '../../ui/button';
+import { Badge } from '../../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Repeat, Clock } from 'lucide-react';
+import { ActivityFormData, ActivityBlockDef } from '../../../lib/types/activities';
+import { Field } from './Field';
+import { useFormContext } from './FormContext';
+
+// Recurrence pattern interface
+interface RecurrencePattern {
+  type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+  interval: number; // Every X days/weeks/months/years
+  daysOfWeek?: number[]; // For weekly: 0-6 (Sun-Sat)
+  dayOfMonth?: number; // For monthly: 1-31
+  monthOfYear?: number; // For yearly: 1-12
+  endType: 'never' | 'on_date' | 'after_occurrences';
+  endDate?: Date;
+  maxOccurrences?: number;
+  isEnabled: boolean;
+}
+
+// Recurrence value interface
+interface RecurrenceValue {
+  pattern: RecurrencePattern;
+  nextOccurrence?: Date;
+  upcomingOccurrences?: Date[];
+  totalOccurrences?: number;
+  notes?: string;
+}
+
+// Days of week for weekly recurrence
+const DAYS_OF_WEEK = [
+  { value: 0, label: 'Sunday', short: 'Sun' },
+  { value: 1, label: 'Monday', short: 'Mon' },
+  { value: 2, label: 'Tuesday', short: 'Tue' },
+  { value: 3, label: 'Wednesday', short: 'Wed' },
+  { value: 4, label: 'Thursday', short: 'Thu' },
+  { value: 5, label: 'Friday', short: 'Fri' },
+  { value: 6, label: 'Saturday', short: 'Sat' },
+];
+
+// Predefined recurrence templates for common pet activities
+const RECURRENCE_TEMPLATES = {
+  daily_medication: {
+    label: 'Daily Medication',
+    pattern: { type: 'daily' as const, interval: 1 },
+    description: 'Every day at the same time',
+  },
+  weekly_grooming: {
+    label: 'Weekly Grooming',
+    pattern: { type: 'weekly' as const, interval: 1, daysOfWeek: [6] as number[] }, // Saturday
+    description: 'Every Saturday',
+  },
+  monthly_checkup: {
+    label: 'Monthly Vet Checkup',
+    pattern: { type: 'monthly' as const, interval: 1, dayOfMonth: 15 },
+    description: 'Monthly on the 15th',
+  },
+  quarterly_vaccination: {
+    label: 'Quarterly Vaccination',
+    pattern: { type: 'monthly' as const, interval: 3 },
+    description: 'Every 3 months',
+  },
+  annual_exam: {
+    label: 'Annual Exam',
+    pattern: { type: 'yearly' as const, interval: 1 },
+    description: 'Once per year',
+  },
+  bi_weekly_training: {
+    label: 'Bi-weekly Training',
+    pattern: { type: 'weekly' as const, interval: 2 },
+    description: 'Every 2 weeks',
+  },
+} as const;
+
+// Recurrence block specific props
+interface RecurrenceBlockProps {
+  block: ActivityBlockDef & { type: 'recurrence' };
+  control?: Control<ActivityFormData>;
+  error?: FieldError;
+}
+
+// RecurrenceBlock component for setting up recurring activities
+const RecurrenceBlock: React.FC<RecurrenceBlockProps> = ({
+  block,
+  error,
+}) => {
+  const { watch, setValue } = useFormContext();
+  const fieldName = `blocks.${block.id}` as const;
+  const currentValue: RecurrenceValue | undefined = watch(fieldName);
+
+  // State management
+  const [showAdvanced, setShowAdvanced] = React.useState(false);
+  const [showTemplates, setShowTemplates] = React.useState(false);
+
+  // Initialize default value
+  React.useEffect(() => {
+    if (!currentValue) {
+      setValue(fieldName, {
+        pattern: {
+          type: 'weekly',
+          interval: 1,
+          endType: 'never',
+          isEnabled: false,
+        },
+      });
+    }
+  }, [currentValue, fieldName, setValue]);
+
+  // Handle pattern field changes
+  const handlePatternChange = React.useCallback((field: keyof RecurrencePattern, value: any) => {
+    if (!currentValue) return;
+
+    const updatedPattern: RecurrencePattern = {
+      ...currentValue.pattern,
+      [field]: value,
+    };
+
+    // Reset relevant fields when type changes
+    if (field === 'type') {
+      delete updatedPattern.daysOfWeek;
+      delete updatedPattern.dayOfMonth;
+      delete updatedPattern.monthOfYear;
+    }
+
+    const updatedValue: RecurrenceValue = {
+      ...currentValue,
+      pattern: updatedPattern,
+      nextOccurrence: calculateNextOccurrence(updatedPattern),
+    };
+
+    setValue(fieldName, updatedValue);
+  }, [currentValue, fieldName, setValue]);
+
+  // Handle days of week selection for weekly recurrence
+  const handleDayOfWeekToggle = React.useCallback((dayIndex: number) => {
+    if (!currentValue) return;
+
+    const currentDays = currentValue.pattern.daysOfWeek || [];
+    const updatedDays = currentDays.includes(dayIndex)
+      ? currentDays.filter(day => day !== dayIndex)
+      : [...currentDays, dayIndex].sort();
+
+    handlePatternChange('daysOfWeek', updatedDays);
+  }, [currentValue, handlePatternChange]);
+
+  // Load template
+  const handleLoadTemplate = React.useCallback((templateKey: keyof typeof RECURRENCE_TEMPLATES) => {
+    const template = RECURRENCE_TEMPLATES[templateKey];
+    
+    const updatedPattern: RecurrencePattern = {
+      ...template.pattern,
+      endType: 'never',
+      isEnabled: true,
+    };
+
+    const updatedValue: RecurrenceValue = {
+      pattern: updatedPattern,
+      nextOccurrence: calculateNextOccurrence(updatedPattern),
+    };
+
+    setValue(fieldName, updatedValue);
+    setShowTemplates(false);
+  }, [fieldName, setValue]);
+
+  // Calculate next occurrence (simplified calculation)
+  const calculateNextOccurrence = React.useCallback((pattern: RecurrencePattern): Date => {
+    const now = new Date();
+    const nextOccurrence = new Date(now);
+
+    switch (pattern.type) {
+      case 'daily':
+        nextOccurrence.setDate(now.getDate() + pattern.interval);
+        break;
+      case 'weekly':
+        nextOccurrence.setDate(now.getDate() + (pattern.interval * 7));
+        break;
+      case 'monthly':
+        nextOccurrence.setMonth(now.getMonth() + pattern.interval);
+        if (pattern.dayOfMonth) {
+          nextOccurrence.setDate(pattern.dayOfMonth);
+        }
+        break;
+      case 'yearly':
+        nextOccurrence.setFullYear(now.getFullYear() + pattern.interval);
+        break;
+    }
+
+    return nextOccurrence;
+  }, []);
+
+  // Get recurrence description
+  const getRecurrenceDescription = React.useCallback((pattern: RecurrencePattern): string => {
+    if (!pattern.isEnabled) return 'Recurrence disabled';
+
+    let description = '';
+
+    switch (pattern.type) {
+      case 'daily':
+        description = pattern.interval === 1 ? 'Daily' : `Every ${pattern.interval} days`;
+        break;
+      case 'weekly':
+        if (pattern.interval === 1) {
+          if (pattern.daysOfWeek && pattern.daysOfWeek.length > 0) {
+            const dayNames = pattern.daysOfWeek.map(day => DAYS_OF_WEEK[day].short);
+            description = `Weekly on ${dayNames.join(', ')}`;
+          } else {
+            description = 'Weekly';
+          }
+        } else {
+          description = `Every ${pattern.interval} weeks`;
+        }
+        break;
+      case 'monthly':
+        if (pattern.interval === 1) {
+          description = pattern.dayOfMonth 
+            ? `Monthly on day ${pattern.dayOfMonth}`
+            : 'Monthly';
+        } else {
+          description = `Every ${pattern.interval} months`;
+        }
+        break;
+      case 'yearly':
+        description = pattern.interval === 1 ? 'Yearly' : `Every ${pattern.interval} years`;
+        break;
+      default:
+        description = 'Custom recurrence';
+    }
+
+    // Add end condition
+    if (pattern.endType === 'on_date' && pattern.endDate) {
+      description += ` until ${pattern.endDate.toLocaleDateString()}`;
+    } else if (pattern.endType === 'after_occurrences' && pattern.maxOccurrences) {
+      description += ` for ${pattern.maxOccurrences} times`;
+    }
+
+    return description;
+  }, []);
+
+  // Format date for input
+  const formatDateForInput = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+
+  // Parse date from input
+  const parseDateFromInput = (dateString: string): Date => {
+    return new Date(dateString + 'T00:00:00');
+  };
+
+  if (!currentValue) return null;
+
+  return (
+    <Field
+      label={block.label}
+      required={block.required}
+      error={error?.message}
+      hint={block.config?.hint || 'Set up recurring schedule for this activity'}
+      blockType="recurrence"
+      id={`recurrence-${block.id}`}
+    >
+      <div className="space-y-4">
+        {/* Enable/disable recurrence */}
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium">Recurring Activity</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={currentValue.pattern.isEnabled}
+              onChange={(e) => handlePatternChange('isEnabled', e.target.checked)}
+              className="rounded"
+            />
+            <span className="text-sm text-muted-foreground">
+              {currentValue.pattern.isEnabled ? 'Enabled' : 'Disabled'}
+            </span>
+          </div>
+        </div>
+
+        {/* Recurrence configuration - only show if enabled */}
+        {currentValue.pattern.isEnabled && (
+          <>
+            {/* Quick templates */}
+            <div className="flex justify-between items-center">
+              <div className="text-sm font-medium">Quick Setup</div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTemplates(!showTemplates)}
+                className="text-xs"
+              >
+                Templates
+              </Button>
+            </div>
+
+            {/* Template selector */}
+            {showTemplates && (
+              <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+                <div className="text-sm font-medium">Common Patterns</div>
+                <div className="grid grid-cols-1 gap-2">
+                  {Object.entries(RECURRENCE_TEMPLATES).map(([key, template]) => (
+                    <Button
+                      key={key}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleLoadTemplate(key as keyof typeof RECURRENCE_TEMPLATES)}
+                      className="justify-start text-left"
+                    >
+                      <div>
+                        <div className="font-medium text-xs">{template.label}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {template.description}
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTemplates(false)}
+                  className="w-full text-xs"
+                >
+                  Close
+                </Button>
+              </div>
+            )}
+
+            {/* Recurrence type and interval */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">Repeat</label>
+                <Select 
+                  value={currentValue.pattern.type} 
+                  onValueChange={(value) => handlePatternChange('type', value)}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Every</label>
+                <div className="mt-1 flex items-center gap-1">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={currentValue.pattern.interval}
+                    onChange={(e) => handlePatternChange('interval', parseInt(e.target.value) || 1)}
+                    className="text-center"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {currentValue.pattern.type === 'daily' && 'day(s)'}
+                    {currentValue.pattern.type === 'weekly' && 'week(s)'}
+                    {currentValue.pattern.type === 'monthly' && 'month(s)'}
+                    {currentValue.pattern.type === 'yearly' && 'year(s)'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Weekly: Days of week */}
+            {currentValue.pattern.type === 'weekly' && (
+              <div>
+                <label className="text-sm font-medium">Days of Week</label>
+                <div className="mt-1 flex gap-1">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <Button
+                      key={day.value}
+                      type="button"
+                      variant={currentValue.pattern.daysOfWeek?.includes(day.value) ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleDayOfWeekToggle(day.value)}
+                      className="text-xs w-10 h-8 p-0"
+                    >
+                      {day.short}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Monthly: Day of month */}
+            {currentValue.pattern.type === 'monthly' && (
+              <div>
+                <label className="text-sm font-medium">Day of Month</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={31}
+                  value={currentValue.pattern.dayOfMonth || ''}
+                  onChange={(e) => handlePatternChange('dayOfMonth', parseInt(e.target.value) || undefined)}
+                  placeholder="Day (1-31)"
+                  className="mt-1"
+                />
+              </div>
+            )}
+
+            {/* Advanced options */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="w-full text-xs"
+            >
+              {showAdvanced ? 'Less Options' : 'End Conditions'}
+            </Button>
+
+            {/* Advanced end conditions */}
+            {showAdvanced && (
+              <div className="space-y-3 border-t pt-3">
+                <div className="text-sm font-medium">End Recurrence</div>
+                
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="endType"
+                      value="never"
+                      checked={currentValue.pattern.endType === 'never'}
+                      onChange={(e) => handlePatternChange('endType', e.target.value)}
+                    />
+                    <span className="text-sm">Never (continues indefinitely)</span>
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="endType"
+                      value="on_date"
+                      checked={currentValue.pattern.endType === 'on_date'}
+                      onChange={(e) => handlePatternChange('endType', e.target.value)}
+                    />
+                    <span className="text-sm">On date:</span>
+                    {currentValue.pattern.endType === 'on_date' && (
+                      <Input
+                        type="date"
+                        value={currentValue.pattern.endDate ? formatDateForInput(currentValue.pattern.endDate) : ''}
+                        onChange={(e) => handlePatternChange('endDate', parseDateFromInput(e.target.value))}
+                        className="text-sm"
+                      />
+                    )}
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="endType"
+                      value="after_occurrences"
+                      checked={currentValue.pattern.endType === 'after_occurrences'}
+                      onChange={(e) => handlePatternChange('endType', e.target.value)}
+                    />
+                    <span className="text-sm">After:</span>
+                    {currentValue.pattern.endType === 'after_occurrences' && (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={999}
+                          value={currentValue.pattern.maxOccurrences || ''}
+                          onChange={(e) => handlePatternChange('maxOccurrences', parseInt(e.target.value) || undefined)}
+                          className="text-sm w-20"
+                        />
+                        <span className="text-xs text-muted-foreground">occurrences</span>
+                      </div>
+                    )}
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Recurrence summary */}
+            <div className="bg-primary/5 border border-primary/20 rounded-md p-3">
+              <div className="flex items-center gap-2">
+                <Repeat className="w-4 h-4 text-primary" />
+                <div className="flex-1">
+                  <div className="font-medium text-sm">
+                    {getRecurrenceDescription(currentValue.pattern)}
+                  </div>
+                  {currentValue.nextOccurrence && (
+                    <div className="text-xs text-muted-foreground">
+                      Next occurrence: {currentValue.nextOccurrence.toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+                {currentValue.pattern.isEnabled && (
+                  <Badge variant="secondary" className="text-xs">
+                    <Clock className="w-3 h-3 mr-1" />
+                    Active
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="text-sm font-medium">Recurrence Notes (Optional)</label>
+              <Input
+                type="text"
+                placeholder="Any special notes about this recurring activity..."
+                value={currentValue.notes || ''}
+                onChange={(e) => setValue(fieldName, { ...currentValue, notes: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+          </>
+        )}
+      </div>
+    </Field>
+  );
+};
+
+export default RecurrenceBlock;
