@@ -62,6 +62,7 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
   const [selectedTemplate, setSelectedTemplate] = React.useState<ActivityTemplate | undefined>(initialTemplate);
   const [currentMode, setCurrentMode] = React.useState<ActivityMode>(mode);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [showSuccessAlert, setShowSuccessAlert] = React.useState(false);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
 
 
@@ -173,19 +174,22 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
   // Re-validate when selected template changes (for dynamic schema)
   React.useEffect(() => {
     if (selectedTemplate) {
-      // Update blocks with proper default values for new template
-      const newBlocks = getDefaultBlocks();
       const currentBlocks = getValues('blocks');
-      
-      // Merge existing values with new defaults (preserve user input)
-      const mergedBlocks = { ...newBlocks, ...currentBlocks };
-      setValue('blocks', mergedBlocks);
-      
+
+      // Only apply defaults if we don't have initial data (new activity mode)
+      // In edit mode, preserve all existing values
+      if (!activityId || !initialData?.blocks) {
+        // New activity: merge defaults with any user input
+        const newBlocks = getDefaultBlocks();
+        const mergedBlocks = { ...newBlocks, ...currentBlocks };
+        setValue('blocks', mergedBlocks);
+      }
+
       setTimeout(() => {
         trigger();
       }, 100);
     }
-  }, [selectedTemplate, trigger, getDefaultBlocks, setValue, getValues]);
+  }, [selectedTemplate, trigger, getDefaultBlocks, setValue, getValues, activityId, initialData]);
 
   // Watch all form fields to trigger validation on any change
   const watchedValues = watch();
@@ -204,9 +208,19 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
         .filter(block => block.required)
         .forEach(block => {
           const blockValue = watchedValues.blocks?.[block.id];
-          const isEmpty = blockValue === undefined || blockValue === null || blockValue === '' || 
-            (typeof blockValue === 'object' && Object.keys(blockValue).length === 0);
-          
+
+          // Check if value is empty
+          let isEmpty = false;
+          if (blockValue === undefined || blockValue === null || blockValue === '') {
+            isEmpty = true;
+          } else if (blockValue instanceof Date) {
+            // Date objects are valid values
+            isEmpty = false;
+          } else if (typeof blockValue === 'object') {
+            // Check if object has meaningful content
+            isEmpty = Object.keys(blockValue).length === 0;
+          }
+
           if (isEmpty) {
             missingRequiredBlocks.push(block.label || block.id);
           }
@@ -214,7 +228,16 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
     }
     
     const canSave = hasTemplate && hasPet && !hasFormErrors && missingRequiredBlocks.length === 0;
-    
+
+    // Get first form error message for better user feedback
+    let firstErrorMessage: string | null = null;
+    if (hasFormErrors && errors.blocks) {
+      const firstError = Object.values(errors.blocks).find(err => err?.message);
+      if (firstError && typeof firstError.message === 'string') {
+        firstErrorMessage = firstError.message;
+      }
+    }
+
     return {
       hasTemplate,
       hasPet,
@@ -225,8 +248,9 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
       errorMessage: !canSave ? (
         !hasTemplate ? 'Select an activity type' :
         !hasPet ? 'Select a pet' :
-        missingRequiredBlocks.length > 0 ? `Complete: ${missingRequiredBlocks.join(', ')}` :
-        hasFormErrors ? 'Fix form errors' :
+        missingRequiredBlocks.length > 0 ? `Please complete: ${missingRequiredBlocks.join(', ')}` :
+        hasFormErrors && firstErrorMessage ? firstErrorMessage :
+        hasFormErrors ? 'Please fix the form errors above' :
         'Unknown validation issue'
       ) : null
     };
@@ -236,21 +260,31 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
 
   // Form submission handler
   const onSubmit = React.useCallback(async (data: ActivityFormData) => {
+    // Reset states at the beginning
+    setShowSuccessAlert(false);
     setIsSubmitting(true);
-    
+
     try {
       if (!formValidation.canSave) {
         console.warn('Form validation failed:', formValidation.errorMessage);
+        setIsSubmitting(false);
         return;
       }
 
       await onSave(data);
+
+      // Show success alert only for editing (activityId exists)
+      if (activityId) {
+        setIsSubmitting(false);
+        setShowSuccessAlert(true);
+        // Success alert will be visible for 1.5 seconds before parent navigates away
+      }
     } catch (error) {
       console.error('Failed to save activity:', error);
-    } finally {
       setIsSubmitting(false);
+      setShowSuccessAlert(false);
     }
-  }, [onSave, formValidation]);
+  }, [onSave, formValidation, activityId]);
 
 
 
@@ -460,12 +494,25 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
               </Alert>
             )}
             
-            {isSubmitting && (
+            {isSubmitting && !showSuccessAlert && (
               <Alert className="border-blue-200 bg-blue-50">
                 <div className="flex items-center gap-2">
                   <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
                   <AlertDescription className="text-blue-700">
                     Saving your activity...
+                  </AlertDescription>
+                </div>
+              </Alert>
+            )}
+
+            {showSuccessAlert && (
+              <Alert className="border-green-200 bg-green-50">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-green-600 flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
+                  <AlertDescription className="text-green-700">
+                    Activity updated successfully
                   </AlertDescription>
                 </div>
               </Alert>

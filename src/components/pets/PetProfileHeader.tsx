@@ -1,12 +1,11 @@
 import { Pet } from '../../lib/types';
 import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
 import { PetProfilePhoto } from './PetProfilePhoto';
 import { calculateAge, cn } from '../../lib/utils';
-import { 
-  Edit, 
-  Calendar, 
-  Scale, 
+import {
+  Edit,
+  Calendar,
+  Scale,
   Palette,
   Info
 } from 'lucide-react';
@@ -42,130 +41,160 @@ export function PetProfileHeader({
 
   return (
     <div className={cn(
-      "bg-white rounded-lg border border-orange-100 overflow-hidden",
+      "bg-white rounded-3xl shadow-sm border border-orange-100/50 overflow-hidden relative",
       className
     )}>
-      {/* Header Section */}
-      <div className={cn(
-        "flex gap-6 p-6",
-        isCompact && "gap-4 p-4"
-      )}>
-        {/* Pet Photo */}
-        <div className="flex-shrink-0">
-          <PetProfilePhoto
-            pet={pet}
-            size={isCompact ? 'large' : 'hero'}
-            className={cn(
-              "rounded-lg shadow-md",
-              isCompact ? "w-20 h-20" : "w-32 h-32"
-            )}
-          />
-        </div>
+      {/* Full Size Layout - Hero Banner Style */}
+      {!isCompact && (
+        <>
+          {/* Edit Button - Ghost Style Top Right */}
+          {showEditButton && onEdit && (
+            <div className="absolute top-8 right-8 z-10">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onEdit}
+                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 transition-all"
+              >
+                <Edit className="w-4 h-4 mr-1.5" />
+                Edit
+              </Button>
+            </div>
+          )}
 
-        {/* Pet Information */}
-        <div className="flex-grow min-w-0">
-          {/* Name and Badges */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="min-w-0 flex-grow">
-              <h1 className={cn(
-                "font-bold text-orange-900 truncate",
-                isCompact ? "text-xl" : "text-2xl"
-              )}>
+          {/* Hero Banner - Centered Layout */}
+          <div className="px-12 pt-16 pb-12">
+            {/* Centered Photo - Large Circular */}
+            <div className="flex justify-center mb-8">
+              <PetProfilePhoto
+                pet={pet}
+                size="hero"
+                className="w-48 h-48 rounded-full shadow-2xl ring-6 ring-white"
+              />
+            </div>
+
+            {/* Centered Name */}
+            <div className="text-center mb-6">
+              <h1 className="text-5xl font-bold text-orange-800 mb-4 tracking-tight">
                 {pet.name}
               </h1>
-              <div className="flex flex-wrap gap-2 mt-2">
-                <Badge 
-                  variant="secondary" 
-                  className="bg-orange-100 text-orange-800 hover:bg-orange-200"
-                >
-                  {pet.species}
-                </Badge>
-                <Badge 
-                  variant="outline"
-                  className="border-orange-200 text-orange-700"
-                >
-                  {pet.gender}
-                </Badge>
+
+              {/* Inline Badges - Clean Text with Dots (No Age) */}
+              <div className="flex items-center justify-center gap-3 text-lg text-orange-600 font-medium">
+                <span>{pet.species}</span>
+                <span className="text-orange-400">•</span>
+                <span>{pet.gender}</span>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2 ml-4">
-              {showEditButton && onEdit && (
-                <Button
-                  variant="outline"
-                  size={isCompact ? "sm" : "default"}
-                  onClick={onEdit}
-                  className="text-orange-700 border-orange-200 hover:bg-orange-50"
-                >
-                  <Edit className="w-4 h-4 mr-1" />
-                  {!isCompact && "Edit"}
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Pet Details */}
-          {!isCompact && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-orange-700">
-              {/* Age */}
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-orange-500" />
-                <span className="font-medium">Age:</span>
-                <span>{age}</span>
-              </div>
-
-              {/* Breed */}
-              {pet.breed && (
-                <div className="flex items-center gap-2">
-                  <Info className="w-4 h-4 text-orange-500" />
-                  <span className="font-medium">Breed:</span>
-                  <span className="truncate">{pet.breed}</span>
+            {/* Information Cards Grid - Icon First, Minimalist */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* Age Card */}
+              <div className="group bg-gradient-to-br from-white to-orange-50/30 rounded-xl p-5 border border-orange-100/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                <div className="flex flex-col items-center text-center gap-2.5">
+                  <Calendar className="w-7 h-7 text-orange-500 group-hover:scale-110 transition-transform" />
+                  <div>
+                    <p className="text-xl font-bold text-orange-900 mb-0.5">{age}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">Age</p>
+                  </div>
                 </div>
-              )}
+              </div>
 
-              {/* Weight */}
+              {/* Weight Card */}
               {pet.weight_kg && (
-                <div className="flex items-center gap-2">
-                  <Scale className="w-4 h-4 text-orange-500" />
-                  <span className="font-medium">Weight:</span>
-                  <span>{pet.weight_kg} kg</span>
+                <div className="group bg-gradient-to-br from-white to-orange-50/30 rounded-xl p-5 border border-orange-100/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="flex flex-col items-center text-center gap-2.5">
+                    <Scale className="w-7 h-7 text-orange-500 group-hover:scale-110 transition-transform" />
+                    <div>
+                      <p className="text-xl font-bold text-orange-900 mb-0.5">{pet.weight_kg} kg</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">Weight</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Color */}
+              {/* Breed Card */}
+              {pet.breed && (
+                <div className="group bg-gradient-to-br from-white to-orange-50/30 rounded-xl p-5 border border-orange-100/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="flex flex-col items-center text-center gap-2.5">
+                    <Palette className="w-7 h-7 text-orange-500 group-hover:scale-110 transition-transform" />
+                    <div>
+                      <p className="text-xl font-bold text-orange-900 mb-0.5 truncate max-w-full">{pet.breed}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">Breed</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Color Card */}
               {pet.color && (
-                <div className="flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-orange-500" />
-                  <span className="font-medium">Color:</span>
-                  <span className="truncate">{pet.color}</span>
+                <div className="group bg-gradient-to-br from-white to-orange-50/30 rounded-xl p-5 border border-orange-100/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="flex flex-col items-center text-center gap-2.5">
+                    <Info className="w-7 h-7 text-orange-500 group-hover:scale-110 transition-transform" />
+                    <div>
+                      <p className="text-xl font-bold text-orange-900 mb-0.5 truncate max-w-full">{pet.color}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">Color</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-          )}
 
-          {/* Compact Details */}
-          {isCompact && (
-            <div className="text-sm text-orange-600">
-              <span>{age}</span>
-              {pet.breed && <span className="ml-2">• {pet.breed}</span>}
-              {pet.weight_kg && <span className="ml-2">• {pet.weight_kg}kg</span>}
+            {/* Notes Section - If Present */}
+            {pet.notes && (
+              <div className="mt-8">
+                <div className="bg-orange-50/50 rounded-xl p-5 border border-orange-100/50">
+                  <h3 className="font-semibold text-orange-900 mb-2.5 flex items-center gap-2 text-sm">
+                    <Info className="w-4 h-4 text-orange-500" />
+                    About {pet.name}
+                  </h3>
+                  <p className="text-orange-700 leading-relaxed text-sm">
+                    {pet.notes}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Compact Size Layout */}
+      {isCompact && (
+        <div className="p-6">
+          <div className="flex gap-5 items-start">
+            {/* Pet Photo - Larger Circle */}
+            <div className="flex-shrink-0">
+              <PetProfilePhoto
+                pet={pet}
+                size="large"
+                className="w-24 h-24 rounded-full shadow-lg ring-4 ring-white"
+              />
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Notes Section (full size only) */}
-      {!isCompact && pet.notes && (
-        <div className="px-6 pb-6 pt-0">
-          <div className="bg-orange-50 rounded-lg p-4 border border-orange-100">
-            <h3 className="font-medium text-orange-900 mb-2 flex items-center gap-2">
-              <Info className="w-4 h-4" />
-              Notes
-            </h3>
-            <p className="text-sm text-orange-700 leading-relaxed">
-              {pet.notes}
-            </p>
+            {/* Pet Information */}
+            <div className="flex-grow min-w-0 pt-1">
+              <h1 className="text-2xl font-bold text-orange-800 mb-3 tracking-tight">
+                {pet.name}
+              </h1>
+
+              {/* Inline Info - No Badge Boxes, No Age */}
+              <div className="flex items-center gap-2.5 text-sm text-orange-600 font-medium mb-3">
+                <span>{pet.species}</span>
+                <span className="text-orange-400">•</span>
+                <span>{pet.gender}</span>
+              </div>
+
+              {/* Additional Details */}
+              {(age || pet.breed || pet.weight_kg) && (
+                <div className="flex items-center gap-2.5 text-xs text-orange-500">
+                  <span>{age}</span>
+                  {(pet.breed || pet.weight_kg) && <span className="text-orange-300">•</span>}
+                  {pet.breed && <span>{pet.breed}</span>}
+                  {pet.breed && pet.weight_kg && <span className="text-orange-300">•</span>}
+                  {pet.weight_kg && <span>{pet.weight_kg}kg</span>}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

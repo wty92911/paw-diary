@@ -1,3 +1,4 @@
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertTriangle, ArrowLeft, Activity, Plus } from 'lucide-react';
 import { usePets } from '../hooks/usePets';
@@ -6,9 +7,8 @@ import { useActivitiesList } from '../hooks/useActivitiesList';
 import { PetProfileHeader } from '../components/pets/PetProfileHeader';
 import { ActivityPreviewSection } from '../components/activities/ActivityPreviewSection';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
 import { convertActivitiesToTimelineItems } from '../lib/utils/activityUtils';
-import { UniversalHeader, HeaderVariant, BackActionType, PetPhotoSize } from '../components/header';
+import { UniversalHeader, HeaderVariant, BackActionType } from '../components/header';
 
 /**
  * PetProfilePage - Comprehensive pet profile
@@ -35,6 +35,14 @@ export function PetProfilePage() {
     isLoading: isActivitiesLoading,
     error: activitiesErrorMessage,
   } = useActivitiesList(petId || 0);
+
+  // Sort activities by date (most recent first) and take the first 3
+  const recentActivities = React.useMemo(() => {
+    const timelineItems = convertActivitiesToTimelineItems(activities);
+    return timelineItems
+      .sort((a, b) => new Date(b.activityDate).getTime() - new Date(a.activityDate).getTime())
+      .slice(0, 3);
+  }, [activities]);
 
   // Loading state while pets are loading or pet not found yet
   if (petsLoading && pets.length === 0) {
@@ -104,7 +112,9 @@ export function PetProfilePage() {
       {/* Universal Header */}
       <UniversalHeader
         configuration={{
-          variant: HeaderVariant.PET_CONTEXT,
+          variant: HeaderVariant.FORM,
+          title: 'Pet Profile',
+          subtitle: currentPet.name,
           showBackButton: true,
           backAction: {
             type: BackActionType.CUSTOM_HANDLER,
@@ -112,59 +122,48 @@ export function PetProfilePage() {
             label: 'Back',
           },
           sticky: true,
-          petContext: {
-            pet: currentPet,
-            showPetPhoto: true,
-            photoSize: PetPhotoSize.MEDIUM,
-            showSpecies: true,
-            breadcrumbs: [
-              { label: 'Home', href: '/', active: false },
-              { label: currentPet.name, href: '', active: true },
-            ],
-          },
         }}
       />
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Pet Profile Section */}
-          <div className="lg:col-span-1 space-y-6">
-            <PetProfileHeader
-              pet={currentPet}
-              onEdit={() => navigate(`/pets/${currentPet.id}/edit`)}
-              size="full"
-              className="shadow-lg"
-            />
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
+        <div className="space-y-6">
+          {/* Pet Profile Section - Full Width */}
+          <PetProfileHeader
+            pet={currentPet}
+            onEdit={() => navigate(`/pets/${currentPet.id}/edit`)}
+            size="full"
+            className="shadow-lg"
+          />
 
-            {/* Activities Navigation */}
-            <Card className="bg-white shadow-lg">
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <Button
-                    onClick={() => navigate(`/pets/${currentPet.id}/activities`)}
-                    variant="outline"
-                    className="w-full border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
-                  >
-                    <Activity className="w-4 h-4 mr-2" />
-                    View All Activities
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recent Activities Preview */}
-          <div className="lg:col-span-2">
+          {/* Recent Activities Section */}
+          <div className="space-y-4">
             <ActivityPreviewSection
-              activities={convertActivitiesToTimelineItems(activities.slice(0, 3))}
+              activities={recentActivities}
               petId={currentPet.id}
               isLoading={isActivitiesLoading}
               error={activitiesErrorMessage || undefined}
               maxActivities={3}
               className="shadow-lg"
               emptyStateMessage={`Start tracking ${currentPet.name}'s activities`}
+              showHeader={true}
+              showViewAllButton={false}
             />
+
+            {/* View All Activities Button - Below Recent Activities */}
+            {activities.length > 0 && (
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => navigate(`/pets/${currentPet.id}/activities`)}
+                  variant="outline"
+                  size="lg"
+                  className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400 min-w-[240px]"
+                >
+                  <Activity className="w-4 h-4 mr-2" />
+                  View All Activities
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </main>

@@ -151,10 +151,17 @@ export function useUpdateActivity() {
       if (data.updates.subcategory) updateData.subcategory = data.updates.subcategory;
       if (data.updates.blocks) updateData.activity_data = data.updates.blocks;
 
-      const result = await invoke('update_activity', {
-        activity_id: data.activityId,
+      console.log('📤 Sending update request:', {
+        activityId: data.activityId,
         updates: updateData,
       });
+
+      const result = await invoke('update_activity', {
+        activityId: data.activityId,
+        updates: updateData,
+      });
+
+      console.log('📥 Update response:', result);
       return result as Activity;
     },
     onMutate: async ({ activityId, petId, updates }) => {
@@ -198,17 +205,33 @@ export function useUpdateActivity() {
       }
     },
     onSuccess: (updatedActivity, { petId }) => {
+      console.log('✅ Update successful, received activity:', updatedActivity);
+      console.log('✅ Activity data field:', updatedActivity.activity_data);
+
       // Update caches with server response
-      queryClient.setQueryData<Activity[]>(activityKeys.list(petId), (old = []) =>
-        old.map(activity => (activity.id === updatedActivity.id ? updatedActivity : activity)),
-      );
+      queryClient.setQueryData<Activity[]>(activityKeys.list(petId), (old = []) => {
+        const updated = old.map(activity =>
+          activity.id === updatedActivity.id ? updatedActivity : activity,
+        );
+        console.log('✅ Updated activity list cache');
+        return updated;
+      });
 
       queryClient.setQueryData(activityKeys.detail(updatedActivity.id), updatedActivity);
+      console.log('✅ Updated activity detail cache');
     },
-    onSettled: (_updatedActivity, _error, { activityId, petId }) => {
-      // Invalidate to ensure consistency
-      queryClient.invalidateQueries({ queryKey: activityKeys.list(petId) });
-      queryClient.invalidateQueries({ queryKey: activityKeys.detail(activityId) });
+    onSettled: async (_updatedActivity, _error, { activityId, petId }) => {
+      // Invalidate and refetch to ensure consistency
+      await queryClient.invalidateQueries({
+        queryKey: activityKeys.list(petId),
+        refetchType: 'active',
+      });
+      await queryClient.invalidateQueries({
+        queryKey: activityKeys.detail(activityId),
+        refetchType: 'active',
+      });
+
+      console.log('🔄 Invalidated queries and triggered refetch');
     },
   });
 }

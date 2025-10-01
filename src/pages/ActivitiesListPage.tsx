@@ -6,10 +6,10 @@ import { usePets } from '../hooks/usePets';
 {
   /* ActivityTimelineItem import removed - not used in this file */
 }
-import { RouteValidator, BreadcrumbBuilder, RouteBuilder } from '../lib/types/routing';
+import { RouteValidator, RouteBuilder } from '../lib/types/routing';
 import { convertActivitiesToTimelineItems } from '../lib/utils/activityUtils';
 import { PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
-import { UniversalHeader, HeaderVariant, BackActionType, PetPhotoSize } from '../components/header';
+import { UniversalHeader, HeaderVariant, BackActionType } from '../components/header';
 import ActivityTimeline from '../components/activities/ActivityTimeline';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -161,15 +161,14 @@ export function ActivitiesListPage() {
     setActivityToDelete(null);
   };
 
-  // Generate breadcrumbs
-  const breadcrumbs = BreadcrumbBuilder.forActivitiesList(pet.name, numericPetId);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
-      {/* Pet Context Header */}
+      {/* Activities List Header */}
       <UniversalHeader
         configuration={{
-          variant: HeaderVariant.PET_CONTEXT,
+          variant: HeaderVariant.FORM,
+          title: 'Activities',
+          subtitle: pet.name,
           showBackButton: true,
           backAction: {
             type: BackActionType.CUSTOM_HANDLER,
@@ -177,13 +176,6 @@ export function ActivitiesListPage() {
             label: 'Back',
           },
           sticky: true,
-          petContext: {
-            pet: pet,
-            showPetPhoto: true,
-            photoSize: PetPhotoSize.MEDIUM,
-            showSpecies: true,
-            breadcrumbs: breadcrumbs,
-          },
         }}
       />
 

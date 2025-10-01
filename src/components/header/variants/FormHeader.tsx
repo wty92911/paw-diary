@@ -8,7 +8,7 @@
 import { cn } from '../../../lib/utils';
 import { FormHeaderProps } from '../types';
 import { HeaderNavigation } from '../components/HeaderNavigation';
-import { Edit3, Save } from 'lucide-react';
+import { PawPrint, Sparkles } from 'lucide-react';
 
 // ============================================================================
 // Component Styles
@@ -59,12 +59,18 @@ export function FormHeader({
         />
       )}
 
-      {/* Title Section with Form Icon */}
+      {/* Title Section with App Logo */}
       <div className={TITLE_CONTAINER_STYLES}>
-        {/* Form Icon */}
-        <div className="flex-shrink-0 mr-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center shadow-sm">
-            <Edit3 className="w-4 h-4 text-white" />
+        {/* App Logo - consistent with HomePage */}
+        <div className="flex items-center mr-3">
+          <div className="relative">
+            <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-yellow-500 rounded-lg flex items-center justify-center shadow-sm">
+              <PawPrint className="w-5 h-5 text-white" />
+            </div>
+            {/* Subtle sparkle effect */}
+            <div className="absolute -top-1 -right-1 w-3 h-3 opacity-60">
+              <Sparkles className="w-3 h-3 text-yellow-400 animate-pulse" />
+            </div>
           </div>
         </div>
 
@@ -78,13 +84,6 @@ export function FormHeader({
               <span className="truncate block">{subtitle}</span>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Save Indicator (placeholder for form state) */}
-      <div className="flex-shrink-0 mr-2">
-        <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center opacity-60">
-          <Save className="w-3 h-3 text-green-600" />
         </div>
       </div>
     </div>

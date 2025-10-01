@@ -3,14 +3,13 @@ import { AlertCircle } from 'lucide-react';
 import { useActivity, useCreateActivity, useUpdateActivity } from '../hooks/useActivities';
 import { usePets } from '../hooks/usePets';
 import { ActivityFormData, ActivityMode } from '../lib/types/activities';
-import { RouteValidator, RouteBuilder, BreadcrumbBuilder } from '../lib/types/routing';
+import { RouteValidator, RouteBuilder } from '../lib/types/routing';
 import { PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
-import { UniversalHeader, HeaderVariant, BackActionType, PetPhotoSize } from '../components/header';
+import { UniversalHeader, HeaderVariant, BackActionType } from '../components/header';
 import ActivityEditorCore from '../components/activities/ActivityEditorCore';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { getActivityTitle } from '../lib/utils/activityUtils';
 
 /**
  * ActivityEditorPage - Full-screen activity creation and editing page
@@ -136,28 +135,83 @@ function ActivityEditorPageContent({
         petId: activity.pet_id,
         category: activity.category as any, // Category will need proper conversion
         subcategory: activity.subcategory,
-        blocks: activity.activity_data || {},
+        blocks: convertBlocksFromDatabase(activity.activity_data || {}),
       }
     : undefined;
+
+  // Convert blocks from database format to form format
+  // Database stores time as { date: "ISO string", time: "", timezone: "" }
+  // Form expects Date objects
+  function convertBlocksFromDatabase(blocks: Record<string, any>): Record<string, any> {
+    const converted: Record<string, any> = {};
+    for (const [key, value] of Object.entries(blocks)) {
+      if (value && typeof value === 'object' && 'date' in value && typeof value.date === 'string') {
+        // Convert time block from database format to Date object
+        converted[key] = new Date(value.date);
+      } else {
+        converted[key] = value;
+      }
+    }
+    return converted;
+  }
+
+  // Convert blocks from form format to database format
+  // Form uses Date objects, database expects { date: "ISO string", time: "", timezone: "" }
+  function convertBlocksToDatabase(blocks: Record<string, any>): Record<string, any> {
+    const converted: Record<string, any> = {};
+    for (const [key, value] of Object.entries(blocks)) {
+      if (value instanceof Date) {
+        // Convert Date object to database format
+        converted[key] = {
+          date: value.toISOString(),
+          time: '',
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        };
+      } else {
+        converted[key] = value;
+      }
+    }
+    return converted;
+  }
 
   // Event handlers
   const handleSave = async (formData: ActivityFormData) => {
     try {
+      // Convert Date objects in blocks back to database format
+      const convertedFormData = {
+        ...formData,
+        blocks: convertBlocksToDatabase(formData.blocks || {}),
+      };
+
+      console.log('🔍 Original formData.blocks:', formData.blocks);
+      console.log('🔍 Converted blocks:', convertedFormData.blocks);
+
       if (isEditMode && numericActivityId) {
+        console.log('🔍 Calling updateActivityMutation with:', {
+          activityId: numericActivityId,
+          petId: numericPetId,
+          updates: convertedFormData,
+        });
+
         await updateActivityMutation.mutateAsync({
           activityId: numericActivityId,
           petId: numericPetId,
-          updates: formData,
+          updates: convertedFormData,
         });
+
+        // Delay navigation to show success message in ActivityEditorCore
+        setTimeout(() => {
+          navigate(RouteBuilder.activitiesList(numericPetId));
+        }, 1500);
       } else {
         await createActivityMutation.mutateAsync({
           petId: numericPetId,
-          activityData: formData,
+          activityData: convertedFormData,
         });
-      }
 
-      // Navigate back to activities list
-      navigate(RouteBuilder.activitiesList(numericPetId));
+        // Navigate back immediately for new activities
+        navigate(RouteBuilder.activitiesList(numericPetId));
+      }
     } catch (error) {
       console.error('Failed to save activity:', error);
       // Error handling could be improved with toast notifications
@@ -168,32 +222,18 @@ function ActivityEditorPageContent({
     navigate(RouteBuilder.activitiesList(numericPetId));
   };
 
-  // Generate breadcrumbs
-  const breadcrumbs = isEditMode
-    ? [
-        {
-          label: 'Profile',
-          href: RouteBuilder.petProfile(numericPetId),
-          active: false,
-        },
-        {
-          label: 'Activities',
-          href: RouteBuilder.activitiesList(numericPetId),
-          active: false,
-        },
-        {
-          label: activity ? getActivityTitle(activity) : 'Edit Activity',
-          active: true,
-        },
-      ]
-    : BreadcrumbBuilder.forNewActivity(pet.name, numericPetId);
+  // Generate header title
+  const headerTitle = isEditMode ? 'Edit Activity' : 'New Activity';
+  const headerSubtitle = pet.name;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
-      {/* Pet Context Header */}
+      {/* Activity Editor Header */}
       <UniversalHeader
         configuration={{
-          variant: HeaderVariant.PET_CONTEXT,
+          variant: HeaderVariant.FORM,
+          title: headerTitle,
+          subtitle: headerSubtitle,
           showBackButton: true,
           backAction: {
             type: BackActionType.CUSTOM_HANDLER,
@@ -201,13 +241,6 @@ function ActivityEditorPageContent({
             label: 'Cancel',
           },
           sticky: true,
-          petContext: {
-            pet: pet,
-            showPetPhoto: true,
-            photoSize: PetPhotoSize.MEDIUM,
-            showSpecies: true,
-            breadcrumbs: breadcrumbs,
-          },
         }}
       />
 
