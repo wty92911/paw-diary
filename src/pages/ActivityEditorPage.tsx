@@ -4,7 +4,8 @@ import { useActivity, useCreateActivity, useUpdateActivity } from '../hooks/useA
 import { usePets } from '../hooks/usePets';
 import { ActivityFormData, ActivityMode } from '../lib/types/activities';
 import { RouteValidator, RouteBuilder, BreadcrumbBuilder } from '../lib/types/routing';
-import { PetContextHeader, PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
+import { PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
+import { UniversalHeader, HeaderVariant, BackActionType, PetPhotoSize } from '../components/header';
 import ActivityEditorCore from '../components/activities/ActivityEditorCore';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -189,17 +190,30 @@ function ActivityEditorPageContent({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
-      {/* Simplified Pet Context Header - only back navigation */}
-      <PetContextHeader
-        pet={pet}
-        showBackButton={true}
-        breadcrumbs={breadcrumbs}
-        backAction={handleCancel}
+      {/* Pet Context Header */}
+      <UniversalHeader
+        configuration={{
+          variant: HeaderVariant.PET_CONTEXT,
+          showBackButton: true,
+          backAction: {
+            type: BackActionType.CUSTOM_HANDLER,
+            handler: handleCancel,
+            label: 'Cancel',
+          },
+          sticky: true,
+          petContext: {
+            pet: pet,
+            showPetPhoto: true,
+            photoSize: PetPhotoSize.MEDIUM,
+            showSpecies: true,
+            breadcrumbs: breadcrumbs,
+          },
+        }}
       />
 
       {/* Activity Editor Error State */}
       {isEditMode && activityError && (
-        <div className="max-w-4xl mx-auto px-4 pt-4">
+        <div className="max-w-4xl mx-auto px-4 pt-24">
           <Alert className="mb-4 border-red-200 bg-red-50">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -210,7 +224,7 @@ function ActivityEditorPageContent({
       )}
 
       {/* Direct Activity Editor - No wrapper cards */}
-      <main className="max-w-4xl mx-auto px-4 pb-6">
+      <main className="max-w-4xl mx-auto px-4 pb-6 pt-24">
         <ActivityEditorCore
           mode={mode}
           templateId={templateId}

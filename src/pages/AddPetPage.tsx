@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Heart, ArrowLeft, Upload, X, Camera, Loader2 } from 'lucide-react';
+import { Upload, X, Camera, Loader2 } from 'lucide-react';
 import {
   PetCreateRequest,
   petFormSchema,
@@ -29,6 +29,7 @@ import {
 } from '../components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { cn } from '../lib/utils';
+import { UniversalHeader, HeaderVariant, BackActionType } from '../components/header';
 
 /**
  * AddPetPage - Dedicated full-page pet creation interface
@@ -158,37 +159,25 @@ export function AddPetPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-orange-200 flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Back button and title */}
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleBack}
-                disabled={isSubmitting || isUploading}
-                className="text-orange-700 hover:bg-orange-100"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Back
-              </Button>
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white fill-current" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-orange-900">Add New Pet</h1>
-                <p className="text-xs text-orange-600 -mt-1">Create your pet's profile</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Universal Header */}
+      <UniversalHeader
+        configuration={{
+          variant: HeaderVariant.FORM,
+          title: 'Add New Pet',
+          subtitle: "Create your pet's profile",
+          showBackButton: true,
+          backAction: {
+            type: BackActionType.CUSTOM_HANDLER,
+            handler: handleBack,
+            label: 'Back',
+            disabled: isSubmitting || isUploading,
+          },
+          sticky: true,
+        }}
+      />
 
       {/* Main scrollable content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pt-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Error display */}
           {error && (

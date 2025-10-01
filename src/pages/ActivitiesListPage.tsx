@@ -8,7 +8,8 @@ import { usePets } from '../hooks/usePets';
 }
 import { RouteValidator, BreadcrumbBuilder, RouteBuilder } from '../lib/types/routing';
 import { convertActivitiesToTimelineItems } from '../lib/utils/activityUtils';
-import { PetContextHeader, PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
+import { PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
+import { UniversalHeader, HeaderVariant, BackActionType, PetPhotoSize } from '../components/header';
 import ActivityTimeline from '../components/activities/ActivityTimeline';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -166,14 +167,27 @@ export function ActivitiesListPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
       {/* Pet Context Header */}
-      <PetContextHeader
-        pet={pet}
-        showBackButton={true}
-        breadcrumbs={breadcrumbs}
-        backAction={() => navigate(RouteBuilder.petProfile(numericPetId))}
+      <UniversalHeader
+        configuration={{
+          variant: HeaderVariant.PET_CONTEXT,
+          showBackButton: true,
+          backAction: {
+            type: BackActionType.CUSTOM_HANDLER,
+            handler: () => navigate(RouteBuilder.petProfile(numericPetId)),
+            label: 'Back',
+          },
+          sticky: true,
+          petContext: {
+            pet: pet,
+            showPetPhoto: true,
+            photoSize: PetPhotoSize.MEDIUM,
+            showSpecies: true,
+            breadcrumbs: breadcrumbs,
+          },
+        }}
       />
 
-      <main className="container mx-auto px-4 py-6 pb-20">
+      <main className="container mx-auto px-4 py-6 pb-20 pt-24">
         <div className="max-w-5xl mx-auto">
           {/* Activities Error State */}
           {activitiesError && (

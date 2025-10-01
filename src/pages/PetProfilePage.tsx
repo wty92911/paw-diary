@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Heart, Loader2, AlertTriangle, ArrowLeft, Activity, Plus } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Activity, Plus } from 'lucide-react';
 import { usePets } from '../hooks/usePets';
 import { useRouterNavigation } from '../hooks/usePetProfileNavigation';
 import { useActivitiesList } from '../hooks/useActivitiesList';
@@ -8,6 +8,7 @@ import { ActivityPreviewSection } from '../components/activities/ActivityPreview
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { convertActivitiesToTimelineItems } from '../lib/utils/activityUtils';
+import { UniversalHeader, HeaderVariant, BackActionType, PetPhotoSize } from '../components/header';
 
 /**
  * PetProfilePage - Comprehensive pet profile
@@ -100,35 +101,32 @@ export function PetProfilePage() {
   // Main profile page
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-orange-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo and title */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={navigateToHome}
-                className="text-orange-700 hover:bg-orange-100"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Back
-              </Button>
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white fill-current" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-orange-900">{currentPet.name}</h1>
-                <p className="text-xs text-orange-600 -mt-1">Pet Profile</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Universal Header */}
+      <UniversalHeader
+        configuration={{
+          variant: HeaderVariant.PET_CONTEXT,
+          showBackButton: true,
+          backAction: {
+            type: BackActionType.CUSTOM_HANDLER,
+            handler: navigateToHome,
+            label: 'Back',
+          },
+          sticky: true,
+          petContext: {
+            pet: currentPet,
+            showPetPhoto: true,
+            photoSize: PetPhotoSize.MEDIUM,
+            showSpecies: true,
+            breadcrumbs: [
+              { label: 'Home', href: '/', active: false },
+              { label: currentPet.name, href: '', active: true },
+            ],
+          },
+        }}
+      />
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Pet Profile Section */}
           <div className="lg:col-span-1 space-y-6">
