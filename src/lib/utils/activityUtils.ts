@@ -4,8 +4,8 @@ import { ActivityTimelineItem, ActivityRecord } from '../types/activities';
  * Extract display title from activity data
  */
 export function getActivityTitle(activity: ActivityRecord): string {
-  // Try to get title from blocks first, fallback to subcategory
-  const titleBlock = activity.activity_data?.blocks?.title;
+  // Try to get title from activity_data first, fallback to subcategory
+  const titleBlock = activity.activity_data?.title;
   const title = titleBlock?.value || titleBlock;
   return title || activity.subcategory || 'Untitled Activity';
 }
@@ -14,8 +14,8 @@ export function getActivityTitle(activity: ActivityRecord): string {
  * Extract display description from activity data
  */
 export function getActivityDescription(activity: ActivityRecord): string {
-  // Try to get description from blocks
-  const notesBlock = activity.activity_data?.blocks?.notes;
+  // Try to get description from activity_data
+  const notesBlock = activity.activity_data?.notes;
   const description = notesBlock?.value || notesBlock;
   return description || '';
 }
@@ -24,8 +24,15 @@ export function getActivityDescription(activity: ActivityRecord): string {
  * Extract activity date from activity data
  */
 export function getActivityDate(activity: ActivityRecord): Date {
-  // Try to get date from blocks first, fallback to created_at
-  const timeBlock = activity.activity_data?.blocks?.time;
+  // Try to get date from activity_data first, fallback to created_at
+  const timeBlock = activity.activity_data?.time;
+
+  // Handle the database format: { date: "ISO string", time: "", timezone: "" }
+  if (timeBlock && typeof timeBlock === 'object' && 'date' in timeBlock) {
+    return new Date(timeBlock.date);
+  }
+
+  // Fallback to other formats
   const activityDate = timeBlock?.value || timeBlock || activity.created_at;
   return new Date(activityDate);
 }
@@ -131,8 +138,8 @@ function extractThumbnails(blocks: Record<string, any>, limit = 3): string[] {
 function hasHealthFlag(activity: ActivityRecord): boolean {
   return (
     activity.category === 'Health' ||
-    activity.activity_data?.blocks?.health?.urgent === true ||
-    activity.activity_data?.blocks?.health?.flag === true ||
+    activity.activity_data?.health?.urgent === true ||
+    activity.activity_data?.health?.flag === true ||
     false
   );
 }
@@ -141,7 +148,7 @@ function hasHealthFlag(activity: ActivityRecord): boolean {
  * Determines if activity is pinned
  */
 function isPinned(activity: ActivityRecord): boolean {
-  return activity.activity_data?.blocks?.pinned === true || false;
+  return activity.activity_data?.pinned === true || false;
 }
 
 /**
@@ -149,8 +156,9 @@ function isPinned(activity: ActivityRecord): boolean {
  */
 export function convertActivitiesToTimelineItems(activities: ActivityRecord[]): ActivityTimelineItem[] {
   return activities.map((activity): ActivityTimelineItem => {
-    const blocks = activity.activity_data?.blocks || {};
-    
+    // activity_data is the blocks Record itself, not nested under .blocks
+    const blocks = activity.activity_data || {};
+
     return {
       id: activity.id,
       petId: activity.pet_id,

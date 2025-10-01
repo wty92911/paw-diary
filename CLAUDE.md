@@ -95,6 +95,26 @@ The PRD located in `specs/0001-prd.md` outlines the complete product vision:
 - Database operations should be handled in Rust backend
 - Cross-platform considerations for desktop app deployment
 
+### Universal Header Component System
+
+The app uses a unified header component system for consistent navigation across all screens:
+
+**Component Structure:**
+- `src/components/header/` - Universal header component system
+- Variants: AppHeader (home), PetContextHeader (pet pages), FormHeader (forms)
+- Supports iOS HIG patterns, responsive design, and accessibility compliance
+
+**Usage Patterns:**
+- Replace existing custom headers with unified components
+- Configure via HeaderConfiguration interface with type safety
+- Use HeaderProvider context for state management across routes
+- Follow contracts in `specs/001-ios-app-header/contracts/` for implementation
+
+**Migration Status:**
+- ✅ Specification and contracts complete
+- 🔄 Implementation in progress (see `specs/001-ios-app-header/`)
+- 📋 Planned pages: HomePage, AddPetPage, PetProfilePage, ActivitiesListPage
+
 ### UI/UX Guidelines
 
 - Visual style: Warm, fresh, with pet-themed elements (paw prints, diary aesthetics)

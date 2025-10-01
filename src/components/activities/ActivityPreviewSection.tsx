@@ -44,6 +44,8 @@ interface ActivityPreviewSectionProps {
   className?: string;
   /** Show section header (default: true) */
   showHeader?: boolean;
+  /** Show view all button in header (default: true) */
+  showViewAllButton?: boolean;
   /** Custom empty state message */
   emptyStateMessage?: string;
 }
@@ -58,6 +60,7 @@ export const ActivityPreviewSection: React.FC<ActivityPreviewSectionProps> = ({
   maxActivities = 3,
   className = '',
   showHeader = true,
+  showViewAllButton = true,
   emptyStateMessage = 'Start recording your pet\'s daily activities',
 }) => {
   const navigate = useNavigate();
@@ -169,15 +172,17 @@ export const ActivityPreviewSection: React.FC<ActivityPreviewSectionProps> = ({
               <ActivityIcon className="w-4 h-4" />
               Recent Activities
             </h3>
-            <Button
-              onClick={handleViewAllActivities}
-              variant="ghost"
-              size="sm"
-              className="text-orange-600 hover:text-orange-800 hover:bg-orange-50 h-auto p-1"
-            >
-              <span className="text-xs">View All</span>
-              <ChevronRight className="w-3 h-3 ml-1" />
-            </Button>
+            {showViewAllButton && (
+              <Button
+                onClick={handleViewAllActivities}
+                variant="ghost"
+                size="sm"
+                className="text-orange-600 hover:text-orange-800 hover:bg-orange-50 h-auto p-1"
+              >
+                <span className="text-xs">View All</span>
+                <ChevronRight className="w-3 h-3 ml-1" />
+              </Button>
+            )}
           </div>
         )}
 

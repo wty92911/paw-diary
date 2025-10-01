@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Heart, ArrowLeft, Upload, X, Camera, Loader2, AlertTriangle } from 'lucide-react';
+import { Upload, X, Camera, Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import {
   PetUpdateRequest,
   petFormSchema,
@@ -31,6 +31,7 @@ import {
 } from '../components/ui/select';
 import { Card, CardContent } from '../components/ui/card';
 import { cn } from '../lib/utils';
+import { UniversalHeader, HeaderVariant, BackActionType } from '../components/header';
 
 /**
  * EditPetPage - Dedicated full-page pet editing interface
@@ -222,34 +223,24 @@ export function EditPetPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-orange-200 sticky top-0 z-40">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBack}
-                className="text-orange-700 hover:bg-orange-100"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Back
-              </Button>
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white fill-current" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-orange-900">Edit Pet</h1>
-                <p className="text-xs text-orange-600 -mt-1">{currentPet.name}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Universal Header */}
+      <UniversalHeader
+        configuration={{
+          variant: HeaderVariant.FORM,
+          title: 'Edit Pet',
+          subtitle: currentPet.name,
+          showBackButton: true,
+          backAction: {
+            type: BackActionType.CUSTOM_HANDLER,
+            handler: handleBack,
+            label: 'Back',
+          },
+          sticky: true,
+        }}
+      />
 
       {/* Main Content */}
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <Card className="bg-white shadow-lg">
           <CardContent className="p-6">
             {/* Error Display */}

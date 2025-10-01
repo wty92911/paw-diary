@@ -6,9 +6,10 @@ import { usePets } from '../hooks/usePets';
 {
   /* ActivityTimelineItem import removed - not used in this file */
 }
-import { RouteValidator, BreadcrumbBuilder, RouteBuilder } from '../lib/types/routing';
+import { RouteValidator, RouteBuilder } from '../lib/types/routing';
 import { convertActivitiesToTimelineItems } from '../lib/utils/activityUtils';
-import { PetContextHeader, PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
+import { PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
+import { UniversalHeader, HeaderVariant, BackActionType } from '../components/header';
 import ActivityTimeline from '../components/activities/ActivityTimeline';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -160,20 +161,25 @@ export function ActivitiesListPage() {
     setActivityToDelete(null);
   };
 
-  // Generate breadcrumbs
-  const breadcrumbs = BreadcrumbBuilder.forActivitiesList(pet.name, numericPetId);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
-      {/* Pet Context Header */}
-      <PetContextHeader
-        pet={pet}
-        showBackButton={true}
-        breadcrumbs={breadcrumbs}
-        backAction={() => navigate(RouteBuilder.petProfile(numericPetId))}
+      {/* Activities List Header */}
+      <UniversalHeader
+        configuration={{
+          variant: HeaderVariant.FORM,
+          title: 'Activities',
+          subtitle: pet.name,
+          showBackButton: true,
+          backAction: {
+            type: BackActionType.CUSTOM_HANDLER,
+            handler: () => navigate(RouteBuilder.petProfile(numericPetId)),
+            label: 'Back',
+          },
+          sticky: true,
+        }}
       />
 
-      <main className="container mx-auto px-4 py-6 pb-20">
+      <main className="container mx-auto px-4 py-6 pb-20 pt-24">
         <div className="max-w-5xl mx-auto">
           {/* Activities Error State */}
           {activitiesError && (

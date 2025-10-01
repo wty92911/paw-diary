@@ -120,6 +120,10 @@ export default {
         'success-glow': 'successGlow 2s ease-out',
         'error-shake': 'errorShake 0.5s ease-in-out',
         'highlight-fade': 'highlightFade 2s ease-out',
+        // iOS-style animations
+        'ios-slide-up': 'iosSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+        'ios-fade-in': 'iosFadeIn 0.3s ease-out',
+        'ios-scale-in': 'iosScaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
       },
       keyframes: {
         fadeIn: {
@@ -159,6 +163,31 @@ export default {
             backgroundColor: 'transparent', 
             boxShadow: '0 0 0 rgba(34, 197, 94, 0)',
             transform: 'scale(1)' 
+          },
+        },
+        // iOS-style keyframes
+        iosSlideUp: {
+          '0%': { 
+            transform: 'translateY(20px)',
+            opacity: '0'
+          },
+          '100%': { 
+            transform: 'translateY(0)',
+            opacity: '1'
+          },
+        },
+        iosFadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        iosScaleIn: {
+          '0%': { 
+            transform: 'scale(0.9)',
+            opacity: '0'
+          },
+          '100%': { 
+            transform: 'scale(1)',
+            opacity: '1'
           },
         },
         errorShake: {

@@ -30,6 +30,13 @@
     @apply border-border;
   }
 
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+  }
+
   body {
     @apply bg-cream-50 font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -37,6 +44,11 @@
 
   html {
     scroll-behavior: smooth;
+  }
+
+  #root {
+    height: 100%;
+    width: 100%;
   }
 }
 

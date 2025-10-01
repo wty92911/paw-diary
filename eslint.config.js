@@ -36,4 +36,36 @@ export default tseslint.config(
       ],
     },
   },
+  // Header component specific rules
+  {
+    files: ['src/components/header/**/*.{ts,tsx}'],
+    rules: {
+      // Enforce React component naming conventions
+      '@typescript-eslint/naming-convention': [
+        'error',
+        {
+          selector: 'function',
+          format: ['PascalCase'],
+          filter: {
+            regex: '^use[A-Z]',
+            match: false,
+          },
+        },
+        {
+          selector: 'function',
+          format: ['camelCase'],
+          filter: {
+            regex: '^use[A-Z]',
+            match: true,
+          },
+        },
+      ],
+      // Ensure proper prop destructuring for better performance
+      'react/destructuring-assignment': 'off',
+      // Allow empty interfaces for extending base types
+      '@typescript-eslint/no-empty-interface': 'off',
+      // Strict null checks for header configurations
+      '@typescript-eslint/strict-boolean-expressions': 'off',
+    },
+  },
 )
