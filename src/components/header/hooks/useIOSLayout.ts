@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { UseIOSLayoutReturn } from '../types';
+import { type UseIOSLayoutReturn } from '../types';
 
 interface UseIOSLayoutOptions {
   enableSafeArea?: boolean;
@@ -46,7 +46,7 @@ export function useIOSLayout(options: UseIOSLayoutOptions = {}): UseIOSLayoutRet
 
       setSafeAreaTop(Math.max(0, topInset));
       setSafeAreaBottom(Math.max(0, bottomInset));
-    } catch (error) {
+    } catch {
       // Fallback for browsers that don't support env() variables
       setSafeAreaTop(0);
       setSafeAreaBottom(0);

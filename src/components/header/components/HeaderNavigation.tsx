@@ -8,7 +8,7 @@
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { cn } from '../../../lib/utils';
-import { HeaderNavigationProps, DEFAULT_BACK_LABEL, MAX_BREADCRUMBS } from '../types';
+import { type HeaderNavigationProps, DEFAULT_BACK_LABEL, MAX_BREADCRUMBS } from '../types';
 import { useBackActionHandler } from '../hooks/useHeaderNavigation';
 
 // ============================================================================

@@ -8,8 +8,8 @@
 import React, { forwardRef, useMemo } from 'react';
 import { cn } from '../../../lib/utils';
 import { 
-  ScrollState, 
-  IOSHeaderBehavior, 
+  type ScrollState, 
+  type IOSHeaderBehavior, 
   ElevationLevel, 
   ColorScheme 
 } from '../types';

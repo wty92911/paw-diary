@@ -1,7 +1,7 @@
 import { 
-  ActivityTemplate, 
+  type ActivityTemplate, 
   ActivityCategory, 
-  ActivityBlockType,
+  type ActivityBlockType,
   DEFAULT_ATTACHMENT_CONFIG
 } from '../types/activities';
 

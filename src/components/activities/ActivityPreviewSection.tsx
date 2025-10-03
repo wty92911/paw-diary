@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ActivityTimelineItem } from '../../lib/types/activities';
+import { type ActivityTimelineItem } from '../../lib/types/activities';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { RouteBuilder } from '../../lib/types/routing';

@@ -1,9 +1,13 @@
+ 
+ 
+/* TODO: Refactor to move hooks outside Controller render function */
+
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Textarea } from '../../ui/textarea';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
-import { BlockProps } from '../../../lib/types/activities';
+import { type BlockProps } from '../../../lib/types/activities';
 import { notesBlockSchema } from '../../../lib/validation/activityBlocks';
 
 // Configuration interface for NotesBlock
@@ -60,11 +64,12 @@ const NotesBlock: React.FC<BlockProps<NotesBlockConfig>> = ({
         formattedText = `_${selectedText}_`;
         cursorOffset = selectedText ? 2 : 1;
         break;
-      case 'bullet':
+      case 'bullet': {
         const lines = selectedText.split('\n');
         formattedText = lines.map(line => line.trim() ? `• ${line}` : line).join('\n');
         cursorOffset = formattedText.length - selectedText.length;
         break;
+      }
     }
 
     const newValue = beforeSelection + formattedText + afterSelection;
@@ -116,7 +121,7 @@ const NotesBlock: React.FC<BlockProps<NotesBlockConfig>> = ({
           const textarea = textareaRef.current;
           const selectionStart = textarea.selectionStart;
           const selectionEnd = textarea.selectionEnd;
-          const currentValue = field.value || '';
+          const currentValue = typeof field.value === 'string' ? field.value : '';
 
           const { newValue, newCursorPos } = applyFormatting(
             currentValue,
@@ -190,9 +195,12 @@ const NotesBlock: React.FC<BlockProps<NotesBlockConfig>> = ({
               {/* Main textarea */}
               <Textarea
                 {...field}
+                value={typeof field.value === 'string' ? field.value : ''}
                 ref={(e) => {
                   field.ref(e);
-                  (textareaRef as any).current = e;
+                  if (textareaRef && 'current' in textareaRef) {
+                    textareaRef.current = e;
+                  }
                 }}
                 placeholder={placeholder}
                 maxLength={maxLength}

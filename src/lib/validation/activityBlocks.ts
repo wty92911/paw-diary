@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { 
   ActivityCategory,
-  ActivityBlockType,
+  type ActivityBlockType,
 } from '../types/activities';
 
 // Base validation schemas for common patterns
@@ -246,7 +246,7 @@ export const personSchema = z.object({
   name: requiredTextSchema(1, 100),
   type: requiredTextSchema(1, 50),
   contact: z.object({
-    phone: z.string().regex(/^[\+]?[1-9][\d]{0,15}$/, 'Invalid phone number').optional(),
+    phone: z.string().regex(/^[+]?[1-9][\d]{0,15}$/, 'Invalid phone number').optional(),
     email: emailSchema,
     address: textSchema(0, 300).optional(),
   }).optional(),
@@ -354,7 +354,9 @@ export const activityFormValidationSchema = z.object({
 
 // Utility functions for block validation
 
-export const validateBlockData = (blockType: ActivityBlockType, data: any) => {
+import { type ActivityBlockData } from '../types/activities';
+
+export const validateBlockData = (blockType: ActivityBlockType, data: ActivityBlockData) => {
   const schema = blockValidationRegistry[blockType];
   if (!schema) {
     throw new Error(`No validation schema found for block type: ${blockType}`);
@@ -362,14 +364,14 @@ export const validateBlockData = (blockType: ActivityBlockType, data: any) => {
   return schema.safeParse(data);
 };
 
-export const getBlockValidationErrors = (blockType: ActivityBlockType, data: any): string[] => {
+export const getBlockValidationErrors = (blockType: ActivityBlockType, data: ActivityBlockData): string[] => {
   const result = validateBlockData(blockType, data);
   if (result.success) return [];
   
   return result.error.errors.map((err: z.ZodIssue) => err.message);
 };
 
-export const isBlockDataValid = (blockType: ActivityBlockType, data: any): boolean => {
+export const isBlockDataValid = (blockType: ActivityBlockType, data: ActivityBlockData): boolean => {
   const result = validateBlockData(blockType, data);
   return result.success;
 };

@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { UseScrollStateReturn, ScrollState } from '../types';
+import { type UseScrollStateReturn, type ScrollState } from '../types';
 
 interface UseScrollStateOptions {
   threshold?: number;

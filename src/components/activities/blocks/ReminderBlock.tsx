@@ -1,41 +1,13 @@
 import React from 'react';
-import { Control, FieldError } from 'react-hook-form';
+import { type Control, type FieldError } from 'react-hook-form';
 import { Input } from '../../ui/input';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Calendar, Clock, Bell, Repeat } from 'lucide-react';
-import { ActivityFormData, ActivityBlockDef } from '../../../lib/types/activities';
+import { type ActivityFormData, type ActivityBlockDef, type ReminderData, type RecurrenceData, type RecurrencePattern, type ReminderConfig } from '../../../lib/types/activities';
 import { Field } from './Field';
 import { useFormContext } from './FormContext';
-
-// Reminder value interface
-interface ReminderValue {
-  title: string;
-  reminderDate: Date;
-  reminderTime: string; // HH:MM format
-  isEnabled: boolean;
-  recurrence?: RecurrencePattern;
-  notificationMethods: NotificationMethod[];
-  notes?: string;
-}
-
-// Recurrence pattern interface
-interface RecurrencePattern {
-  type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
-  interval: number; // Every X days/weeks/months/years
-  daysOfWeek?: number[]; // For weekly: 0-6 (Sun-Sat)
-  dayOfMonth?: number; // For monthly: 1-31
-  endDate?: Date; // When to stop recurring
-  endAfterOccurrences?: number; // Stop after X occurrences
-}
-
-// Notification method interface
-interface NotificationMethod {
-  type: 'push' | 'email' | 'sms';
-  enabled: boolean;
-  minutesBefore?: number; // How many minutes before to notify
-}
 
 // Predefined reminder types for pets
 const REMINDER_TYPES = {
@@ -115,33 +87,30 @@ const ReminderBlock: React.FC<ReminderBlockProps> = ({
 }) => {
   const { watch, setValue } = useFormContext();
   const fieldName = `blocks.${block.id}` as const;
-  const currentValue: ReminderValue | undefined = watch(fieldName);
+  const currentValue: ReminderData | undefined = watch(fieldName) as unknown as ReminderData | undefined;
 
   // State management
   const [showRecurrence, setShowRecurrence] = React.useState(false);
-  const [showNotifications, setShowNotifications] = React.useState(false);
 
   // Initialize default value
   React.useEffect(() => {
     if (!currentValue) {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      
+
       setValue(fieldName, {
+        type: 'general',
         title: '',
         reminderDate: tomorrow,
         reminderTime: '09:00',
         isEnabled: true,
-        notificationMethods: [
-          { type: 'push', enabled: true, minutesBefore: 15 },
-        ],
       });
     }
   }, [currentValue, fieldName, setValue]);
 
   // Handle basic field changes
-  const handleFieldChange = React.useCallback((field: keyof ReminderValue, value: any) => {
-    const updatedValue: ReminderValue = {
+  const handleFieldChange = React.useCallback((field: keyof ReminderData, value: string | boolean | Date) => {
+    const updatedValue: ReminderData = {
       ...currentValue!,
       [field]: value,
     };
@@ -149,19 +118,10 @@ const ReminderBlock: React.FC<ReminderBlockProps> = ({
   }, [currentValue, fieldName, setValue]);
 
   // Handle recurrence pattern changes
-  const handleRecurrenceChange = React.useCallback((recurrence: RecurrencePattern | undefined) => {
-    const updatedValue: ReminderValue = {
+  const handleRecurrenceChange = React.useCallback((repeat: RecurrenceData | undefined) => {
+    const updatedValue: ReminderData = {
       ...currentValue!,
-      recurrence,
-    };
-    setValue(fieldName, updatedValue);
-  }, [currentValue, fieldName, setValue]);
-
-  // Handle notification method changes
-  const handleNotificationChange = React.useCallback((methods: NotificationMethod[]) => {
-    const updatedValue: ReminderValue = {
-      ...currentValue!,
-      notificationMethods: methods,
+      repeat,
     };
     setValue(fieldName, updatedValue);
   }, [currentValue, fieldName, setValue]);
@@ -197,7 +157,8 @@ const ReminderBlock: React.FC<ReminderBlockProps> = ({
   };
 
   // Get recurrence description
-  const getRecurrenceDescription = (pattern: RecurrencePattern): string => {
+  const getRecurrenceDescription = (repeat: RecurrenceData): string => {
+    const pattern = repeat.pattern;
     switch (pattern.type) {
       case 'daily':
         return pattern.interval === 1 ? 'Daily' : `Every ${pattern.interval} days`;
@@ -219,7 +180,7 @@ const ReminderBlock: React.FC<ReminderBlockProps> = ({
       label={block.label}
       required={block.required}
       error={error?.message}
-      hint={block.config?.hint || 'Set up a reminder for future activities or follow-ups'}
+      hint={(block.config as ReminderConfig | undefined)?.hint || 'Set up a reminder for future activities or follow-ups'}
       blockType="reminder"
       id={`reminder-${block.id}`}
     >
@@ -333,10 +294,10 @@ const ReminderBlock: React.FC<ReminderBlockProps> = ({
                     {formatDate(currentValue.reminderDate)} at {currentValue.reminderTime}
                   </div>
                 </div>
-                {currentValue.recurrence && (
+                {currentValue.repeat && (
                   <Badge variant="secondary" className="text-xs">
                     <Repeat className="w-3 h-3 mr-1" />
-                    {getRecurrenceDescription(currentValue.recurrence)}
+                    {getRecurrenceDescription(currentValue.repeat)}
                   </Badge>
                 )}
               </div>
@@ -353,17 +314,7 @@ const ReminderBlock: React.FC<ReminderBlockProps> = ({
                   className="text-xs"
                 >
                   <Repeat className="w-3 h-3 mr-1" />
-                  {currentValue.recurrence ? 'Edit Repeat' : 'Add Repeat'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="text-xs"
-                >
-                  <Bell className="w-3 h-3 mr-1" />
-                  Notifications
+                  {currentValue.repeat ? 'Edit Repeat' : 'Add Repeat'}
                 </Button>
               </div>
 
@@ -371,16 +322,19 @@ const ReminderBlock: React.FC<ReminderBlockProps> = ({
               {showRecurrence && (
                 <div className="space-y-3 p-3 border rounded-md bg-muted/30">
                   <div className="text-sm font-medium">Repeat Pattern</div>
-                  
+
                   <div className="grid grid-cols-2 gap-2">
                     <Select
-                      value={currentValue.recurrence?.type || 'daily'}
+                      value={currentValue.repeat?.pattern.type || 'daily'}
                       onValueChange={(type) => {
-                        const newRecurrence: RecurrencePattern = {
-                          type: type as RecurrencePattern['type'],
-                          interval: currentValue.recurrence?.interval || 1,
+                        const newRepeat: RecurrenceData = {
+                          pattern: {
+                            type: type as RecurrencePattern['type'],
+                            interval: currentValue.repeat?.pattern.interval || 1,
+                          },
+                          startDate: currentValue.reminderDate,
                         };
-                        handleRecurrenceChange(newRecurrence);
+                        handleRecurrenceChange(newRepeat);
                       }}
                     >
                       <SelectTrigger>
@@ -400,12 +354,15 @@ const ReminderBlock: React.FC<ReminderBlockProps> = ({
                         type="number"
                         min={1}
                         max={99}
-                        value={currentValue.recurrence?.interval || 1}
+                        value={currentValue.repeat?.pattern.interval || 1}
                         onChange={(e) => {
-                          if (currentValue.recurrence) {
+                          if (currentValue.repeat) {
                             handleRecurrenceChange({
-                              ...currentValue.recurrence,
-                              interval: parseInt(e.target.value) || 1,
+                              ...currentValue.repeat,
+                              pattern: {
+                                ...currentValue.repeat.pattern,
+                                interval: parseInt(e.target.value) || 1,
+                              },
                             });
                           }
                         }}
@@ -436,56 +393,16 @@ const ReminderBlock: React.FC<ReminderBlockProps> = ({
                   </div>
                 </div>
               )}
-
-              {/* Notification options */}
-              {showNotifications && (
-                <div className="space-y-3 p-3 border rounded-md bg-muted/30">
-                  <div className="text-sm font-medium">Notification Settings</div>
-                  
-                  {currentValue.notificationMethods.map((method, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={method.enabled}
-                          onChange={(e) => {
-                            const updatedMethods = [...currentValue.notificationMethods];
-                            updatedMethods[index].enabled = e.target.checked;
-                            handleNotificationChange(updatedMethods);
-                          }}
-                          className="rounded"
-                        />
-                        <span className="text-sm capitalize">{method.type}</span>
-                        {method.minutesBefore && (
-                          <Badge variant="outline" className="text-xs">
-                            {method.minutesBefore}m before
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowNotifications(false)}
-                    className="text-xs w-full"
-                  >
-                    Done
-                  </Button>
-                </div>
-              )}
             </div>
 
-            {/* Notes */}
+            {/* Description */}
             <div>
-              <label className="text-sm font-medium">Additional Notes (Optional)</label>
+              <label className="text-sm font-medium">Description (Optional)</label>
               <Input
                 type="text"
                 placeholder="Any extra details for this reminder..."
-                value={currentValue.notes || ''}
-                onChange={(e) => handleFieldChange('notes', e.target.value)}
+                value={currentValue.description || ''}
+                onChange={(e) => handleFieldChange('description', e.target.value)}
                 className="mt-1"
               />
             </div>

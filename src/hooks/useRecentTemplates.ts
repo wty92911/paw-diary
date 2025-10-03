@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ActivityCategory, ActivityTemplate } from '../lib/types/activities';
+import { type ActivityCategory, type ActivityTemplate } from '../lib/types/activities';
 
 // Recent template usage entry
 export interface RecentTemplateEntry {
@@ -26,8 +26,8 @@ class RecentTemplateService {
         const templates = JSON.parse(stored);
 
         // Convert date strings back to Date objects
-        Object.values(templates).forEach((entries: any) => {
-          entries.forEach((entry: any) => {
+        Object.values(templates as Record<string, RecentTemplateEntry[]>).forEach(entries => {
+          entries.forEach(entry => {
             entry.lastUsed = new Date(entry.lastUsed);
           });
         });

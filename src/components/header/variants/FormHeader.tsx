@@ -6,7 +6,7 @@
  */
 
 import { cn } from '../../../lib/utils';
-import { FormHeaderProps } from '../types';
+import { type FormHeaderProps } from '../types';
 import { HeaderNavigation } from '../components/HeaderNavigation';
 import { PawPrint, Sparkles } from 'lucide-react';
 

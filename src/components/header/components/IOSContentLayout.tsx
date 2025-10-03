@@ -101,21 +101,8 @@ export const IOSContentLayout = forwardRef<HTMLDivElement, IOSContentLayoutProps
 IOSContentLayout.displayName = 'IOSContentLayout';
 
 // ============================================================================
-// Convenience Hook
+// Exports
 // ============================================================================
 
-export function useIOSContentLayout() {
-  const { contentOffset, safeAreaTop, safeAreaBottom, headerHeight } = useIOSLayout();
-  
-  return {
-    contentOffset,
-    safeAreaTop,
-    safeAreaBottom,
-    headerHeight,
-    generateContentStyles: (customOffset?: number) => ({
-      paddingTop: `${customOffset || contentOffset}px`,
-      paddingBottom: safeAreaBottom > 0 ? `${safeAreaBottom}px` : undefined,
-      minHeight: `calc(100vh - ${customOffset || contentOffset}px)`
-    })
-  };
-}
+// Convenience hook moved to: ../hooks/useIOSContentLayout
+// Import with: import { useIOSContentLayout } from '../hooks/useIOSContentLayout';

@@ -3,9 +3,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Upload, X, Camera, Loader2 } from 'lucide-react';
 import {
-  PetCreateRequest,
+  type PetCreateRequest,
   petFormSchema,
-  PetFormData,
+  type PetFormData,
   PetSpecies,
   PetGender,
   SPECIES_OPTIONS,

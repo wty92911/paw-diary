@@ -1,4 +1,4 @@
-import { ActivityTemplate, ActivityCategory, TemplateRegistry } from './types/activities';
+import { type ActivityTemplate, ActivityCategory, type TemplateRegistry } from './types/activities';
 
 // Import templates from separate category files
 import {

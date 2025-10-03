@@ -5,7 +5,7 @@
  * and responsive design patterns.
  */
 
-import { ScrollState, IOSHeaderBehavior, ElevationLevel } from '../types';
+import { type ScrollState, type IOSHeaderBehavior, ElevationLevel } from '../types';
 
 // ============================================================================
 // Safe Area Utilities

@@ -1,3 +1,7 @@
+ 
+ 
+/* TODO: Refactor to move hooks outside Controller render function */
+
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,7 +10,7 @@ import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Plus, Minus, Package } from 'lucide-react';
-import { BlockProps } from '../../../lib/types/activities';
+import { type BlockProps } from '../../../lib/types/activities';
 import { useBrandSuggestions } from '../../../hooks/useBrandMemory';
 
 // Portion value interface
@@ -104,7 +108,7 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
       name={fieldName}
       rules={{ required: required ? `${label} is required` : false }}
       render={({ field, fieldState: { error } }) => {
-        const currentValue: PortionValue | undefined = field.value;
+        const currentValue: PortionValue | undefined = field.value as unknown as PortionValue | undefined;
         
         // State for brand/product selection - always start closed
         const [showBrandSelectorState, setShowBrandSelectorState] = React.useState(false);

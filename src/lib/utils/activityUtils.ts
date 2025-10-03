@@ -1,4 +1,9 @@
-import { ActivityTimelineItem, ActivityRecord } from '../types/activities';
+import {
+  type ActivityTimelineItem,
+  type ActivityRecord,
+  type ActivityBlockData,
+  type ActivityCategory
+} from '../types/activities';
 
 /**
  * Extract display title from activity data
@@ -6,8 +11,10 @@ import { ActivityTimelineItem, ActivityRecord } from '../types/activities';
 export function getActivityTitle(activity: ActivityRecord): string {
   // Try to get title from activity_data first, fallback to subcategory
   const titleBlock = activity.activity_data?.title;
-  const title = titleBlock?.value || titleBlock;
-  return title || activity.subcategory || 'Untitled Activity';
+  const title = (titleBlock && typeof titleBlock === 'object' && 'value' in titleBlock)
+    ? titleBlock.value
+    : titleBlock;
+  return (typeof title === 'string' ? title : null) || activity.subcategory || 'Untitled Activity';
 }
 
 /**
@@ -16,8 +23,10 @@ export function getActivityTitle(activity: ActivityRecord): string {
 export function getActivityDescription(activity: ActivityRecord): string {
   // Try to get description from activity_data
   const notesBlock = activity.activity_data?.notes;
-  const description = notesBlock?.value || notesBlock;
-  return description || '';
+  const description = (notesBlock && typeof notesBlock === 'object' && 'value' in notesBlock)
+    ? notesBlock.value
+    : notesBlock;
+  return (typeof description === 'string' ? description : null) || '';
 }
 
 /**
@@ -28,19 +37,21 @@ export function getActivityDate(activity: ActivityRecord): Date {
   const timeBlock = activity.activity_data?.time;
 
   // Handle the database format: { date: "ISO string", time: "", timezone: "" }
-  if (timeBlock && typeof timeBlock === 'object' && 'date' in timeBlock) {
+  if (timeBlock && typeof timeBlock === 'object' && 'date' in timeBlock && typeof timeBlock.date === 'string') {
     return new Date(timeBlock.date);
   }
 
   // Fallback to other formats
-  const activityDate = timeBlock?.value || timeBlock || activity.created_at;
-  return new Date(activityDate);
+  const activityDate = (timeBlock && typeof timeBlock === 'object' && 'value' in timeBlock)
+    ? timeBlock.value
+    : timeBlock || activity.created_at;
+  return new Date(activityDate as string | number | Date);
 }
 
 /**
  * Helper function to add fact if value exists
  */
-function addFact(facts: string[], label: string, value: any, unit?: string) {
+function addFact(facts: string[], label: string, value: string | number | boolean | null | undefined, unit?: string) {
   if (value !== undefined && value !== null && value !== '') {
     const factText = unit ? `${label}: ${value} ${unit}` : `${label}: ${value}`;
     facts.push(factText);
@@ -50,7 +61,7 @@ function addFact(facts: string[], label: string, value: any, unit?: string) {
 /**
  * Extracts key facts from activity blocks for timeline display
  */
-function extractKeyFacts(blocks: Record<string, any>): string[] {
+function extractKeyFacts(blocks: Record<string, ActivityBlockData>): string[] {
   const facts: string[] = [];
 
   // Extract facts from different block types
@@ -61,37 +72,57 @@ function extractKeyFacts(blocks: Record<string, any>): string[] {
       case 'measurement':
       case 'measurements':
         if (Array.isArray(blockData)) {
-          blockData.forEach((measurement: any) => {
-            addFact(facts, measurement.measurementType || 'Measurement', measurement.value, measurement.unit);
+          blockData.forEach((measurement) => {
+            if (measurement && typeof measurement === 'object' && 'value' in measurement && 'unit' in measurement) {
+              const typedMeasurement = measurement as { value: number; unit: string; measurementType?: string };
+              addFact(facts, typedMeasurement.measurementType || 'Measurement', typedMeasurement.value, typedMeasurement.unit);
+            }
           });
-        } else if (typeof blockData === 'object') {
-          Object.entries(blockData).forEach(([key, measurement]: [string, any]) => {
-            if (measurement?.value && measurement?.unit) {
-              addFact(facts, key, measurement.value, measurement.unit);
+        } else if (typeof blockData === 'object' && blockData !== null) {
+          Object.entries(blockData).forEach(([key, measurement]) => {
+            if (
+              measurement &&
+              typeof measurement === 'object' &&
+              'value' in measurement &&
+              'unit' in measurement
+            ) {
+              addFact(facts, key, (measurement as { value: number }).value, (measurement as { unit: string }).unit);
             }
           });
         }
         break;
 
       case 'portion':
-        addFact(facts, 'Amount', blockData.amount, blockData.unit);
-        if (blockData.brand) addFact(facts, 'Brand', blockData.brand);
+        if ('amount' in blockData && 'unit' in blockData) {
+          addFact(facts, 'Amount', (blockData as { amount: number }).amount, (blockData as { unit: string }).unit);
+          if ('brand' in blockData) addFact(facts, 'Brand', (blockData as { brand: string }).brand);
+        }
         break;
 
       case 'cost':
-        addFact(facts, 'Cost', blockData.amount ? `${blockData.currency || '$'}${blockData.amount}` : undefined);
+        if ('amount' in blockData && blockData.amount) {
+          const currency = ('currency' in blockData ? blockData.currency : null) || '$';
+          addFact(facts, 'Cost', `${currency}${blockData.amount}`);
+        }
         break;
 
       case 'rating':
-        addFact(facts, 'Rating', blockData.value ? `${blockData.value}/${blockData.scale || 5}` : undefined);
+        if ('value' in blockData && blockData.value) {
+          const scale = ('scale' in blockData ? blockData.scale : null) || 5;
+          addFact(facts, 'Rating', `${blockData.value}/${scale}`);
+        }
         break;
 
       case 'location':
-        addFact(facts, 'Location', blockData.name || blockData.address);
+        if ('name' in blockData || 'address' in blockData) {
+          const name = 'name' in blockData && typeof blockData.name === 'string' ? blockData.name : null;
+          const address = 'address' in blockData && typeof blockData.address === 'string' ? blockData.address : null;
+          addFact(facts, 'Location', name || address || '');
+        }
         break;
 
       case 'timer':
-        if (blockData.duration) {
+        if ('duration' in blockData && typeof blockData.duration === 'number') {
           const hours = Math.floor(blockData.duration / 60);
           const minutes = blockData.duration % 60;
           const timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
@@ -100,8 +131,12 @@ function extractKeyFacts(blocks: Record<string, any>): string[] {
         break;
 
       case 'weather':
-        if (blockData.condition) addFact(facts, 'Weather', blockData.condition);
-        if (blockData.temperature) addFact(facts, 'Temperature', blockData.temperature, '°C');
+        if ('condition' in blockData && blockData.condition && typeof blockData.condition === 'string') {
+          addFact(facts, 'Weather', blockData.condition);
+        }
+        if ('temperature' in blockData && typeof blockData.temperature === 'number') {
+          addFact(facts, 'Temperature', blockData.temperature, '°C');
+        }
         break;
     }
   });
@@ -112,7 +147,7 @@ function extractKeyFacts(blocks: Record<string, any>): string[] {
 /**
  * Counts attachments from activity blocks
  */
-function countAttachments(blocks: Record<string, any>): number {
+function countAttachments(blocks: Record<string, ActivityBlockData>): number {
   const attachments = blocks.attachments || blocks.attachment;
   if (!attachments) return 0;
   if (Array.isArray(attachments)) return attachments.length;
@@ -122,13 +157,19 @@ function countAttachments(blocks: Record<string, any>): number {
 /**
  * Extracts thumbnail URLs from activity blocks
  */
-function extractThumbnails(blocks: Record<string, any>, limit = 3): string[] {
+function extractThumbnails(blocks: Record<string, ActivityBlockData>, limit = 3): string[] {
   const attachments = blocks.attachments || blocks.attachment || [];
   if (!Array.isArray(attachments)) return [];
 
   return attachments
     .slice(0, limit)
-    .map((att: any) => att.thumbnail || att.url || '')
+    .map((att) => {
+      if (att && typeof att === 'object' && ('thumbnail' in att || 'url' in att)) {
+        const typedAtt = att as { thumbnail?: string; url?: string };
+        return typedAtt.thumbnail || typedAtt.url || '';
+      }
+      return '';
+    })
     .filter(Boolean);
 }
 
@@ -136,19 +177,23 @@ function extractThumbnails(blocks: Record<string, any>, limit = 3): string[] {
  * Determines if activity has health-related flags
  */
 function hasHealthFlag(activity: ActivityRecord): boolean {
-  return (
-    activity.category === 'Health' ||
-    activity.activity_data?.health?.urgent === true ||
-    activity.activity_data?.health?.flag === true ||
-    false
-  );
+  if (activity.category === 'Health') return true;
+
+  const healthData = activity.activity_data?.health;
+  if (healthData && typeof healthData === 'object') {
+    return ('urgent' in healthData && healthData.urgent === true) ||
+           ('flag' in healthData && healthData.flag === true);
+  }
+
+  return false;
 }
 
 /**
  * Determines if activity is pinned
  */
 function isPinned(activity: ActivityRecord): boolean {
-  return activity.activity_data?.pinned === true || false;
+  const pinnedData = activity.activity_data?.pinned;
+  return typeof pinnedData === 'boolean' && pinnedData === true;
 }
 
 /**
@@ -162,7 +207,7 @@ export function convertActivitiesToTimelineItems(activities: ActivityRecord[]): 
     return {
       id: activity.id,
       petId: activity.pet_id,
-      category: activity.category as any,
+      category: activity.category as ActivityCategory,
       subcategory: activity.subcategory,
       title: getActivityTitle(activity),
       description: getActivityDescription(activity),

@@ -2,37 +2,16 @@ import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
-import { Play, Pause, Square, RotateCcw, Timer } from 'lucide-react';
-import { BlockProps } from '../../../lib/types/activities';
+import { Play, Square, Timer, Clock } from 'lucide-react';
+import { type BlockProps, type TimerData } from '../../../lib/types/activities';
 import { Field } from './Field';
-
-// Timer value interface
-interface TimerValue {
-  duration: number; // Total duration in seconds
-  startTime?: Date; // When timer was started
-  endTime?: Date; // When timer was stopped
-  isRunning: boolean;
-  currentTime: number; // Current elapsed time in seconds
-  laps?: TimerLap[]; // For activities that need lap tracking
-}
-
-// Timer lap interface
-interface TimerLap {
-  lapNumber: number;
-  startTime: Date;
-  endTime: Date;
-  duration: number; // Duration in seconds
-}
+import { Input } from '../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 
 // Timer block configuration
 interface TimerBlockConfig {
-  showLaps?: boolean;
-  autoStart?: boolean;
-  maxDuration?: number; // in seconds
-  showMilliseconds?: boolean;
-  enableLaps?: boolean;
   hint?: string;
-  presetDurations?: number[];
+  presetDurations?: number[]; // in minutes
 }
 
 // TimerBlock component for duration tracking activities
@@ -51,36 +30,27 @@ const TimerBlock: React.FC<BlockProps<TimerBlockConfig>> = ({
       name={fieldName}
       rules={{ required: required ? `${label} is required` : false }}
       render={({ field, fieldState: { error } }) => {
-        const currentValue: TimerValue | undefined = field.value;
-
-        // Timer interval ref
+        const currentValue: TimerData | undefined = field.value as unknown as TimerData | undefined;
+        const [isRunning, setIsRunning] = React.useState(false);
+        const [elapsedSeconds, setElapsedSeconds] = React.useState(0);
         const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
         // Initialize default value
         React.useEffect(() => {
           if (!currentValue) {
             field.onChange({
+              type: 'stopwatch',
               duration: 0,
-              isRunning: false,
-              currentTime: 0,
-              laps: [],
             });
           }
         }, [currentValue, field]);
 
         // Timer tick effect
         React.useEffect(() => {
-          if (currentValue?.isRunning) {
+          if (isRunning && currentValue?.startTime) {
             intervalRef.current = setInterval(() => {
-              const now = new Date();
-              const startTime = currentValue.startTime || now;
-              const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-              
-              const updatedValue: TimerValue = {
-                ...currentValue,
-                currentTime: elapsed,
-              };
-              field.onChange(updatedValue);
+              const elapsed = Math.floor((Date.now() - currentValue.startTime!.getTime()) / 1000);
+              setElapsedSeconds(elapsed);
             }, 1000);
           } else {
             if (intervalRef.current) {
@@ -95,107 +65,100 @@ const TimerBlock: React.FC<BlockProps<TimerBlockConfig>> = ({
               intervalRef.current = null;
             }
           };
-        }, [currentValue?.isRunning, currentValue?.startTime, field]);
+        }, [isRunning, currentValue?.startTime]);
 
         // Start timer
-        const handleStart = React.useCallback(() => {
+        const handleStart = () => {
           if (!currentValue) return;
 
           const now = new Date();
-          const updatedValue: TimerValue = {
+          field.onChange({
             ...currentValue,
-            isRunning: true,
             startTime: currentValue.startTime || now,
-          };
-          field.onChange(updatedValue);
-        }, [currentValue, field]);
-
-        // Pause timer
-        const handlePause = React.useCallback(() => {
-          if (!currentValue) return;
-
-          const updatedValue: TimerValue = {
-            ...currentValue,
-            isRunning: false,
-            duration: currentValue.currentTime,
-          };
-          field.onChange(updatedValue);
-        }, [currentValue, field]);
+          });
+          setIsRunning(true);
+        };
 
         // Stop timer
-        const handleStop = React.useCallback(() => {
+        const handleStop = () => {
           if (!currentValue) return;
 
           const now = new Date();
-          const updatedValue: TimerValue = {
+          const durationMinutes = currentValue.startTime
+            ? Math.round((now.getTime() - currentValue.startTime.getTime()) / 60000)
+            : 0;
+
+          field.onChange({
             ...currentValue,
-            isRunning: false,
             endTime: now,
-            duration: currentValue.currentTime,
-          };
-          field.onChange(updatedValue);
-        }, [currentValue, field]);
+            duration: durationMinutes,
+          });
+          setIsRunning(false);
+          setElapsedSeconds(0);
+        };
 
         // Reset timer
-        const handleReset = React.useCallback(() => {
+        const handleReset = () => {
           if (!currentValue) return;
 
-          const updatedValue: TimerValue = {
-            duration: 0,
-            isRunning: false,
-            currentTime: 0,
-            laps: [],
-          };
-          field.onChange(updatedValue);
-        }, [currentValue, field]);
-
-        // Add lap (for activities that need lap tracking)
-        const handleAddLap = React.useCallback(() => {
-          if (!currentValue || !currentValue.isRunning) return;
-
-          const now = new Date();
-          const previousLap = currentValue.laps?.[currentValue.laps.length - 1];
-          const lapStartTime = previousLap ? previousLap.endTime : currentValue.startTime || now;
-          
-          const newLap: TimerLap = {
-            lapNumber: (currentValue.laps?.length || 0) + 1,
-            startTime: lapStartTime,
-            endTime: now,
-            duration: Math.floor((now.getTime() - lapStartTime.getTime()) / 1000),
-          };
-
-          const updatedValue: TimerValue = {
+          field.onChange({
             ...currentValue,
-            laps: [...(currentValue.laps || []), newLap],
-          };
-          field.onChange(updatedValue);
-        }, [currentValue, field]);
+            startTime: undefined,
+            endTime: undefined,
+            duration: 0,
+          });
+          setIsRunning(false);
+          setElapsedSeconds(0);
+        };
 
-        // Format time display
+        // Handle type change
+        const handleTypeChange = (type: 'duration' | 'stopwatch' | 'start_end') => {
+          if (!currentValue) return;
+
+          field.onChange({
+            ...currentValue,
+            type,
+          });
+        };
+
+        // Handle duration input (for duration type)
+        const handleDurationChange = (minutes: number) => {
+          if (!currentValue) return;
+
+          field.onChange({
+            ...currentValue,
+            duration: minutes,
+          });
+        };
+
+        // Handle notes change
+        const handleNotesChange = (notes: string) => {
+          if (!currentValue) return;
+
+          field.onChange({
+            ...currentValue,
+            notes: notes || undefined,
+          });
+        };
+
+        // Format time display (seconds to MM:SS)
         const formatTime = (seconds: number): string => {
-          const hours = Math.floor(seconds / 3600);
-          const minutes = Math.floor((seconds % 3600) / 60);
+          const mins = Math.floor(seconds / 60);
           const secs = seconds % 60;
-
-          if (hours > 0) {
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-          }
-          return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+          return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         };
 
-        // Get timer status
-        const getTimerStatus = (): { label: string; color: string } => {
-          if (!currentValue) return { label: 'Ready', color: 'text-muted-foreground' };
-          
-          if (currentValue.isRunning) {
-            return { label: 'Running', color: 'text-green-600' };
-          } else if (currentValue.duration > 0) {
-            return { label: 'Stopped', color: 'text-blue-600' };
-          }
-          return { label: 'Ready', color: 'text-muted-foreground' };
+        // Format datetime for input
+        const formatDateTimeForInput = (date?: Date): string => {
+          if (!date) return '';
+          return date.toISOString().slice(0, 16);
         };
 
-        // 如果没有值，显示一个空的组件而不是返回null
+        // Parse datetime from input
+        const parseDateTimeFromInput = (dateTimeString: string): Date => {
+          return new Date(dateTimeString);
+        };
+
         if (!currentValue) {
           return (
             <Field
@@ -212,10 +175,6 @@ const TimerBlock: React.FC<BlockProps<TimerBlockConfig>> = ({
           );
         }
 
-        const displayTime = currentValue.isRunning ? currentValue.currentTime : currentValue.duration;
-        const status = getTimerStatus();
-        const canAddLaps = config?.enableLaps && currentValue.isRunning;
-
         return (
           <Field
             label={label}
@@ -226,163 +185,218 @@ const TimerBlock: React.FC<BlockProps<TimerBlockConfig>> = ({
             id={`timer-${fieldName}`}
           >
             <div className="space-y-4">
-              {/* Timer display */}
-              <div className="text-center space-y-3">
-                <div className="relative">
-                  {/* Main timer display */}
-                  <div className="text-4xl font-mono font-bold text-primary">
-                    {formatTime(displayTime)}
+              {/* Timer type selection */}
+              <div>
+                <label className="text-sm font-medium">Timer Type</label>
+                <Select value={currentValue.type} onValueChange={(value) => handleTypeChange(value as 'duration' | 'stopwatch' | 'start_end')}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="stopwatch">Stopwatch (Track as you go)</SelectItem>
+                    <SelectItem value="duration">Duration (Enter manually)</SelectItem>
+                    <SelectItem value="start_end">Start & End Time</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Stopwatch mode */}
+              {currentValue.type === 'stopwatch' && (
+                <div className="space-y-3">
+                  <div className="text-center space-y-3">
+                    <div className="relative">
+                      {/* Main timer display */}
+                      <div className="text-4xl font-mono font-bold text-primary">
+                        {formatTime(elapsedSeconds)}
+                      </div>
+
+                      {/* Status indicator */}
+                      <div className={`text-sm flex items-center justify-center gap-1 mt-1 ${isRunning ? 'text-green-600' : 'text-muted-foreground'}`}>
+                        <Timer className="w-3 h-3" />
+                        {isRunning ? 'Running' : currentValue.duration ? 'Stopped' : 'Ready'}
+                      </div>
+                    </div>
+
+                    {/* Timer controls */}
+                    <div className="flex items-center justify-center gap-2">
+                      {!isRunning ? (
+                        <Button
+                          type="button"
+                          onClick={handleStart}
+                          className="flex items-center gap-2"
+                          size="lg"
+                        >
+                          <Play className="w-4 h-4" />
+                          {currentValue.startTime ? 'Resume' : 'Start'}
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={handleStop}
+                          variant="secondary"
+                          className="flex items-center gap-2"
+                          size="lg"
+                        >
+                          <Square className="w-4 h-4" />
+                          Stop
+                        </Button>
+                      )}
+
+                      <Button
+                        type="button"
+                        onClick={handleReset}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                        disabled={isRunning}
+                      >
+                        Reset
+                      </Button>
+                    </div>
                   </div>
-                  
-                  {/* Status indicator */}
-                  <div className={`text-sm ${status.color} flex items-center justify-center gap-1 mt-1`}>
-                    <Timer className="w-3 h-3" />
-                    {status.label}
-                  </div>
+
+                  {/* Activity summary */}
+                  {(currentValue.startTime || currentValue.endTime) && (
+                    <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                      <div className="text-sm font-medium">Activity Summary</div>
+
+                      {currentValue.startTime && (
+                        <div className="text-xs text-muted-foreground">
+                          Started: {currentValue.startTime.toLocaleTimeString()}
+                        </div>
+                      )}
+
+                      {currentValue.endTime && (
+                        <div className="text-xs text-muted-foreground">
+                          Ended: {currentValue.endTime.toLocaleTimeString()}
+                        </div>
+                      )}
+
+                      {currentValue.duration !== undefined && currentValue.duration > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          Duration: {currentValue.duration} minutes
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                {/* Timer controls */}
-                <div className="flex items-center justify-center gap-2">
-                  {!currentValue.isRunning ? (
-                    <Button
-                type="button"
-                onClick={handleStart}
-                className="flex items-center gap-2"
-                size="lg"
-              >
-                <Play className="w-4 h-4" />
-                {currentValue.duration > 0 ? 'Resume' : 'Start'}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={handlePause}
-                variant="secondary"
-                className="flex items-center gap-2"
-                size="lg"
-              >
-                <Pause className="w-4 h-4" />
-                Pause
-              </Button>
-            )}
-
-            {currentValue.duration > 0 && (
-              <Button
-                type="button"
-                onClick={handleStop}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Square className="w-4 h-4" />
-                Stop
-              </Button>
-            )}
-
-            <Button
-              type="button"
-              onClick={handleReset}
-              variant="outline"
-              className="flex items-center gap-2"
-              disabled={currentValue.isRunning}
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset
-            </Button>
-          </div>
-
-          {/* Lap button */}
-          {canAddLaps && (
-            <Button
-              type="button"
-              onClick={handleAddLap}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Timer className="w-3 h-3" />
-              Add Lap
-            </Button>
-          )}
-        </div>
-
-        {/* Activity summary */}
-        {(currentValue.startTime || currentValue.endTime) && (
-          <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-            <div className="text-sm font-medium">Activity Summary</div>
-            
-            {currentValue.startTime && (
-              <div className="text-xs text-muted-foreground">
-                Started: {currentValue.startTime.toLocaleTimeString()}
-              </div>
-            )}
-            
-            {currentValue.endTime && (
-              <div className="text-xs text-muted-foreground">
-                Ended: {currentValue.endTime.toLocaleTimeString()}
-              </div>
-            )}
-            
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">
-                Duration: {formatTime(currentValue.duration)}
-              </Badge>
-              {currentValue.laps && currentValue.laps.length > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {currentValue.laps.length} Lap{currentValue.laps.length !== 1 ? 's' : ''}
-                </Badge>
               )}
-            </div>
-          </div>
-        )}
 
-        {/* Laps list */}
-        {currentValue.laps && currentValue.laps.length > 0 && (
-          <div className="space-y-2">
-            <div className="text-sm font-medium">Laps</div>
-            <div className="max-h-32 overflow-y-auto space-y-1">
-              {currentValue.laps.map((lap) => (
-                <div key={lap.lapNumber} className="flex items-center justify-between text-xs bg-muted/20 rounded p-2">
-                  <span className="font-medium">Lap {lap.lapNumber}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono">{formatTime(lap.duration)}</span>
-                    <span className="text-muted-foreground">
-                      {lap.endTime.toLocaleTimeString()}
-                    </span>
+              {/* Duration mode */}
+              {currentValue.type === 'duration' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium">Duration (minutes)</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={currentValue.duration || 0}
+                      onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
+                      className="mt-1"
+                    />
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* Presets for common activity durations */}
-        {config?.presetDurations && (
-          <div className="space-y-2">
-            <div className="text-sm font-medium">Quick Durations</div>
-            <div className="flex flex-wrap gap-2">
-              {config.presetDurations.map((preset: number) => (
-                <Button
-                  key={preset}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const updatedValue: TimerValue = {
-                      ...currentValue,
-                      duration: preset,
-                      currentTime: preset,
-                    };
-                    field.onChange(updatedValue);
-                  }}
-                  className="text-xs"
-                  disabled={currentValue.isRunning}
-                >
-                  {formatTime(preset)}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
+                  {/* Presets for common activity durations */}
+                  {config?.presetDurations && config.presetDurations.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium">Quick Durations</div>
+                      <div className="flex flex-wrap gap-2">
+                        {config.presetDurations.map((preset: number) => (
+                          <Button
+                            key={preset}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDurationChange(preset)}
+                            className="text-xs"
+                          >
+                            {preset} min
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {currentValue.duration !== undefined && currentValue.duration > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      Duration: {currentValue.duration} minutes
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {/* Start & End Time mode */}
+              {currentValue.type === 'start_end' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      Start Time
+                    </label>
+                    <Input
+                      type="datetime-local"
+                      value={formatDateTimeForInput(currentValue.startTime)}
+                      onChange={(e) => {
+                        const startTime = parseDateTimeFromInput(e.target.value);
+                        const durationMinutes =
+                          currentValue.endTime && startTime
+                            ? Math.round((currentValue.endTime.getTime() - startTime.getTime()) / 60000)
+                            : undefined;
+
+                        field.onChange({
+                          ...currentValue,
+                          startTime,
+                          duration: durationMinutes,
+                        });
+                      }}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      End Time
+                    </label>
+                    <Input
+                      type="datetime-local"
+                      value={formatDateTimeForInput(currentValue.endTime)}
+                      onChange={(e) => {
+                        const endTime = parseDateTimeFromInput(e.target.value);
+                        const durationMinutes =
+                          currentValue.startTime && endTime
+                            ? Math.round((endTime.getTime() - currentValue.startTime.getTime()) / 60000)
+                            : undefined;
+
+                        field.onChange({
+                          ...currentValue,
+                          endTime,
+                          duration: durationMinutes,
+                        });
+                      }}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  {currentValue.startTime && currentValue.endTime && currentValue.duration !== undefined && (
+                    <Badge variant="secondary" className="text-xs">
+                      Duration: {currentValue.duration} minutes
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {/* Notes */}
+              <div>
+                <label className="text-sm font-medium">Notes (Optional)</label>
+                <Input
+                  type="text"
+                  placeholder="Any notes about this activity duration..."
+                  value={currentValue.notes || ''}
+                  onChange={(e) => handleNotesChange(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
             </div>
           </Field>
         );

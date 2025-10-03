@@ -1,5 +1,5 @@
-import { ActivityMode } from '../lib/types/activities';
-import { RouteValidator, ActivityEditorQueryParams } from '../lib/types/routing';
+import { type ActivityMode } from '../lib/types/activities';
+import { RouteValidator, type ActivityEditorQueryParams } from '../lib/types/routing';
 
 /**
  * Activity Editor Query Parameter Utilities

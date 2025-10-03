@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Pet, PetCreateRequest, PetUpdateRequest } from '../lib/types';
+import { type Pet, type PetCreateRequest, type PetUpdateRequest } from '../lib/types';
 
 export interface UsePetsState {
   pets: Pet[];

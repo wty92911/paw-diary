@@ -1,41 +1,15 @@
 import React from 'react';
-import { Control, FieldError } from 'react-hook-form';
+import { type Control, type FieldError } from 'react-hook-form';
 import { Input } from '../../ui/input';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Users, UserPlus, X, Star, Phone, Mail } from 'lucide-react';
-import { ActivityFormData, ActivityBlockDef } from '../../../lib/types/activities';
+import { type ActivityFormData, type ActivityBlockDef, type PeopleData, type PersonData, type PeopleConfig } from '../../../lib/types/activities';
 import { Field } from './Field';
 import { useFormContext } from './FormContext';
 
-// Person interface
-interface Person {
-  id: string;
-  name: string;
-  role?: PersonRole;
-  contact?: {
-    phone?: string;
-    email?: string;
-  };
-  notes?: string;
-  isFavorite?: boolean;
-  relationshipToPet?: string; // e.g., "Primary Vet", "Dog Walker", "Friend"
-}
-
-// Person roles for pet activities
-type PersonRole = 
-  | 'owner' 
-  | 'vet' 
-  | 'groomer' 
-  | 'trainer' 
-  | 'walker' 
-  | 'sitter' 
-  | 'friend' 
-  | 'family' 
-  | 'other';
-
 // Role configurations
-const PERSON_ROLES = {
+const PERSON_ROLES: Record<string, { label: string; icon: string; color: string }> = {
   owner: { label: 'Owner', icon: '👤', color: 'text-blue-600' },
   vet: { label: 'Veterinarian', icon: '🏥', color: 'text-red-600' },
   groomer: { label: 'Groomer', icon: '✂️', color: 'text-pink-600' },
@@ -47,45 +21,39 @@ const PERSON_ROLES = {
   other: { label: 'Other', icon: '👤', color: 'text-gray-600' },
 } as const;
 
-// People value interface
-interface PeopleValue {
-  participants: Person[];
-  notes?: string; // General notes about people involved
-}
-
 // Mock recent contacts - would come from contacts hook
-const getMockRecentContacts = (_petId?: number): Array<Person & { lastSeen: Date }> => [
+const getMockRecentContacts = (_petId?: number): Array<PersonData & { lastSeen: Date }> => [
   {
     id: 'person-1',
     name: 'Dr. Sarah Johnson',
-    role: 'vet',
+    type: 'vet',
     contact: { phone: '(555) 123-4567', email: 'sarah@happypetsvet.com' },
-    relationshipToPet: 'Primary Veterinarian',
-    isFavorite: true,
+    notes: 'Primary Veterinarian',
+    rating: 5,
     lastSeen: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
   },
   {
     id: 'person-2',
     name: 'Mike Wilson',
-    role: 'walker',
+    type: 'walker',
     contact: { phone: '(555) 987-6543' },
-    relationshipToPet: 'Regular Dog Walker',
-    isFavorite: true,
+    notes: 'Regular Dog Walker',
+    rating: 5,
     lastSeen: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
   },
   {
     id: 'person-3',
     name: 'Emma Thompson',
-    role: 'groomer',
+    type: 'groomer',
     contact: { phone: '(555) 456-7890' },
-    relationshipToPet: 'Professional Groomer',
+    notes: 'Professional Groomer',
     lastSeen: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
   },
   {
     id: 'person-4',
     name: 'Alex Chen',
-    role: 'friend',
-    relationshipToPet: 'Dog Park Friend',
+    type: 'friend',
+    notes: 'Dog Park Friend',
     lastSeen: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
   },
 ];
@@ -104,14 +72,14 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
 }) => {
   const { watch, setValue, petId } = useFormContext();
   const fieldName = `blocks.${block.id}` as const;
-  const currentValue: PeopleValue | undefined = watch(fieldName);
+  const currentValue: PeopleData | undefined = watch(fieldName) as unknown as PeopleData | undefined;
 
   // State management
   const [showAddPerson, setShowAddPerson] = React.useState(false);
   const [showRecentContacts, setShowRecentContacts] = React.useState(false);
-  const [newPerson, setNewPerson] = React.useState<Partial<Person>>({
+  const [newPerson, setNewPerson] = React.useState<Partial<PersonData>>({
     name: '',
-    role: 'other',
+    type: 'other',
   });
 
   // Mock recent contacts
@@ -121,22 +89,22 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
   React.useEffect(() => {
     if (!currentValue) {
       setValue(fieldName, {
-        participants: [],
+        people: [],
       });
     }
   }, [currentValue, fieldName, setValue]);
 
   // Handle adding person from recent contacts
-  const handleAddFromContacts = React.useCallback((contact: Person) => {
+  const handleAddFromContacts = React.useCallback((contact: PersonData) => {
     if (!currentValue) return;
-    
+
     // Check if person already added
-    const alreadyAdded = currentValue.participants.some(p => p.id === contact.id);
+    const alreadyAdded = currentValue.people.some(p => p.id === contact.id);
     if (alreadyAdded) return;
 
-    const updatedValue: PeopleValue = {
+    const updatedValue: PeopleData = {
       ...currentValue,
-      participants: [...currentValue.participants, contact],
+      people: [...currentValue.people, contact],
     };
     setValue(fieldName, updatedValue);
     setShowRecentContacts(false);
@@ -146,22 +114,22 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
   const handleAddNewPerson = React.useCallback(() => {
     if (!newPerson.name?.trim() || !currentValue) return;
 
-    const person: Person = {
+    const person: PersonData = {
       id: `person-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: newPerson.name.trim(),
-      role: newPerson.role || 'other',
+      type: newPerson.type || 'other',
       contact: newPerson.contact,
       notes: newPerson.notes,
-      relationshipToPet: newPerson.relationshipToPet,
+      rating: newPerson.rating,
     };
 
-    const updatedValue: PeopleValue = {
+    const updatedValue: PeopleData = {
       ...currentValue,
-      participants: [...currentValue.participants, person],
+      people: [...currentValue.people, person],
     };
 
     setValue(fieldName, updatedValue);
-    setNewPerson({ name: '', role: 'other' });
+    setNewPerson({ name: '', type: 'other' });
     setShowAddPerson(false);
   }, [newPerson, currentValue, fieldName, setValue]);
 
@@ -169,22 +137,22 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
   const handleRemovePerson = React.useCallback((personId: string) => {
     if (!currentValue) return;
 
-    const updatedValue: PeopleValue = {
+    const updatedValue: PeopleData = {
       ...currentValue,
-      participants: currentValue.participants.filter(p => p.id !== personId),
+      people: currentValue.people.filter(p => p.id !== personId),
     };
     setValue(fieldName, updatedValue);
   }, [currentValue, fieldName, setValue]);
 
-  // Handle toggling favorite
-  const handleToggleFavorite = React.useCallback((personId: string) => {
+  // Handle rating change
+  const handleRatingChange = React.useCallback((personId: string, rating: number) => {
     if (!currentValue) return;
 
-    const updatedValue: PeopleValue = {
+    const updatedValue: PeopleData = {
       ...currentValue,
-      participants: currentValue.participants.map(person =>
+      people: currentValue.people.map(person =>
         person.id === personId
-          ? { ...person, isFavorite: !person.isFavorite }
+          ? { ...person, rating }
           : person
       ),
     };
@@ -195,7 +163,7 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
   const handleNotesChange = React.useCallback((notes: string) => {
     if (!currentValue) return;
 
-    const updatedValue: PeopleValue = {
+    const updatedValue: PeopleData = {
       ...currentValue,
       notes: notes || undefined,
     };
@@ -203,8 +171,8 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
   }, [currentValue, fieldName, setValue]);
 
   // Get role info
-  const getRoleInfo = (role?: PersonRole) => {
-    return role ? PERSON_ROLES[role] : PERSON_ROLES.other;
+  const getRoleInfo = (type?: string) => {
+    return type && PERSON_ROLES[type] ? PERSON_ROLES[type] : PERSON_ROLES.other;
   };
 
   if (!currentValue) return null;
@@ -214,7 +182,7 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
       label={block.label}
       required={block.required}
       error={error?.message}
-      hint={block.config?.hint || 'Add people who were involved in this activity'}
+      hint={(block.config as PeopleConfig | undefined)?.hint || 'Add people who were involved in this activity'}
       blockType="people"
       id={`people-${block.id}`}
     >
@@ -257,8 +225,8 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
               />
 
               <select
-                value={newPerson.role || 'other'}
-                onChange={(e) => setNewPerson(prev => ({ ...prev, role: e.target.value as PersonRole }))}
+                value={newPerson.type || 'other'}
+                onChange={(e) => setNewPerson(prev => ({ ...prev, type: e.target.value }))}
                 className="w-full p-2 border rounded-md text-sm"
               >
                 {Object.entries(PERSON_ROLES).map(([key, config]) => (
@@ -267,13 +235,6 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
                   </option>
                 ))}
               </select>
-
-              <Input
-                type="text"
-                placeholder="Relationship to pet (optional)"
-                value={newPerson.relationshipToPet || ''}
-                onChange={(e) => setNewPerson(prev => ({ ...prev, relationshipToPet: e.target.value }))}
-              />
 
               <div className="grid grid-cols-2 gap-2">
                 <Input
@@ -333,8 +294,8 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
             
             <div className="space-y-2 max-h-32 overflow-y-auto">
               {recentContacts.slice(0, 5).map((contact) => {
-                const roleInfo = getRoleInfo(contact.role);
-                const alreadyAdded = currentValue.participants.some(p => p.id === contact.id);
+                const roleInfo = getRoleInfo(contact.type);
+                const alreadyAdded = currentValue.people.some(p => p.id === contact.id);
                 
                 return (
                   <Button
@@ -350,14 +311,14 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
                       <span role="img" aria-label={roleInfo.label}>
                         {roleInfo.icon}
                       </span>
-                      {contact.isFavorite && (
+                      {contact.rating && contact.rating === 5 && (
                         <Star className="w-3 h-3 text-yellow-500 fill-current" />
                       )}
-                      
+
                       <div className="flex-1">
                         <div className="font-medium text-sm">{contact.name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {contact.relationshipToPet || roleInfo.label}
+                          {contact.notes || roleInfo.label}
                         </div>
                       </div>
 
@@ -389,15 +350,15 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
         )}
 
         {/* Current participants */}
-        {currentValue.participants.length > 0 && (
+        {currentValue.people.length > 0 && (
           <div className="space-y-2">
             <div className="text-sm font-medium">
-              People Involved ({currentValue.participants.length})
+              People Involved ({currentValue.people.length})
             </div>
-            
+
             <div className="space-y-2">
-              {currentValue.participants.map((person) => {
-                const roleInfo = getRoleInfo(person.role);
+              {currentValue.people.map((person) => {
+                const roleInfo = getRoleInfo(person.type);
                 
                 return (
                   <div
@@ -408,12 +369,12 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
                       <span role="img" aria-label={roleInfo.label} className={roleInfo.color}>
                         {roleInfo.icon}
                       </span>
-                      {person.isFavorite && (
+                      {person.rating && person.rating === 5 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleToggleFavorite(person.id)}
+                          onClick={() => handleRatingChange(person.id, person.rating === 5 ? 0 : 5)}
                           className="h-4 w-4 p-0 text-yellow-500"
                         >
                           <Star className="w-3 h-3 fill-current" />
@@ -428,12 +389,6 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
                           {roleInfo.label}
                         </Badge>
                       </div>
-                      
-                      {person.relationshipToPet && (
-                        <div className="text-xs text-muted-foreground">
-                          {person.relationshipToPet}
-                        </div>
-                      )}
 
                       {(person.contact?.phone || person.contact?.email) && (
                         <div className="flex gap-2 mt-1">
@@ -488,7 +443,7 @@ const PeopleBlock: React.FC<PeopleBlockProps> = ({
         </div>
 
         {/* Empty state */}
-        {currentValue.participants.length === 0 && (
+        {currentValue.people.length === 0 && (
           <div className="text-center text-muted-foreground py-4 border-2 border-dashed border-muted rounded-lg">
             <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <div className="text-sm">No people added yet</div>

@@ -15,8 +15,7 @@ export function useErrorBoundary() {
 
   // Throw error to be caught by nearest ErrorBoundary
   const throwError = React.useCallback((error: Error | string) => {
-    const errorObj = typeof error === 'string' ? new Error(error) : error;
-    throw errorObj;
+    throw typeof error === 'string' ? new Error(error) : error;
   }, []);
 
   // Activity-specific error thrower
@@ -24,8 +23,8 @@ export function useErrorBoundary() {
     (message: string, petId?: number, context?: string) => {
       const error = new Error(message);
       error.name = 'ActivityError';
-      (error as any).petId = petId;
-      (error as any).context = context;
+      (error as Error & { petId?: number; context?: string }).petId = petId;
+      (error as Error & { petId?: number; context?: string }).context = context;
       throw error;
     },
     [],

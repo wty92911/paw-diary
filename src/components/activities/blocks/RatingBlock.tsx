@@ -1,8 +1,12 @@
+ 
+ 
+/* TODO: Refactor to move hooks outside Controller render function */
+
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
-import { BlockProps } from '../../../lib/types/activities';
+import { type BlockProps } from '../../../lib/types/activities';
 import { Field } from './Field';
 
 // Rating value interface
@@ -79,7 +83,7 @@ const RatingBlock: React.FC<BlockProps<RatingBlockConfig>> = ({
       name={fieldName}
       rules={{ required: required ? `${label} is required` : false }}
       render={({ field, fieldState: { error } }) => {
-        const currentValue: RatingValue | undefined = field.value;
+        const currentValue: RatingValue | undefined = field.value as unknown as RatingValue | undefined;
 
         // Handle rating selection
         const handleRatingSelect = React.useCallback((rating: number) => {

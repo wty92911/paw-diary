@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { PhotoInfo } from '../lib/types';
+import { type PhotoInfo } from '../lib/types';
 import { validateImageFile } from '../lib/utils';
 
 export interface UsePhotosState {
@@ -63,11 +63,9 @@ export function usePhotos(): UsePhotosState & UsePhotosActions {
       setIsUploading(true);
       setError(null);
 
-      const filename = await invoke<string>('upload_pet_photo_from_path', {
+      return await invoke<string>('upload_pet_photo_from_path', {
         filePath: filePath,
       });
-
-      return filename;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload photo from path';
       setError(errorMessage);
@@ -93,10 +91,9 @@ export function usePhotos(): UsePhotosState & UsePhotosActions {
   const getPhotoInfo = async (filename: string): Promise<PhotoInfo> => {
     try {
       setError(null);
-      const info = await invoke<PhotoInfo>('get_pet_photo_info', {
+      return await invoke<PhotoInfo>('get_pet_photo_info', {
         photoId: filename,
       });
-      return info;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get photo info';
       setError(errorMessage);

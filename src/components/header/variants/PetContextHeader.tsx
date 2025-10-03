@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { cn } from '../../../lib/utils';
-import { PetContextHeaderProps, PetPhotoSize } from '../types';
+import { type PetContextHeaderProps, PetPhotoSize } from '../types';
 import { HeaderNavigation } from '../components/HeaderNavigation';
 import { PetPhoto } from '../components/PetPhoto';
 import { ChevronRight, Heart } from 'lucide-react';

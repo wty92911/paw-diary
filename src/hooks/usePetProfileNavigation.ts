@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Pet, RouterNavigationState } from '../lib/types';
+import { type Pet, type RouterNavigationState } from '../lib/types';
 import { useResponsiveNavigation } from './useResponsiveNavigation';
 
 /**

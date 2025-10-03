@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Pet } from '../../lib/types';
+import { type Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
 import { Camera, Loader2 } from 'lucide-react';
 import { usePhotoState } from '../../hooks/usePhotoCache';

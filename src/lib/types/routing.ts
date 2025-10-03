@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ActivityMode } from './activities';
+import { type ActivityMode } from './activities';
 
 /**
  * Routing Types for Activity Pages

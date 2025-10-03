@@ -6,7 +6,7 @@
  */
 
 import { cn } from '../../../lib/utils';
-import { ActivitiesHeaderProps, PetPhotoSize, ActionVariant, ActionPosition } from '../types';
+import { type ActivitiesHeaderProps, PetPhotoSize, ActionVariant, ActionPosition } from '../types';
 import { HeaderNavigation } from '../components/HeaderNavigation';
 import { HeaderActions } from '../components/HeaderActions';
 import { PetPhoto } from '../components/PetPhoto';

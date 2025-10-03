@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
+// HeaderProvider exports both context and related hooks
+
 /**
  * Header Provider Component
  * 
@@ -7,13 +10,13 @@
 
 import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
 import {
-  HeaderContextState,
-  HeaderContextAction,
-  HeaderContextType,
-  HeaderConfiguration,
-  HeaderTheme,
+  type HeaderContextState,
+  type HeaderContextAction,
+  type HeaderContextType,
+  type HeaderConfiguration,
+  type HeaderTheme,
   HeaderVariant,
-  ColorScheme,
+  type ColorScheme,
   DEFAULT_HEADER_THEME
 } from './types';
 

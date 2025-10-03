@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ActivityCategory } from '../lib/types/activities';
+import { type ActivityCategory, type ActivityBlockData } from '../lib/types/activities';
 
 // Quick default value interfaces
 export interface QuickDefaults {
@@ -78,7 +78,7 @@ class QuickDefaultsService {
         const defaults = JSON.parse(stored);
 
         // Convert date strings back to Date objects
-        Object.values(defaults).forEach((petDefault: any) => {
+        Object.values(defaults as Record<number, PetQuickDefaults>).forEach(petDefault => {
           petDefault.lastUpdated = new Date(petDefault.lastUpdated);
         });
 
@@ -173,7 +173,7 @@ class QuickDefaultsService {
     petId: number,
     category: ActivityCategory,
     fieldName: keyof CategoryQuickDefaults,
-    value: any,
+    value: ActivityBlockData,
   ): void {
     if (!value || value === '') return;
 
@@ -185,7 +185,7 @@ class QuickDefaultsService {
     try {
       const stored = localStorage.getItem(usageCountKey);
       usageCount = stored ? parseInt(stored, 10) : 0;
-    } catch (error) {
+    } catch {
       // Ignore parse errors
     }
 
@@ -206,8 +206,8 @@ class QuickDefaultsService {
     category: ActivityCategory,
     fieldName: keyof CategoryQuickDefaults,
     limit: number = 5,
-  ): any[] {
-    const suggestions = new Map<any, number>();
+  ): ActivityBlockData[] {
+    const suggestions = new Map<string, number>();
 
     // Search for all usage patterns for this field
     for (let i = 0; i < localStorage.length; i++) {
@@ -374,7 +374,7 @@ export function useQuickDefaults(petId: number, category?: ActivityCategory) {
 
   // Learn from user input
   const learnFromInput = useCallback(
-    (fieldName: keyof CategoryQuickDefaults, value: any) => {
+    (fieldName: keyof CategoryQuickDefaults, value: ActivityBlockData) => {
       if (!category) return;
 
       quickDefaultsService.learnFromInput(petId, category, fieldName, value);
@@ -487,7 +487,7 @@ export function useCategoryQuickDefaults(petId: number, category: ActivityCatego
   );
 
   const learnFromInput = useCallback(
-    (fieldName: keyof CategoryQuickDefaults, value: any) => {
+    (fieldName: keyof CategoryQuickDefaults, value: ActivityBlockData) => {
       quickDefaultsService.learnFromInput(petId, category, fieldName, value);
     },
     [petId, category],
@@ -516,7 +516,7 @@ export function useSmartSuggestions(
   category: ActivityCategory,
   fieldName: keyof CategoryQuickDefaults,
 ) {
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<ActivityBlockData[]>([]);
 
   const refreshSuggestions = useCallback(() => {
     const smartSuggestions = quickDefaultsService.getSmartSuggestions(
@@ -588,7 +588,7 @@ export function learnFromUserInput(
   petId: number,
   category: ActivityCategory,
   fieldName: keyof CategoryQuickDefaults,
-  value: any,
+  value: ActivityBlockData,
 ): void {
   quickDefaultsService.learnFromInput(petId, category, fieldName, value);
 }
@@ -598,7 +598,7 @@ export function getSmartFieldSuggestions(
   category: ActivityCategory,
   fieldName: keyof CategoryQuickDefaults,
   limit?: number,
-): any[] {
+): ActivityBlockData[] {
   return quickDefaultsService.getSmartSuggestions(petId, category, fieldName, limit);
 }
 

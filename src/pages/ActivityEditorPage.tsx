@@ -2,7 +2,12 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { useActivity, useCreateActivity, useUpdateActivity } from '../hooks/useActivities';
 import { usePets } from '../hooks/usePets';
-import { ActivityFormData, ActivityMode } from '../lib/types/activities';
+import {
+  type ActivityFormData,
+  type ActivityMode,
+  type ActivityCategory,
+  type ActivityBlockData,
+} from '../lib/types/activities';
 import { RouteValidator, RouteBuilder } from '../lib/types/routing';
 import { PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
 import { UniversalHeader, HeaderVariant, BackActionType } from '../components/header';
@@ -133,7 +138,7 @@ function ActivityEditorPageContent({
   const initialData: Partial<ActivityFormData> | undefined = activity
     ? {
         petId: activity.pet_id,
-        category: activity.category as any, // Category will need proper conversion
+        category: activity.category as ActivityCategory, // Category conversion from database
         subcategory: activity.subcategory,
         blocks: convertBlocksFromDatabase(activity.activity_data || {}),
       }
@@ -142,8 +147,10 @@ function ActivityEditorPageContent({
   // Convert blocks from database format to form format
   // Database stores time as { date: "ISO string", time: "", timezone: "" }
   // Form expects Date objects
-  function convertBlocksFromDatabase(blocks: Record<string, any>): Record<string, any> {
-    const converted: Record<string, any> = {};
+  function convertBlocksFromDatabase(
+    blocks: Record<string, ActivityBlockData>,
+  ): Record<string, ActivityBlockData> {
+    const converted: Record<string, ActivityBlockData> = {};
     for (const [key, value] of Object.entries(blocks)) {
       if (value && typeof value === 'object' && 'date' in value && typeof value.date === 'string') {
         // Convert time block from database format to Date object
@@ -157,16 +164,19 @@ function ActivityEditorPageContent({
 
   // Convert blocks from form format to database format
   // Form uses Date objects, database expects { date: "ISO string", time: "", timezone: "" }
-  function convertBlocksToDatabase(blocks: Record<string, any>): Record<string, any> {
-    const converted: Record<string, any> = {};
+  function convertBlocksToDatabase(
+    blocks: Record<string, ActivityBlockData>,
+  ): Record<string, ActivityBlockData> {
+    const converted: Record<string, ActivityBlockData> = {};
     for (const [key, value] of Object.entries(blocks)) {
       if (value instanceof Date) {
         // Convert Date object to database format
+        // Use type assertion since time blocks can have various shapes
         converted[key] = {
           date: value.toISOString(),
           time: '',
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        };
+        } as unknown as ActivityBlockData;
       } else {
         converted[key] = value;
       }

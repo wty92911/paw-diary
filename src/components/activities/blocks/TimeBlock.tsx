@@ -2,7 +2,7 @@ import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Input } from '../../ui/input';
 import { Badge } from '../../ui/badge';
-import { BlockProps } from '../../../lib/types/activities';
+import { type BlockProps } from '../../../lib/types/activities';
 import { timeBlockSchema } from '../../../lib/validation/activityBlocks';
 
 
@@ -108,14 +108,15 @@ const TimeBlock: React.FC<BlockProps<TimeBlockConfig>> = ({
         required: required ? `${label} is required` : false,
         validate: (value) => {
           // Use Zod validation
+          const dateValue = value instanceof Date ? value : (typeof value === 'string' || typeof value === 'number' ? new Date(value) : new Date());
           const result = timeBlockSchema.safeParse({
-            date: value instanceof Date ? value : new Date(value),
+            date: dateValue,
             time: showTime ? (value instanceof Date ? value.toTimeString().slice(0, 5) : undefined) : undefined,
           });
           if (!result.success && (required || value)) {
             return result.error.errors[0]?.message || 'Invalid date/time';
           }
-          return validateDateTime(value);
+          return validateDateTime(typeof value === 'string' || value instanceof Date ? value : '');
         },
       }}
       render={({ field, fieldState }) => {

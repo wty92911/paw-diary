@@ -44,7 +44,7 @@ class BrandMemoryCache {
       if (stored) {
         const data = JSON.parse(stored);
         Object.entries(data).forEach(([key, entries]) => {
-          this.cache.set(key, (entries as any[]).map((entry: any) => ({
+          this.cache.set(key, (entries as Array<Omit<BrandMemoryEntry, 'lastUsed'> & { lastUsed: string }>).map((entry) => ({
             ...entry,
             lastUsed: new Date(entry.lastUsed),
           })));

@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Alert, AlertDescription } from '../ui/alert';
 import { LoadingSpinner } from '../ui/loading-spinner';
+import { type ActivityBlockData } from '../../lib/types/activities';
 import {
   Dialog,
   DialogContent,
@@ -15,10 +16,10 @@ import {
 } from '../ui/dialog';
 import { ChevronDown, Activity, AlertCircle } from 'lucide-react';
 import { 
-  ActivityEditorProps, 
-  ActivityFormData, 
-  ActivityTemplate, 
-  ActivityMode,
+  type ActivityEditorProps, 
+  type ActivityFormData, 
+  type ActivityTemplate, 
+  type ActivityMode,
   ActivityCategory 
 } from '../../lib/types/activities';
 import { activityFormValidationSchema } from '../../lib/validation/activityBlocks';
@@ -96,7 +97,7 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
 
   // Create default blocks values based on template
   const getDefaultBlocks = React.useCallback(() => {
-    const defaultBlocks: Record<string, any> = {};
+    const defaultBlocks: Record<string, ActivityBlockData> = {};
     if (selectedTemplate) {
       selectedTemplate.blocks.forEach(block => {
         // Set appropriate default values based on block type
@@ -107,11 +108,8 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
             defaultBlocks[block.id] = '';
             break;
           case 'time':
-            defaultBlocks[block.id] = {
-              date: new Date(),
-              time: '',
-              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            };
+            // Time blocks use Date objects in forms
+            defaultBlocks[block.id] = new Date();
             break;
           case 'measurement':
             defaultBlocks[block.id] = {
@@ -497,7 +495,7 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
             {isSubmitting && !showSuccessAlert && (
               <Alert className="border-blue-200 bg-blue-50">
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                  <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full" />
                   <AlertDescription className="text-blue-700">
                     Saving your activity...
                   </AlertDescription>

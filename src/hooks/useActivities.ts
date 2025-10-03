@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
-import { ActivityRecord, ActivityFormData } from '../lib/types/activities';
+import {
+  type ActivityRecord,
+  type ActivityFormData,
+  type ActivityBlockData,
+} from '../lib/types/activities';
 
 export type Activity = ActivityRecord;
 
@@ -146,7 +150,11 @@ export function useUpdateActivity() {
       updates: Partial<ActivityFormData>;
     }) => {
       // Convert to ActivityUpdateRequest format expected by backend
-      const updateData: any = {};
+      const updateData: {
+        category?: string;
+        subcategory?: string;
+        activity_data?: Record<string, ActivityBlockData>;
+      } = {};
       if (data.updates.category) updateData.category = data.updates.category;
       if (data.updates.subcategory) updateData.subcategory = data.updates.subcategory;
       if (data.updates.blocks) updateData.activity_data = data.updates.blocks;
