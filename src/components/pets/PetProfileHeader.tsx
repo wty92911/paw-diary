@@ -1,4 +1,4 @@
-import { Pet } from '../../lib/types';
+import { type Pet } from '../../lib/types';
 import { Button } from '../ui/button';
 import { PetProfilePhoto } from './PetProfilePhoto';
 import { calculateAge, cn } from '../../lib/utils';

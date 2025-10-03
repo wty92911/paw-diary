@@ -1,6 +1,6 @@
 /**
  * Header Components Export Index
- * 
+ *
  * Centralized exports for all header sub-components
  */
 
@@ -9,4 +9,4 @@ export { HeaderNavigation } from './HeaderNavigation';
 export { HeaderActions } from './HeaderActions';
 export { PetPhoto } from './PetPhoto';
 export { IOSHeaderContainer } from './IOSHeaderContainer';
-export { IOSContentLayout, useIOSContentLayout } from './IOSContentLayout';
+export { IOSContentLayout } from './IOSContentLayout';

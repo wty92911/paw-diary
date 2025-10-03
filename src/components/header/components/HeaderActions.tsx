@@ -7,7 +7,7 @@
 
 import { Button } from '../../ui/button';
 import { cn } from '../../../lib/utils';
-import { HeaderActionsProps, ActionVariant, ActionPosition, MAX_ACTION_LABEL_LENGTH } from '../types';
+import { type HeaderActionsProps, ActionVariant, ActionPosition, MAX_ACTION_LABEL_LENGTH } from '../types';
 
 // ============================================================================
 // Component Styles

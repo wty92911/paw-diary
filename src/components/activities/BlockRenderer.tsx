@@ -1,24 +1,28 @@
+/* eslint-disable react-refresh/only-export-components */
+// BlockRenderer exports both component and utility constant
 import React, { Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Control, FieldErrors, UseFormWatch, UseFormSetValue } from 'react-hook-form';
+import { type Control, type FieldErrors, type UseFormWatch, type UseFormSetValue } from 'react-hook-form';
+import { type ActivityBlockData } from '../../lib/types/activities';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { Alert, AlertDescription } from '../ui/alert';
-import { 
-  ActivityBlockDef, 
-  ActivityBlockType, 
-  ActivityFormData,
-  BlockRendererProps,
-  BlockProps 
+import {
+  type ActivityBlockDef,
+  type ActivityBlockType,
+  type ActivityFormData,
+  type BlockRendererProps,
+  type BlockProps
 } from '../../lib/types/activities';
+// Block helpers available but not used in this file
+// import { getBlockDisplayName, getBlockIcon } from './utils/blockHelpers';
 
 // Lazy load individual block components for better performance
 const TitleBlock = React.lazy(() => import('./blocks/TitleBlock'));
 const TimeBlock = React.lazy(() => import('./blocks/TimeBlock'));
 const NotesBlock = React.lazy(() => import('./blocks/NotesBlock'));
 const MeasurementBlock = React.lazy(() => import('./blocks/MeasurementBlock'));
-const SubcategoryBlock = React.lazy(() => import('./blocks/SubcategoryBlock'));
 
 // Implemented block components
 const RatingBlock = React.lazy(() => import('./blocks/RatingBlock'));
@@ -34,12 +38,12 @@ const CostBlock = React.lazy(() => import('./blocks/CostBlock'));
 // const RecurrenceBlock = React.lazy(() => import('./blocks/RecurrenceBlock'));
 
 // Block component registry mapping block types to their components
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const BLOCK_COMPONENT_REGISTRY: Partial<Record<ActivityBlockType, React.LazyExoticComponent<React.ComponentType<BlockProps<any>>>>> = {
   'title': TitleBlock,
   'time': TimeBlock,
   'notes': NotesBlock,
   'measurement': MeasurementBlock,
-  'subcategory': SubcategoryBlock,
   'rating': RatingBlock,
   'portion': PortionBlock,
   'timer': TimerBlock,
@@ -64,7 +68,7 @@ const BlockLoadingFallback: React.FC<{ label?: string }> = ({ label }) => (
 
 // Error fallback component for individual blocks
 class BlockErrorBoundary extends React.Component<
-  { 
+  {
     children: React.ReactNode;
     blockType: ActivityBlockType;
     blockLabel?: string;
@@ -72,7 +76,7 @@ class BlockErrorBoundary extends React.Component<
   },
   { hasError: boolean; error?: Error }
 > {
-  constructor(props: any) {
+  constructor(props: { children: React.ReactNode; blockType: ActivityBlockType; blockLabel?: string; onRetry?: () => void }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -220,16 +224,18 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // Extract field error for this specific block
   const fieldError = errors?.blocks?.[block.id];
   const hasError = !!fieldError;
-  
+
   // Check if field has been touched and get current value
-  const currentValue = watch ? watch(`blocks.${block.id}` as any) : undefined;
+  const currentValue = watch ? watch(`blocks.${block.id}` as `blocks.${string}`) : undefined;
   const isEmpty = currentValue === undefined || currentValue === null || currentValue === '';
   const showRequiredHint = block.required && isEmpty && hasError;
 
   const handleRetry = () => {
     // Clear any errors and re-render the component
     if (setValue) {
-      setValue(`blocks.${block.id}` as any, undefined);
+      // Reset to empty string for text fields, or appropriate default based on block type
+      const defaultValue = block.type === 'time' ? new Date() : '' as ActivityBlockData;
+      setValue(`blocks.${block.id}` as `blocks.${string}`, defaultValue);
     }
     window.location.reload(); // Simple retry mechanism
   };
@@ -367,62 +373,8 @@ export const useBlockRenderer = () => {
   };
 };
 
-// Utility functions for block operations
-export const getBlockDisplayName = (block: ActivityBlockDef): string => {
-  return block.label || block.type.charAt(0).toUpperCase() + block.type.slice(1);
-};
-
-export const getBlockIcon = (blockType: ActivityBlockType): string => {
-  const iconMap: Record<ActivityBlockType, string> = {
-    'title': '📝',
-    'notes': '📄',
-    'time': '⏰',
-    'subcategory': '📂',
-    'measurement': '📏',
-    'rating': '⭐',
-    'portion': '🍽️',
-    'timer': '⏱️',
-    'location': '📍',
-    'weather': '🌤️',
-    'checklist': '☑️',
-    'attachment': '📎',
-    'cost': '💰',
-    'reminder': '🔔',
-    'people': '👥',
-    'recurrence': '🔁',
-  };
-  return iconMap[blockType] || '🔧';
-};
-
-export const validateBlockData = (block: ActivityBlockDef, data: any): boolean => {
-  if (block.required && (data === undefined || data === null || data === '')) {
-    return false;
-  }
-  
-  // Add block-specific validation here
-  switch (block.type) {
-    case 'measurement':
-      return !block.required || (typeof data?.value === 'number' && data?.unit);
-    case 'cost':
-      return !block.required || (typeof data?.amount === 'number' && data?.currency);
-    case 'rating':
-      return !block.required || (typeof data?.value === 'number' && data?.value >= 1);
-    default:
-      return !block.required || !!data;
-  }
-};
-
-// Export the main component and utilities
+// Export the main component
 export default BlockRenderer;
 
 // Re-export types for convenience
 export type { BlockRendererProps, BlockProps };
-
-// Block registry utilities
-export const getAvailableBlockTypes = (): ActivityBlockType[] => {
-  return Object.keys(BLOCK_COMPONENT_REGISTRY) as ActivityBlockType[];
-};
-
-export const isBlockTypeSupported = (blockType: string): blockType is ActivityBlockType => {
-  return blockType in BLOCK_COMPONENT_REGISTRY;
-};

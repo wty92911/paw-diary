@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Pet } from '../types';
+import type { Control, FieldErrors, UseFormWatch, UseFormSetValue } from 'react-hook-form';
 
 // Activity categories and subcategories
 export enum ActivityCategory {
@@ -44,13 +45,33 @@ export type ActivityBlockType =
   | 'people'
   | 'recurrence';
 
+// Block-specific configuration types union
+export type BlockConfig =
+  | MeasurementConfig
+  | RatingConfig
+  | PortionConfig
+  | TimerConfig
+  | LocationConfig
+  | WeatherConfig
+  | ChecklistConfig
+  | AttachmentConfig
+  | CostConfig
+  | ReminderConfig
+  | PeopleConfig
+  | RecurrenceConfig
+  | SubcategoryConfig
+  | TitleConfig
+  | NotesConfig
+  | TimeConfig
+  | Record<string, unknown>; // For blocks without specific config or with additional properties
+
 // Block definition interface - defines structure of each block
 export interface ActivityBlockDef {
   id: string;
   type: ActivityBlockType;
   label?: string;
   required?: boolean;
-  config?: Record<string, any>;
+  config?: BlockConfig;
 }
 
 // Template definition for activity types
@@ -68,15 +89,64 @@ export interface ActivityTemplate {
 // Activity interaction modes
 export type ActivityMode = 'quick' | 'guided' | 'advanced';
 
+// Block data union type - all possible block values
+export type ActivityBlockData =
+  | MeasurementData
+  | RatingData
+  | PortionData
+  | TimerData
+  | LocationData
+  | WeatherData
+  | ChecklistData
+  | AttachmentData[]
+  | CostData
+  | ReminderData
+  | PeopleData
+  | RecurrenceData
+  | string // for title, notes, subcategory
+  | Date; // for time
+
 // Core activity form data structure - matches backend ActivityCreateRequest
 export interface ActivityFormData {
   petId: number;
   category: ActivityCategory;
   subcategory: string;
-  blocks: Record<string, any>;
+  blocks: Record<string, ActivityBlockData>;
 }
 
 // Block-specific data types
+
+// Supported attachment types (defined early for use in config)
+export const SUPPORTED_ATTACHMENT_TYPES = [
+  'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+  'image/bmp', 'image/tiff', 'image/tif',
+  'application/pdf', 'text/plain'
+] as const;
+
+export type SupportedAttachmentType = typeof SUPPORTED_ATTACHMENT_TYPES[number];
+
+// Title block configuration
+export interface TitleConfig {
+  placeholder?: string;
+  maxLength?: number;
+  hint?: string;
+}
+
+// Notes block configuration
+export interface NotesConfig {
+  placeholder?: string;
+  maxLength?: number;
+  hint?: string;
+}
+
+// Time block configuration
+export interface TimeConfig {
+  showDate?: boolean;
+  showTime?: boolean;
+  defaultToNow?: boolean;
+  allowFuture?: boolean;
+  hint?: string;
+}
 
 // Measurement block configuration and data
 export interface MeasurementConfig {
@@ -86,6 +156,7 @@ export interface MeasurementConfig {
   min?: number;
   max?: number;
   precision?: number;
+  hint?: string;
 }
 
 export interface MeasurementData {
@@ -95,12 +166,15 @@ export interface MeasurementData {
   notes?: string;
 }
 
+export type MeasurementValue = MeasurementData;
+
 // Rating block configuration and data
 export interface RatingConfig {
   scale: number; // e.g., 5 for 1-5 scale
   labels?: string[]; // Custom labels for each rating
   showEmojis?: boolean;
   ratingType: 'mood' | 'energy' | 'appetite' | 'behavior' | 'custom';
+  hint?: string;
 }
 
 export interface RatingData {
@@ -110,12 +184,15 @@ export interface RatingData {
   notes?: string;
 }
 
+export type RatingValue = RatingData;
+
 // Portion block configuration and data
 export interface PortionConfig {
   portionTypes: string[]; // ['cup', 'bowl', 'treat', 'custom']
   units: string[]; // ['g', 'ml', 'cups', 'pieces']
   defaultUnit?: string;
   showBrand?: boolean;
+  hint?: string;
 }
 
 export interface PortionData {
@@ -126,12 +203,15 @@ export interface PortionData {
   notes?: string;
 }
 
+export type PortionValue = PortionData;
+
 // Timer block configuration and data
 export interface TimerConfig {
   timerType: 'duration' | 'stopwatch' | 'start_end';
   showPresets?: boolean;
   presets?: number[]; // Duration presets in minutes
   maxDuration?: number; // Max duration in minutes
+  hint?: string;
 }
 
 export interface TimerData {
@@ -142,11 +222,14 @@ export interface TimerData {
   notes?: string;
 }
 
+export type TimerValue = TimerData;
+
 // Location block configuration and data
 export interface LocationConfig {
   allowCustomLocation: boolean;
   showMap?: boolean;
   commonLocations?: string[];
+  hint?: string;
 }
 
 export interface LocationData {
@@ -159,11 +242,14 @@ export interface LocationData {
   notes?: string;
 }
 
+export type LocationValue = LocationData | string | { lat: number; lng: number; } | boolean;
+
 // Weather block configuration and data
 export interface WeatherConfig {
   showTemperature: boolean;
   showConditions: boolean;
   temperatureUnit: 'C' | 'F';
+  hint?: string;
 }
 
 export interface WeatherData {
@@ -179,6 +265,7 @@ export interface ChecklistConfig {
   predefinedItems?: string[];
   allowCustomItems?: boolean;
   maxItems?: number;
+  hint?: string;
 }
 
 export interface ChecklistItem {
@@ -194,13 +281,16 @@ export interface ChecklistData {
   notes?: string;
 }
 
+export type ChecklistValue = ChecklistData;
+
 // Attachment block configuration and data
 export interface AttachmentConfig {
   maxFiles: number;
-  allowedTypes: string[];
+  allowedTypes: (SupportedAttachmentType | string)[];
   maxFileSize: number; // Size in bytes
   showOCR?: boolean;
   allowReordering?: boolean;
+  hint?: string;
 }
 
 export interface AttachmentData {
@@ -216,6 +306,8 @@ export interface AttachmentData {
   ocrText?: string;
 }
 
+export type AttachmentValue = AttachmentData[];
+
 // Cost block configuration and data
 export interface CostConfig {
   currencies: string[];
@@ -223,6 +315,7 @@ export interface CostConfig {
   showCategory?: boolean;
   categories?: string[];
   allowReceipt?: boolean;
+  hint?: string;
 }
 
 export interface CostData {
@@ -234,12 +327,15 @@ export interface CostData {
   notes?: string;
 }
 
+export type CostValue = CostData;
+
 // Reminder block configuration and data
 export interface ReminderConfig {
   reminderTypes: string[];
   allowCustom: boolean;
   showTime: boolean;
   showRepeat: boolean;
+  hint?: string;
 }
 
 export interface ReminderData {
@@ -258,6 +354,7 @@ export interface PeopleConfig {
   allowCustomType: boolean;
   showContact?: boolean;
   showRating?: boolean;
+  hint?: string;
 }
 
 export interface PersonData {
@@ -283,6 +380,7 @@ export interface RecurrenceConfig {
   allowCustom: boolean;
   presets: RecurrencePreset[];
   maxEndDate?: Date;
+  hint?: string;
 }
 
 export interface RecurrencePreset {
@@ -314,6 +412,7 @@ export interface SubcategoryConfig {
   subcategories: SubcategoryOption[];
   allowCustom?: boolean;
   showDescription?: boolean;
+  hint?: string;
 }
 
 export interface SubcategoryOption {
@@ -334,25 +433,25 @@ export interface ActivityEditorProps {
   initialData?: Partial<ActivityFormData>;
 }
 
-// Block renderer component props
+// Block renderer component props with strict types
 export interface BlockRendererProps {
   block: ActivityBlockDef;
-  control: any; // React Hook Form control
-  errors: any; // React Hook Form errors
-  watch: any; // React Hook Form watch
-  setValue: any; // React Hook Form setValue
+  control: Control<ActivityFormData>;
+  errors: FieldErrors<ActivityFormData>;
+  watch: UseFormWatch<ActivityFormData>;
+  setValue: UseFormSetValue<ActivityFormData>;
 }
 
-// Individual block component props interface
-export interface BlockProps<T = any> {
-  control: any;
-  name: string;
+// Individual block component props interface with strict generics
+export interface BlockProps<TConfig = unknown> {
+  control: Control<ActivityFormData>;
+  name: keyof ActivityFormData | `blocks.${string}`;
   label?: string;
   required?: boolean;
-  config?: T;
-  errors?: any;
-  watch?: any;
-  setValue?: any;
+  config?: TConfig;
+  errors?: FieldErrors<ActivityFormData>;
+  watch?: UseFormWatch<ActivityFormData>;
+  setValue?: UseFormSetValue<ActivityFormData>;
 }
 
 // Activity database record interface
@@ -361,7 +460,7 @@ export interface ActivityRecord {
   pet_id: number;
   category: string;
   subcategory: string;
-  activity_data: Record<string, any>; // Contains blocks data as JSON
+  activity_data: Record<string, ActivityBlockData>; // Contains blocks data as JSON
   created_at: string;
   updated_at: string;
 }
@@ -519,10 +618,6 @@ export const BLOCK_TYPES = [
 
 export const MAX_ATTACHMENTS = 10;
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-export const SUPPORTED_ATTACHMENT_TYPES = [
-  'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
-  'application/pdf', 'text/plain'
-];
 
 export const UNDO_TIMEOUT = 6000; // 6 seconds
 
@@ -551,7 +646,7 @@ export const DEFAULT_PORTION_CONFIG: PortionConfig = {
 
 export const DEFAULT_ATTACHMENT_CONFIG: AttachmentConfig = {
   maxFiles: MAX_ATTACHMENTS,
-  allowedTypes: SUPPORTED_ATTACHMENT_TYPES,
+  allowedTypes: [...SUPPORTED_ATTACHMENT_TYPES],
   maxFileSize: MAX_FILE_SIZE,
   showOCR: false,
   allowReordering: true,

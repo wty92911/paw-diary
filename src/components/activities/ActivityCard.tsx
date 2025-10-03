@@ -10,7 +10,7 @@ import {
   AlertTriangle,
   Trash2
 } from 'lucide-react';
-import { ActivityTimelineItem } from '../../lib/types/activities';
+import { type ActivityTimelineItem } from '../../lib/types/activities';
 import { formatRelativeTime, formatDate } from '../../lib/utils/dateUtils';
 import { 
   getCategoryColor, 

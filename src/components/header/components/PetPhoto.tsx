@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { User } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import { Pet, PetPhotoSize } from '../types';
+import { type Pet, PetPhotoSize } from '../types';
 
 // ============================================================================
 // Component Props

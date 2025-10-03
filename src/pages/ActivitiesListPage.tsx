@@ -331,8 +331,9 @@ function InvalidPetIdError({ message }: { message: string }) {
 /**
  * Error component for pet not found
  */
-function PetNotFoundError({ error }: { petId?: number; error: any }) {
+function PetNotFoundError({ error }: { petId?: number; error: string | Error }) {
   const navigate = useNavigate();
+  const errorMessage = typeof error === 'string' ? error : error.message;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 flex items-center justify-center">
@@ -340,7 +341,7 @@ function PetNotFoundError({ error }: { petId?: number; error: any }) {
         <CardContent className="text-center py-8">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Pet Not Found</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <p className="text-gray-600 mb-6">{errorMessage}</p>
           <div className="space-x-3">
             <Button onClick={() => navigate('/')} variant="outline">
               Return Home

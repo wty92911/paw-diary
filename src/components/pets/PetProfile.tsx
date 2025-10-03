@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pet } from '../../lib/types';
+import { type Pet } from '../../lib/types';
 import { useActivitiesList } from '../../hooks/useActivitiesList';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';

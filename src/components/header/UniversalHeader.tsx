@@ -8,7 +8,7 @@
 import { useMemo, useRef, useEffect } from 'react';
 import { cn } from '../../lib/utils';
 import { 
-  UniversalHeaderProps, 
+  type UniversalHeaderProps, 
   HeaderVariant,
   ColorScheme,
   ElevationLevel,

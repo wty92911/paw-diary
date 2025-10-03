@@ -61,16 +61,16 @@ export const Field: React.FC<FieldProps> = ({
 
       {/* Field content */}
       <div className="relative">
-        {React.isValidElement(children) ? 
-          React.cloneElement(children, {
+        {React.isValidElement(children) ?
+          React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
             id: fieldId,
-            'aria-describedby': error 
-              ? `${fieldId}-error` 
-              : hint 
-              ? `${fieldId}-hint` 
+            'aria-describedby': error
+              ? `${fieldId}-error`
+              : hint
+              ? `${fieldId}-hint`
               : undefined,
             'aria-invalid': error ? 'true' : 'false',
-          } as any) : children
+          }) : children
         }
       </div>
 
@@ -220,11 +220,7 @@ export const FieldHint: React.FC<{ hint?: string; fieldId?: string }> = ({
   );
 };
 
-// Utility function to get field props from React Hook Form
-export const getFieldProps = (field: any, fieldState: any) => ({
-  error: fieldState.error?.message,
-  'aria-invalid': fieldState.error ? 'true' : 'false',
-  'aria-describedby': fieldState.error ? `${field.name}-error` : undefined,
-});
+// Utility function moved to: ./utils/fieldProps
+// Import with: import { getFieldProps } from './utils/fieldProps';
 
 export default Field;

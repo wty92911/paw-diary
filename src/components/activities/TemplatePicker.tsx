@@ -6,7 +6,7 @@ import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Search, Clock } from 'lucide-react';
-import { ActivityTemplate, ActivityCategory } from '../../lib/types/activities';
+import { type ActivityTemplate, ActivityCategory } from '../../lib/types/activities';
 import { templateRegistry } from '../../lib/activityTemplates';
 import { updateActivityTemplate } from '../../utils/activityEditorParams';
 import { cn } from '../../lib/utils';

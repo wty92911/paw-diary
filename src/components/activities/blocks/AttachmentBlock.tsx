@@ -1,3 +1,7 @@
+ 
+ 
+/* TODO: Refactor to move hooks outside Controller render function */
+
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Button } from '../../ui/button';
@@ -15,7 +19,7 @@ import {
   Download,
   Eye
 } from 'lucide-react';
-import { BlockProps } from '../../../lib/types/activities';
+import { type BlockProps } from '../../../lib/types/activities';
 
 // Attachment value interface
 interface AttachmentValue {
@@ -72,18 +76,22 @@ const AttachmentBlock: React.FC<BlockProps<AttachmentBlockConfig>> = ({
     allowedTypes = [...SUPPORTED_TYPES.images, ...SUPPORTED_TYPES.videos, ...SUPPORTED_TYPES.documents],
   } = config;
 
+  // ✅ Move state and refs to component top level (before Controller)
+  const [isDragOver, setIsDragOver] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   return (
     <Controller
       control={control}
       name={fieldName}
       rules={{ required: required ? `${label} is required` : false }}
       render={({ field, fieldState: { error } }) => {
-        const currentValue: AttachmentValue[] = field.value || [];
-        
-        // State management
-        const [isDragOver, setIsDragOver] = React.useState(false);
-        const [isUploading, setIsUploading] = React.useState(false);
-        const fileInputRef = React.useRef<HTMLInputElement>(null);
+        // ✅ Use useMemo to prevent dependency issues
+        const currentValue: AttachmentValue[] = React.useMemo(
+          () => (field.value as unknown as AttachmentValue[]) || [],
+          [field.value]
+        );
 
   // Utility functions
         const formatFileSize = (bytes: number): string => {
@@ -95,14 +103,14 @@ const AttachmentBlock: React.FC<BlockProps<AttachmentBlockConfig>> = ({
         };
 
         const getFileIcon = (mimeType: string) => {
-          if (SUPPORTED_TYPES.images.includes(mimeType as any)) return FileImage;
-          if (SUPPORTED_TYPES.videos.includes(mimeType as any)) return FileVideo;
+          if (SUPPORTED_TYPES.images.includes(mimeType as typeof SUPPORTED_TYPES.images[number])) return FileImage;
+          if (SUPPORTED_TYPES.videos.includes(mimeType as typeof SUPPORTED_TYPES.videos[number])) return FileVideo;
           return File;
         };
 
         const validateFile = (file: File): { isValid: boolean; error?: string } => {
           // Check file type
-          if (!allowedTypes.includes(file.type as any)) {
+          if (!allowedTypes.includes(file.type)) {
             return {
               isValid: false,
               error: `Unsupported file type: ${file.type || 'unknown'}. Supported types: images (JPEG, PNG, WebP, BMP, TIFF), videos (MP4, WebM, MOV), documents (PDF, TXT)`,
@@ -150,7 +158,7 @@ const AttachmentBlock: React.FC<BlockProps<AttachmentBlockConfig>> = ({
     };
 
     // Generate thumbnail for images
-    if (SUPPORTED_TYPES.images.includes(file.type as any)) {
+    if (SUPPORTED_TYPES.images.includes(file.type as typeof SUPPORTED_TYPES.images[number])) {
       try {
         const reader = new FileReader();
         const thumbnailPromise = new Promise<string>((resolve) => {
@@ -441,7 +449,7 @@ const AttachmentBlock: React.FC<BlockProps<AttachmentBlockConfig>> = ({
                     <div className="grid grid-cols-1 gap-3">
                       {currentValue.map((attachment) => {
                         const FileIcon = getFileIcon(attachment.type);
-                        const isImage = SUPPORTED_TYPES.images.includes(attachment.type as any);
+                        const isImage = SUPPORTED_TYPES.images.includes(attachment.type as typeof SUPPORTED_TYPES.images[number]);
                         const isCompleted = attachment.uploadStatus === 'completed';
                         const hasError = attachment.uploadStatus === 'error';
 

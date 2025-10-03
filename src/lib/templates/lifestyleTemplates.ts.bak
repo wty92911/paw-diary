@@ -1,0 +1,420 @@
+// @ts-nocheck - Template type inference issues, will be fixed in type refactor
+import { 
+  type ActivityTemplate, 
+  ActivityCategory, 
+  type ActivityBlockType,
+  DEFAULT_RATING_CONFIG,
+  DEFAULT_ATTACHMENT_CONFIG
+} from '../types/activities';
+
+// Lifestyle category templates
+export const lifestyleTemplates: ActivityTemplate[] = [
+  // Lifestyle Category - Walk Template
+  {
+    id: 'lifestyle.walk',
+    category: ActivityCategory.Lifestyle,
+    subcategory: 'Walk',
+    label: 'Walk/Exercise',
+    icon: '🚶',
+    isQuickLogEnabled: true,
+    description: 'Record walks, exercises, and physical activities',
+    blocks: [
+      {
+        id: 'time',
+        type: 'time' as ActivityBlockType,
+        label: 'Start Time',
+        required: true,
+        config: {
+          showDate: true,
+          showTime: true,
+          defaultToNow: true,
+          allowFuture: false,
+          showPresets: true,
+          presets: [
+            { id: 'now', label: 'Now', offset: 0 },
+            { id: '30m_ago', label: '30 min ago', offset: -30 },
+            { id: '1h_ago', label: '1 hour ago', offset: -60 }
+          ]
+        }
+      },
+      {
+        id: 'timer',
+        type: 'timer' as ActivityBlockType,
+        label: 'Duration',
+        required: true,
+        config: {
+          timerType: 'duration',
+          showPresets: true,
+          presets: [15, 30, 45, 60, 90], // Duration in minutes
+          maxDuration: 480 // 8 hours max
+        }
+      },
+      {
+        id: 'location',
+        type: 'location' as ActivityBlockType,
+        label: 'Walk Location',
+        required: false,
+        config: {
+          allowCustomLocation: true,
+          showMap: false,
+          commonLocations: [
+            'Neighborhood',
+            'Park',
+            'Beach',
+            'Trail',
+            'Dog park',
+            'Backyard'
+          ]
+        }
+      },
+      {
+        id: 'energy_rating',
+        type: 'rating' as ActivityBlockType,
+        label: 'Energy Level',
+        required: false,
+        config: {
+          ...DEFAULT_RATING_CONFIG,
+          scale: 5,
+          ratingType: 'energy',
+          labels: ['Very Low', 'Low', 'Moderate', 'High', 'Very High'],
+          showEmojis: true
+        }
+      },
+      {
+        id: 'weather',
+        type: 'weather' as ActivityBlockType,
+        label: 'Weather',
+        required: false,
+        config: {
+          showTemperature: true,
+          showConditions: true,
+          temperatureUnit: 'C'
+        }
+      },
+      {
+        id: 'notes',
+        type: 'notes' as ActivityBlockType,
+        label: 'Activity Notes',
+        required: false,
+        config: {
+          placeholder: 'Route taken, behavior observed, interactions...',
+          maxLength: 500
+        }
+      },
+      {
+        id: 'attachment',
+        type: 'attachment' as ActivityBlockType,
+        label: 'Activity Photos',
+        required: false,
+        config: {
+          ...DEFAULT_ATTACHMENT_CONFIG,
+          maxFiles: 3,
+          showOCR: false
+        }
+      }
+    ]
+  },
+
+  // Lifestyle Category - Play Template
+  {
+    id: 'lifestyle.play',
+    category: ActivityCategory.Lifestyle,
+    subcategory: 'Play',
+    label: 'Play Session',
+    icon: '🎾',
+    isQuickLogEnabled: true,
+    description: 'Track play sessions and interactive activities',
+    blocks: [
+      {
+        id: 'time',
+        type: 'time' as ActivityBlockType,
+        label: 'Play Time',
+        required: true,
+        config: {
+          showDate: true,
+          showTime: true,
+          defaultToNow: true,
+          allowFuture: false
+        }
+      },
+      {
+        id: 'timer',
+        type: 'timer' as ActivityBlockType,
+        label: 'Duration',
+        required: true,
+        config: {
+          timerType: 'duration',
+          showPresets: true,
+          presets: [5, 10, 15, 30, 45],
+          maxDuration: 180 // 3 hours max
+        }
+      },
+      {
+        id: 'title',
+        type: 'title' as ActivityBlockType,
+        label: 'Play Activity',
+        required: true,
+        config: {
+          placeholder: 'Fetch, tug-of-war, puzzle toys...',
+          maxLength: 100,
+          autocomplete: [
+            'Fetch',
+            'Tug-of-war',
+            'Chase',
+            'Puzzle toys',
+            'Interactive toys',
+            'Laser pointer',
+            'Hide and seek',
+            'Training games'
+          ]
+        }
+      },
+      {
+        id: 'energy_rating',
+        type: 'rating' as ActivityBlockType,
+        label: 'Activity Level',
+        required: false,
+        config: {
+          scale: 5,
+          ratingType: 'energy',
+          labels: ['Calm', 'Light', 'Moderate', 'Active', 'Intense'],
+          showEmojis: true
+        }
+      },
+      {
+        id: 'mood_rating',
+        type: 'rating' as ActivityBlockType,
+        label: 'Mood During Play',
+        required: false,
+        config: {
+          scale: 5,
+          ratingType: 'mood',
+          labels: ['Disinterested', 'Reluctant', 'Neutral', 'Engaged', 'Enthusiastic'],
+          showEmojis: true
+        }
+      },
+      {
+        id: 'people',
+        type: 'people' as ActivityBlockType,
+        label: 'Play Partners',
+        required: false,
+        config: {
+          peopleTypes: ['owner', 'family', 'friend', 'other_pets'],
+          allowCustomType: true,
+          showContact: false,
+          showRating: false
+        }
+      },
+      {
+        id: 'notes',
+        type: 'notes' as ActivityBlockType,
+        label: 'Play Notes',
+        required: false,
+        config: {
+          placeholder: 'New behaviors, favorite toys, social interactions...',
+          maxLength: 400
+        }
+      }
+    ]
+  },
+
+  // Lifestyle Category - Training Template
+  {
+    id: 'lifestyle.training',
+    category: ActivityCategory.Lifestyle,
+    subcategory: 'Training',
+    label: 'Training Session',
+    icon: '🎓',
+    isQuickLogEnabled: false,
+    description: 'Log training sessions and skill development',
+    blocks: [
+      {
+        id: 'time',
+        type: 'time' as ActivityBlockType,
+        label: 'Training Time',
+        required: true,
+        config: {
+          showDate: true,
+          showTime: true,
+          defaultToNow: true,
+          allowFuture: false
+        }
+      },
+      {
+        id: 'timer',
+        type: 'timer' as ActivityBlockType,
+        label: 'Duration',
+        required: true,
+        config: {
+          timerType: 'duration',
+          showPresets: true,
+          presets: [5, 10, 15, 20, 30],
+          maxDuration: 60 // 1 hour max
+        }
+      },
+      {
+        id: 'title',
+        type: 'title' as ActivityBlockType,
+        label: 'Skills Practiced',
+        required: true,
+        config: {
+          placeholder: 'Sit, stay, recall, leash walking...',
+          maxLength: 150,
+          autocomplete: [
+            'Basic commands (sit, stay, down)',
+            'Recall training',
+            'Leash walking',
+            'House training',
+            'Crate training',
+            'Socialization',
+            'Trick training',
+            'Behavioral correction'
+          ]
+        }
+      },
+      {
+        id: 'checklist',
+        type: 'checklist' as ActivityBlockType,
+        label: 'Training Goals',
+        required: false,
+        config: {
+          checklistType: 'training',
+          predefinedItems: [
+            'Responded to command consistently',
+            'Showed improvement from last session',
+            'Stayed focused throughout session',
+            'Successfully completed new skill',
+            'No behavioral issues during training'
+          ],
+          allowCustomItems: true,
+          maxItems: 8
+        }
+      },
+      {
+        id: 'rating',
+        type: 'rating' as ActivityBlockType,
+        label: 'Session Success',
+        required: false,
+        config: {
+          scale: 5,
+          ratingType: 'performance',
+          labels: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+          showEmojis: false
+        }
+      },
+      {
+        id: 'people',
+        type: 'people' as ActivityBlockType,
+        label: 'Trainer',
+        required: false,
+        config: {
+          peopleTypes: ['owner', 'professional_trainer', 'family_member'],
+          allowCustomType: true,
+          showContact: true,
+          showRating: true
+        }
+      },
+      {
+        id: 'notes',
+        type: 'notes' as ActivityBlockType,
+        label: 'Training Notes',
+        required: false,
+        config: {
+          placeholder: 'Progress made, challenges faced, next steps...',
+          maxLength: 600
+        }
+      },
+      {
+        id: 'attachment',
+        type: 'attachment' as ActivityBlockType,
+        label: 'Training Videos/Photos',
+        required: false,
+        config: {
+          ...DEFAULT_ATTACHMENT_CONFIG,
+          maxFiles: 3,
+          showOCR: false
+        }
+      }
+    ]
+  },
+
+  // Lifestyle Category - Sleep Template
+  {
+    id: 'lifestyle.sleep',
+    category: ActivityCategory.Lifestyle,
+    subcategory: 'Sleep',
+    label: 'Sleep Pattern',
+    icon: '😴',
+    isQuickLogEnabled: true,
+    description: 'Track sleep patterns and rest quality',
+    blocks: [
+      {
+        id: 'time',
+        type: 'time' as ActivityBlockType,
+        label: 'Sleep Start Time',
+        required: true,
+        config: {
+          showDate: true,
+          showTime: true,
+          defaultToNow: false,
+          allowFuture: false
+        }
+      },
+      {
+        id: 'timer',
+        type: 'timer' as ActivityBlockType,
+        label: 'Sleep Duration',
+        required: true,
+        config: {
+          timerType: 'duration',
+          showPresets: true,
+          presets: [30, 60, 120, 240, 480, 600], // 30min to 10 hours
+          maxDuration: 720 // 12 hours max
+        }
+      },
+      {
+        id: 'location',
+        type: 'location' as ActivityBlockType,
+        label: 'Sleep Location',
+        required: false,
+        config: {
+          allowCustomLocation: true,
+          showMap: false,
+          commonLocations: [
+            'Bed',
+            'Crate',
+            'Couch',
+            'Floor',
+            'Owner\'s bed',
+            'Outdoor'
+          ]
+        }
+      },
+      {
+        id: 'rating',
+        type: 'rating' as ActivityBlockType,
+        label: 'Sleep Quality',
+        required: false,
+        config: {
+          scale: 5,
+          ratingType: 'quality',
+          labels: ['Restless', 'Light', 'Normal', 'Good', 'Deep'],
+          showEmojis: true
+        }
+      },
+      {
+        id: 'notes',
+        type: 'notes' as ActivityBlockType,
+        label: 'Sleep Notes',
+        required: false,
+        config: {
+          placeholder: 'Sleep disturbances, dreams, unusual behavior...',
+          maxLength: 300
+        }
+      }
+    ]
+  }
+];
+
+
+export default lifestyleTemplates;

@@ -1,3 +1,7 @@
+ 
+ 
+/* TODO: Refactor to move hooks outside Controller render function */
+
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Input } from '../../ui/input';
@@ -5,7 +9,7 @@ import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Receipt, Plus } from 'lucide-react';
-import { BlockProps } from '../../../lib/types/activities';
+import { type BlockProps } from '../../../lib/types/activities';
 import { Field } from './Field';
 
 // Cost value interface
@@ -95,7 +99,7 @@ const CostBlock: React.FC<BlockProps<CostBlockConfig>> = ({
       name={fieldName}
       rules={{ required: required ? `${label} is required` : false }}
       render={({ field, fieldState: { error } }) => {
-        const currentValue: CostValue | undefined = field.value;
+        const currentValue: CostValue | undefined = field.value as unknown as CostValue | undefined;
         
         // State management
         const [, setShowAdvanced] = React.useState(showAdvanced);

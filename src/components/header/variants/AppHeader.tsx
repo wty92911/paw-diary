@@ -6,7 +6,7 @@
  */
 
 import { cn } from '../../../lib/utils';
-import { AppHeaderProps } from '../types';
+import { type AppHeaderProps } from '../types';
 import { HeaderBrand } from '../components/HeaderBrand';
 import { HeaderActions } from '../components/HeaderActions';
 import { PawPrint, Sparkles } from 'lucide-react';

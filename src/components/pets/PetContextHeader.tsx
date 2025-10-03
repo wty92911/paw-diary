@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
-import { Pet } from '../../lib/types';
+import { type Pet } from '../../lib/types';
 import { Button } from '../ui/button';
 import { PetProfilePhoto } from './PetProfilePhoto';
 import { cn } from '../../lib/utils';

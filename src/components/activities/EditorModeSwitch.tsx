@@ -2,7 +2,7 @@
 import { useSearchParams } from 'react-router-dom';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { ActivityMode } from '../../lib/types/activities';
+import { type ActivityMode } from '../../lib/types/activities';
 import { updateActivityMode } from '../../utils/activityEditorParams';
 import { cn } from '../../lib/utils';
 

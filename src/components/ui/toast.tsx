@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
+// Toast exports both component and utility hooks
+
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -39,12 +42,16 @@ interface ToastProviderProps {
   defaultDuration?: number;
 }
 
-export function ToastProvider({ 
-  children, 
-  maxToasts = 5, 
-  defaultDuration = 4000 
+export function ToastProvider({
+  children,
+  maxToasts = 5,
+  defaultDuration = 4000
 }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
 
   const addToast = useCallback((toastData: Omit<Toast, 'id'>) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -68,11 +75,7 @@ export function ToastProvider({
     }
 
     return id;
-  }, [defaultDuration, maxToasts]);
-
-  const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  }, []);
+  }, [defaultDuration, maxToasts, removeToast]);
 
   const clearAllToasts = useCallback(() => {
     setToasts([]);

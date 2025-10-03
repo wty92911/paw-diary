@@ -1,14 +1,17 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { 
-  Control, 
-  FieldErrors, 
-  UseFormWatch, 
-  UseFormSetValue,
-  UseFormGetValues,
-  UseFormTrigger,
-  FieldPath
+/* eslint-disable react-refresh/only-export-components */
+// FormContext provides both the context and related hooks
+// Splitting them would cause circular dependencies
+import React, { createContext, useContext, type ReactNode } from 'react';
+import {
+  type Control,
+  type FieldErrors,
+  type UseFormWatch, 
+  type UseFormSetValue,
+  type UseFormGetValues,
+  type UseFormTrigger,
+  type FieldPath
 } from 'react-hook-form';
-import { ActivityFormData, ActivityTemplate } from '../../../lib/types/activities';
+import { type ActivityFormData, type ActivityTemplate, type ActivityBlockData } from '../../../lib/types/activities';
 
 // Form context interface
 export interface FormContextValue {
@@ -39,9 +42,9 @@ export interface FormContextValue {
   saveDraft: () => Promise<void>;
   isDraftSaving: boolean;
   lastDraftSave?: Date;
-  
+
   // Form actions
-  onFieldChange: (fieldName: FieldPath<ActivityFormData>, value: any) => void;
+  onFieldChange: (fieldName: FieldPath<ActivityFormData>, value: ActivityBlockData) => void;
   onFieldBlur: (fieldName: FieldPath<ActivityFormData>) => void;
   onFieldFocus: (fieldName: FieldPath<ActivityFormData>) => void;
 }
@@ -107,8 +110,7 @@ export const FormProvider: React.FC<FormProviderProps> = ({
   // Helper function to validate a specific field
   const validateField = React.useCallback(async (fieldName: FieldPath<ActivityFormData>) => {
     try {
-      const result = await trigger(fieldName);
-      return result;
+      return await trigger(fieldName);
     } catch (error) {
       console.error('Field validation error:', error);
       return false;
@@ -121,9 +123,9 @@ export const FormProvider: React.FC<FormProviderProps> = ({
   }, []);
 
   // Field change handler with auto-save
-  const onFieldChange = React.useCallback((fieldName: FieldPath<ActivityFormData>, value: any) => {
+  const onFieldChange = React.useCallback((fieldName: FieldPath<ActivityFormData>, value: ActivityBlockData) => {
     setValue(fieldName, value);
-    
+
     // Auto-save draft after a delay (debounced in the parent component)
     if (saveDraft && isDirty) {
       saveDraft();
@@ -201,14 +203,15 @@ export const useFormContext = (): FormContextValue => {
 // Hook to get field-specific props
 export const useFieldProps = (fieldName: FieldPath<ActivityFormData>) => {
   const { errors, onFieldChange, onFieldBlur, onFieldFocus, validateField } = useFormContext();
-  
-  const error = (errors as any)[fieldName]?.message;
+
+  const errorObj = errors as Record<string, { message?: string }>;
+  const error = errorObj[fieldName]?.message;
   const hasError = !!error;
-  
+
   return {
     error,
     hasError,
-    onChange: (value: any) => onFieldChange(fieldName, value),
+    onChange: (value: ActivityBlockData) => onFieldChange(fieldName, value),
     onBlur: () => onFieldBlur(fieldName),
     onFocus: () => onFieldFocus(fieldName),
     validate: () => validateField(fieldName),
@@ -220,12 +223,13 @@ export const useFieldProps = (fieldName: FieldPath<ActivityFormData>) => {
 // Hook for block-level form state
 export const useBlockState = (blockId: string) => {
   const { watch, errors, setValue, getValues } = useFormContext();
-  
+
   const value = watch(blockId as FieldPath<ActivityFormData>);
-  const error = (errors as any)[blockId]?.message;
+  const errorObj = errors as Record<string, { message?: string }>;
+  const error = errorObj[blockId]?.message;
   const hasError = !!error;
-  
-  const updateValue = React.useCallback((newValue: any) => {
+
+  const updateValue = React.useCallback((newValue: ActivityBlockData) => {
     setValue(blockId as FieldPath<ActivityFormData>, newValue, {
       shouldValidate: true,
       shouldDirty: true,

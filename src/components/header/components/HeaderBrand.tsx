@@ -6,7 +6,7 @@
  */
 
 import { cn } from '../../../lib/utils';
-import { HeaderBrandProps, MAX_TITLE_LENGTH } from '../types';
+import { type HeaderBrandProps, MAX_TITLE_LENGTH } from '../types';
 
 // ============================================================================
 // Component Styles

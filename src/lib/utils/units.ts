@@ -322,8 +322,7 @@ export function convertUnits(
   const fromBaseValue = convertToBaseUnit(value, fromUnit);
   if (fromBaseValue === null) return null;
 
-  const result = convertFromBaseUnit(fromBaseValue, toUnit);
-  return result;
+  return convertFromBaseUnit(fromBaseValue, toUnit);
 }
 
 // Convert temperature between Celsius and Fahrenheit

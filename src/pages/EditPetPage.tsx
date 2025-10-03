@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Upload, X, Camera, Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import {
-  PetUpdateRequest,
+  type PetUpdateRequest,
   petFormSchema,
-  PetFormData,
+  type PetFormData,
   PetSpecies,
   PetGender,
   SPECIES_OPTIONS,

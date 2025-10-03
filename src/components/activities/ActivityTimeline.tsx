@@ -14,7 +14,7 @@ import {
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { cn } from '../../lib/utils';
-import { ActivityTimelineItem, ActivityCategory } from '../../lib/types/activities';
+import { type ActivityTimelineItem, ActivityCategory } from '../../lib/types/activities';
 import { getCategoryIcon } from '../../lib/ui/categoryTheme';
 import ActivityCard from './ActivityCard';
 

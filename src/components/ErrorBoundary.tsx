@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Alert } from './ui/alert';
@@ -220,60 +220,5 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 }
 
-// Higher-order component for easier usage
-export function withErrorBoundary<P extends object>(
-  Component: React.ComponentType<P>,
-  errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>,
-) {
-  return function WrappedComponent(props: P) {
-    return (
-      <ErrorBoundary {...errorBoundaryProps}>
-        <Component {...props} />
-      </ErrorBoundary>
-    );
-  };
-}
-
-// Hook for throwing errors to be caught by ErrorBoundary
-export function useErrorHandler() {
-  const throwError = React.useCallback((error: Error) => {
-    throw error;
-  }, []);
-
-  const throwActivityError = React.useCallback(
-    (message: string, petId?: number, context?: string) => {
-      const error = new Error(message);
-      error.name = 'ActivityError';
-      (error as any).petId = petId;
-      (error as any).context = context;
-      throw error;
-    },
-    [],
-  );
-
-  return { throwError, throwActivityError };
-}
-
-// Utility function for creating activity-specific error boundaries
-export function ActivityErrorBoundary({
-  children,
-  petId,
-  activityContext,
-  onError,
-}: {
-  children: ReactNode;
-  petId?: number;
-  activityContext?: string;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
-}) {
-  return (
-    <ErrorBoundary
-      petId={petId}
-      activityContext={activityContext}
-      onError={onError}
-      showRecovery={true}
-    >
-      {children}
-    </ErrorBoundary>
-  );
-}
+// Export only the ErrorBoundary component (helpers moved to separate file)
+export { withErrorBoundary, useErrorHandler } from './ErrorBoundary/errorHelpers.tsx';

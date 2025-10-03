@@ -5,7 +5,7 @@
  * These types ensure type safety and consistent integration across the application
  */
 
-import { ReactNode, ComponentType } from 'react';
+import { type ReactNode, type ComponentType } from 'react';
 
 // ============================================================================
 // Core Enums

@@ -11,7 +11,7 @@ import {
 import { Button } from '../../ui/button';
 import { Card } from '../../ui/card';
 import { Badge } from '../../ui/badge';
-import { BlockProps, MeasurementConfig, MeasurementData } from '../../../lib/types/activities';
+import { type BlockProps, type MeasurementConfig, type MeasurementData } from '../../../lib/types/activities';
 import { measurementBlockSchema } from '../../../lib/validation/activityBlocks';
 
 // Extended config interface for MeasurementBlock
@@ -117,9 +117,9 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
 
   const [convertedValue, setConvertedValue] = React.useState<string>('');
   const [conversionUnit, setConversionUnit] = React.useState<string>(units[1] || units[0]);
-  
-  const availablePresets = presetValues || 
-    (MEASUREMENT_PRESETS as any)[measurementType] || [];
+
+  const availablePresets = presetValues ||
+    (MEASUREMENT_PRESETS as Record<string, Array<{ value: number; label: string; unit: string }>>)[measurementType] || [];
 
   const handlePresetSelect = (
     preset: { value: number; label: string; unit: string },
@@ -160,19 +160,20 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
       }}
       rules={{
         required: required ? `${label} is required` : false,
-        validate: (value: MeasurementData) => {
+        validate: (value: unknown) => {
           // Use Zod validation
           const result = measurementBlockSchema.safeParse(value);
-          if (!result.success && (required || (value && value.value > 0))) {
+          const typedValue = value as MeasurementData | undefined;
+          if (!result.success && (required || (typedValue && typedValue.value > 0))) {
             return result.error.errors[0]?.message || 'Invalid measurement';
           }
-          
+
           // Additional validation
-          if (value && value.value !== undefined) {
-            if (value.value < min) {
+          if (typedValue && typedValue.value !== undefined) {
+            if (typedValue.value < min) {
               return `Value must be at least ${min}`;
             }
-            if (value.value > max) {
+            if (typedValue.value > max) {
               return `Value must not exceed ${max}`;
             }
           }
@@ -181,12 +182,14 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
         },
       }}
       render={({ field, fieldState }) => {
-        const currentValue: MeasurementData = field.value || {
-          value: 0,
-          unit: defaultUnit,
-          measurementType: measurementType,
-          notes: '',
-        };
+        const currentValue: MeasurementData = (typeof field.value === 'object' && field.value && 'value' in field.value)
+          ? field.value as MeasurementData
+          : {
+              value: 0,
+              unit: defaultUnit,
+              measurementType: measurementType,
+              notes: '',
+            };
 
         const handleValueChange = (newValue: string) => {
           const numericValue = parseFloat(newValue) || 0;

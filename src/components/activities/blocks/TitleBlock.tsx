@@ -2,7 +2,7 @@ import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Input } from '../../ui/input';
 import { useFormContext } from './FormContext';
-import { BlockProps } from '../../../lib/types/activities';
+import { type BlockProps } from '../../../lib/types/activities';
 import { titleBlockSchema } from '../../../lib/validation/activityBlocks';
 
 // Configuration interface for TitleBlock
@@ -31,7 +31,7 @@ const TitleBlock: React.FC<BlockProps<TitleBlockConfig>> = ({
   const { watch } = useFormContext();
 
   // Watch current value for character count
-  const currentValue = watch ? (watch as any)(name) : '';
+  const currentValue = watch ? watch(name as `blocks.${string}`) : '';
   const currentLength = typeof currentValue === 'string' ? currentValue.length : 0;
 
   return (
@@ -67,6 +67,7 @@ const TitleBlock: React.FC<BlockProps<TitleBlockConfig>> = ({
           <div className="space-y-1">
             <Input
               {...field}
+              value={typeof field.value === 'string' ? field.value : ''}
               type="text"
               placeholder={placeholder}
               maxLength={maxLength}

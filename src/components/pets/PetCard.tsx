@@ -1,4 +1,4 @@
-import { Pet, PetSpecies } from '../../lib/types';
+import { type Pet, PetSpecies } from '../../lib/types';
 import { cn } from '../../lib/utils';
 import { Dog, Cat } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';

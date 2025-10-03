@@ -9,7 +9,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BreadcrumbItem, BackAction, BackActionType, UseHeaderNavigationReturn } from '../types';
+import { type BreadcrumbItem, type BackAction, BackActionType, type UseHeaderNavigationReturn } from '../types';
 
 // ============================================================================
 // Constants
