@@ -5,19 +5,117 @@ use chrono::{DateTime, Utc};
 use sqlx::Row;
 
 impl super::PetDatabase {
-    /// Create a new activity
-    pub async fn create_activity(
+    /// Create a new activity with automatic side effects (pet profile updates)
+    /// This is the main entry point for activity creation with transactional integrity
+    pub async fn create_activity_with_side_effects(
         &self,
         activity_data: ActivityCreateRequest,
     ) -> Result<Activity, ActivityError> {
         log::debug!(
-            "[DB] create_activity: inserting activity for pet_id={}, category={}, subcategory={}",
+            "[DB] create_activity_with_side_effects: starting transaction for pet_id={}, category={}, subcategory={}",
             activity_data.pet_id,
             activity_data.category,
             activity_data.subcategory
         );
 
-        let now = Utc::now();
+        // Start a transaction for atomic operation
+        let mut tx = self.pool.begin().await.map_err(|e| {
+            log::error!(
+                "[DB] create_activity_with_side_effects: failed to begin transaction, error={e}"
+            );
+            ActivityError::InvalidData {
+                message: format!("Failed to start transaction: {e}"),
+            }
+        })?;
+
+        // Create the activity (using the underlying method)
+        let activity = self
+            .create_activity_in_transaction(&mut tx, activity_data.clone())
+            .await?;
+
+        // Apply side effects based on activity type
+        if let Some(ref data) = activity.activity_data {
+            if data.should_update_pet_profile() {
+                log::debug!(
+                    "[DB] create_activity_with_side_effects: activity triggers pet profile update, activity_id={}",
+                    activity.id
+                );
+
+                // Update pet weight if this is a weight activity
+                if let Some(weight_kg) = data.extract_weight_kg() {
+                    log::info!(
+                        "[DB] create_activity_with_side_effects: updating pet weight to {} kg for pet_id={}",
+                        weight_kg,
+                        activity.pet_id
+                    );
+
+                    sqlx::query("UPDATE pets SET weight_kg = ?, updated_at = ? WHERE id = ?")
+                        .bind(weight_kg)
+                        .bind(chrono::Utc::now())
+                        .bind(activity.pet_id)
+                        .execute(&mut *tx)
+                        .await
+                        .map_err(|e| {
+                            log::error!(
+                                "[DB] create_activity_with_side_effects: failed to update pet weight, error={e}"
+                            );
+                            ActivityError::InvalidData {
+                                message: format!("Failed to update pet weight: {e}"),
+                            }
+                        })?;
+
+                    log::debug!(
+                        "[DB] create_activity_with_side_effects: successfully updated pet weight for pet_id={}",
+                        activity.pet_id
+                    );
+                }
+            }
+        }
+
+        // Commit the transaction
+        tx.commit().await.map_err(|e| {
+            log::error!(
+                "[DB] create_activity_with_side_effects: failed to commit transaction, error={e}"
+            );
+            ActivityError::InvalidData {
+                message: format!("Failed to commit transaction: {e}"),
+            }
+        })?;
+
+        log::info!(
+            "[DB] create_activity_with_side_effects: successfully created activity_id={} with side effects",
+            activity.id
+        );
+
+        Ok(activity)
+    }
+
+    /// Create a new activity within a transaction (internal use)
+    async fn create_activity_in_transaction(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+        activity_data: ActivityCreateRequest,
+    ) -> Result<Activity, ActivityError> {
+        log::debug!(
+            "[DB] create_activity_in_transaction: inserting activity for pet_id={}, category={}, subcategory={}",
+            activity_data.pet_id,
+            activity_data.category,
+            activity_data.subcategory
+        );
+
+        let now = chrono::Utc::now();
+
+        // Serialize ActivityData to JSON string for database storage
+        let activity_data_json = activity_data.activity_data.as_ref().and_then(|data| {
+            serde_json::to_string(data)
+                .map_err(|e| {
+                    log::error!(
+                        "[DB] create_activity_in_transaction: failed to serialize activity_data, error={e}"
+                    );
+                    e
+                })
+                .ok()
+        });
 
         // Insert the activity
         let result = sqlx::query(
@@ -31,7 +129,76 @@ impl super::PetDatabase {
         .bind(activity_data.pet_id)
         .bind(activity_data.category.to_string())
         .bind(&activity_data.subcategory)
-        .bind(activity_data.activity_data.as_ref().map(|v| v.to_string()))
+        .bind(activity_data_json)
+        .bind(now)
+        .bind(now)
+        .execute(&mut **tx)
+        .await
+        .map_err(|e| {
+            log::error!(
+                "[DB] create_activity_in_transaction: insert failed for pet_id={}, error={}",
+                activity_data.pet_id,
+                e
+            );
+            ActivityError::InvalidData {
+                message: format!("Database error: {e}"),
+            }
+        })?;
+
+        let activity_id = result.last_insert_rowid();
+        log::debug!("[DB] create_activity_in_transaction: inserted activity with id={activity_id}");
+
+        // Retrieve the created activity
+        let row = sqlx::query("SELECT * FROM activities WHERE id = ?")
+            .bind(activity_id)
+            .fetch_one(&mut **tx)
+            .await
+            .map_err(|e| ActivityError::InvalidData {
+                message: format!("Failed to retrieve created activity: {e}"),
+            })?;
+
+        self.row_to_activity(&row).await
+    }
+
+    /// Create a new activity (legacy method without side effects, kept for backward compatibility)
+    pub async fn create_activity(
+        &self,
+        activity_data: ActivityCreateRequest,
+    ) -> Result<Activity, ActivityError> {
+        log::debug!(
+            "[DB] create_activity: inserting activity for pet_id={}, category={}, subcategory={}",
+            activity_data.pet_id,
+            activity_data.category,
+            activity_data.subcategory
+        );
+
+        let now = Utc::now();
+
+        // Serialize ActivityData to JSON string for database storage
+        let activity_data_json = activity_data.activity_data.as_ref().and_then(|data| {
+            serde_json::to_string(data)
+                .map_err(|e| {
+                    log::error!(
+                        "[DB] create_activity: failed to serialize activity_data, error={e}"
+                    );
+                    e
+                })
+                .ok()
+        });
+
+        // Insert the activity
+        let result = sqlx::query(
+            r#"
+            INSERT INTO activities (
+                pet_id, category, subcategory, activity_data, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            "#,
+        )
+        .bind(activity_data.pet_id)
+        .bind(activity_data.category.to_string())
+        .bind(&activity_data.subcategory)
+        .bind(activity_data_json)
         .bind(now)
         .bind(now)
         .execute(&self.pool)
@@ -86,8 +253,12 @@ impl super::PetDatabase {
             if let Some(subcategory) = activity_data.subcategory {
                 query = query.bind(subcategory);
             }
-            if let Some(activity_data_json) = activity_data.activity_data {
-                query = query.bind(activity_data_json.to_string());
+            if let Some(data) = activity_data.activity_data {
+                let json_str =
+                    serde_json::to_string(&data).map_err(|e| ActivityError::InvalidData {
+                        message: format!("Failed to serialize activity_data: {e}"),
+                    })?;
+                query = query.bind(json_str);
             }
 
             query = query.bind(now).bind(id);
@@ -482,6 +653,22 @@ impl super::PetDatabase {
                     message: format!("Invalid updated_at: {e}"),
                 })?;
 
+        // Parse activity_data with backward compatibility
+        let activity_data_json: Option<String> = row.try_get("activity_data").ok();
+        let activity_data = activity_data_json.and_then(|json_str| {
+            // Parse JSON string to Value first
+            serde_json::from_str::<serde_json::Value>(&json_str)
+                .ok()
+                .map(|json_value| {
+                    // Try to parse as typed ActivityData, with legacy migration fallback
+                    serde_json::from_value::<super::ActivityData>(json_value.clone())
+                        .unwrap_or_else(|_| {
+                            log::debug!("[DB] Migrating legacy activity_data to typed format");
+                            super::ActivityData::from_legacy_json(json_value)
+                        })
+                })
+        });
+
         Ok(Activity {
             id: row.try_get("id").map_err(|e| ActivityError::InvalidData {
                 message: format!("Invalid id: {e}"),
@@ -497,11 +684,7 @@ impl super::PetDatabase {
                 .map_err(|e| ActivityError::InvalidData {
                     message: format!("Invalid subcategory: {e}"),
                 })?,
-            activity_data: row.try_get("activity_data").map_err(|e| {
-                ActivityError::InvalidData {
-                    message: format!("Invalid activity_data: {e}"),
-                }
-            })?,
+            activity_data,
             created_at,
             updated_at,
         })

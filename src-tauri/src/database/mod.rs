@@ -1,8 +1,10 @@
 pub mod activities;
+pub mod activity_data;
 pub mod fts;
 pub mod models;
 pub mod pets;
 
+pub use activity_data::ActivityData;
 pub use models::*;
 
 use anyhow::Result;

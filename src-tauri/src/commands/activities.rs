@@ -3,7 +3,7 @@ use crate::database::{Activity, ActivityCreateRequest, ActivityUpdateRequest};
 use crate::errors::ActivityError;
 use tauri::State;
 
-/// Create a new activity
+/// Create a new activity with automatic pet profile updates
 #[tauri::command]
 pub async fn create_activity(
     state: State<'_, AppState>,
@@ -14,7 +14,9 @@ pub async fn create_activity(
         activity_data.pet_id,
         activity_data.category,
         activity_data.subcategory,
-        activity_data.activity_data.as_ref().map(|v| v.to_string()).unwrap_or("null".to_string())
+        activity_data.activity_data.as_ref()
+            .and_then(|v| serde_json::to_string(v).ok())
+            .unwrap_or("null".to_string())
     );
 
     // Verify pet exists
@@ -30,14 +32,19 @@ pub async fn create_activity(
         ));
     }
 
-    match state.database.create_activity(activity_data).await {
+    // Create activity with automatic pet profile updates
+    match state
+        .database
+        .create_activity_with_side_effects(activity_data)
+        .await
+    {
         Ok(activity) => {
             log::info!(
                 "[CREATE_ACTIVITY] Success: created activity_id={} for pet_id={}",
                 activity.id,
                 activity.pet_id
             );
-            log::debug!("[CREATE_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"created_at\": \"{}\"}}", 
+            log::debug!("[CREATE_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"created_at\": \"{}\"}}",
                 activity.id, activity.pet_id, activity.category, activity.subcategory, activity.created_at
             );
             Ok(activity)
@@ -61,7 +68,9 @@ pub async fn update_activity(
         activity_id,
         updates.category,
         updates.subcategory,
-        updates.activity_data.as_ref().map(|v| v.to_string()).unwrap_or("null".to_string())
+        updates.activity_data.as_ref()
+            .and_then(|v| serde_json::to_string(v).ok())
+            .unwrap_or("null".to_string())
     );
 
     if activity_id <= 0 {
@@ -135,9 +144,12 @@ pub async fn get_activity(
                 activity.id,
                 activity.pet_id
             );
-            log::debug!("[GET_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"created_at\": \"{}\", \"activity_data_size\": {}}}", 
+            log::debug!("[GET_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"created_at\": \"{}\", \"activity_data_size\": {}}}",
                 activity.id, activity.pet_id, activity.category, activity.subcategory, activity.created_at,
-                activity.activity_data.as_ref().map(|v| v.to_string().len()).unwrap_or(0)
+                activity.activity_data.as_ref()
+                    .and_then(|v| serde_json::to_string(v).ok())
+                    .map(|s| s.len())
+                    .unwrap_or(0)
             );
             Ok(activity)
         }
