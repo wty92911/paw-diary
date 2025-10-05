@@ -16,6 +16,7 @@ export const dietTemplates: ActivityTemplate[] = [
     label: 'Feeding',
     icon: '🍽️',
     isQuickLogEnabled: true,
+    isAvailable: true, // ✅ Tested and implemented
     description: 'Record feeding sessions with food type, portion, and timing',
     blocks: [
       {
@@ -91,6 +92,7 @@ export const dietTemplates: ActivityTemplate[] = [
     label: 'Water Intake',
     icon: '💧',
     isQuickLogEnabled: true,
+    isAvailable: true, // ✅ Tested and implemented
     description: 'Track daily water consumption',
     blocks: [
       {
@@ -138,6 +140,7 @@ export const dietTemplates: ActivityTemplate[] = [
     label: 'Treats & Rewards',
     icon: '🦴',
     isQuickLogEnabled: true,
+    isAvailable: false, // ⚠️ Not yet tested
     description: 'Log treats, rewards, and special snacks',
     blocks: [
       {

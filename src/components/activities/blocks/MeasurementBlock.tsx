@@ -154,7 +154,7 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
       control={control}
       name={name}
       defaultValue={{
-        value: 0,
+        value: undefined as unknown as number, // Start with undefined to force user input
         unit: defaultUnit,
         measurementType: measurementType,
         notes: '',
@@ -176,27 +176,32 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
 
           // Required field validation
           if (required) {
-            if (numValue === undefined || numValue === null || numValue === 0) {
-              return `${label} is required and must be greater than 0`;
+            if (numValue === undefined || numValue === null || Number.isNaN(numValue)) {
+              return `${label} is required`;
+            }
+            if (numValue <= 0) {
+              return `${label} must be greater than 0`;
             }
           }
 
           // Type validation - must be a valid number
-          if (typeof numValue !== 'number' || isNaN(numValue)) {
-            return 'Please enter a valid number';
-          }
+          if (numValue !== undefined && numValue !== null) {
+            if (typeof numValue !== 'number' || isNaN(numValue)) {
+              return 'Please enter a valid number';
+            }
 
-          // Must be greater than 0
-          if (numValue <= 0) {
-            return `${label} must be greater than 0`;
-          }
+            // Must be greater than 0
+            if (numValue <= 0) {
+              return `${label} must be greater than 0`;
+            }
 
-          // Range validation
-          if (numValue < min) {
-            return `Value must be at least ${min}`;
-          }
-          if (numValue > max) {
-            return `Value must not exceed ${max}`;
+            // Range validation
+            if (numValue < min) {
+              return `Value must be at least ${min}`;
+            }
+            if (numValue > max) {
+              return `Value must not exceed ${max}`;
+            }
           }
 
           // Use Zod validation for additional checks
@@ -212,13 +217,24 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
         const currentValue: MeasurementData = (typeof field.value === 'object' && field.value && 'value' in field.value)
           ? field.value as MeasurementData
           : {
-              value: 0,
+              value: undefined as unknown as number,
               unit: defaultUnit,
               measurementType: measurementType,
               notes: '',
             };
 
         const handleValueChange = (newValue: string) => {
+          // Handle empty input
+          if (newValue === '' || newValue === undefined) {
+            const updatedValue = {
+              ...currentValue,
+              value: undefined as unknown as number,
+            };
+            field.onChange(updatedValue);
+            setConvertedValue('');
+            return;
+          }
+
           // Check if input exceeds precision limit
           if (newValue && precision > 0) {
             const parts = newValue.split('.');
@@ -229,14 +245,17 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
           }
 
           // Parse to number
-          const numericValue = parseFloat(newValue) || 0;
+          const numericValue = parseFloat(newValue);
 
-          const updatedValue = {
-            ...currentValue,
-            value: numericValue,
-          };
-          field.onChange(updatedValue);
-          handleConversion(numericValue, updatedValue.unit);
+          // Only update if valid number
+          if (!isNaN(numericValue)) {
+            const updatedValue = {
+              ...currentValue,
+              value: numericValue,
+            };
+            field.onChange(updatedValue);
+            handleConversion(numericValue, updatedValue.unit);
+          }
         };
 
         const handleUnitChange = (newUnit: string) => {
@@ -245,7 +264,9 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
             unit: newUnit,
           };
           field.onChange(updatedValue);
-          handleConversion(currentValue.value, newUnit);
+          if (currentValue.value !== undefined && currentValue.value !== null) {
+            handleConversion(currentValue.value, newUnit);
+          }
         };
 
         const handleTypeChange = (newType: string) => {
@@ -295,16 +316,17 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
                   <Input
                     type="number"
                     placeholder={`Enter ${measurementType}...`}
-                    value={currentValue.value || ''}
+                    value={currentValue.value !== undefined && currentValue.value !== null ? currentValue.value : ''}
                     onChange={(e) => handleValueChange(e.target.value)}
                     min={min}
                     max={max}
                     step={precision === 0 ? 1 : 1 / Math.pow(10, precision)}
                     aria-invalid={fieldState.error ? 'true' : 'false'}
+                    className={fieldState.error ? 'border-red-500' : ''}
                   />
                 </div>
                 <div className="w-24">
-                  <Select value={currentValue.unit} onValueChange={handleUnitChange}>
+                  <Select value={currentValue.unit || defaultUnit} onValueChange={handleUnitChange}>
                     <SelectTrigger className="h-10">
                       <SelectValue />
                     </SelectTrigger>
@@ -391,10 +413,10 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
               )}
 
               {/* Current value display */}
-              {currentValue.value > 0 && (
+              {currentValue.value !== undefined && currentValue.value !== null && currentValue.value > 0 && (
                 <div className="text-sm text-muted-foreground">
                   Current: <span className="font-medium">
-                    {formatValue(currentValue.value)} {currentValue.unit}
+                    {formatValue(currentValue.value)} {currentValue.unit || defaultUnit}
                   </span>
                   {currentValue.notes && (
                     <span className="ml-2 italic">"{currentValue.notes}"</span>

@@ -217,13 +217,42 @@ export class ActivityDataAdapter {
         return blocks;
       }
 
-      case 'Vaccination':
-      case 'CheckUp':
-        // TODO: Implement when VaccinationBlock and CheckUpBlock are created
-        // For now, return as custom data
-        return {
-          custom: activityData.data as unknown as ActivityBlockData,
+      case 'Vaccination': {
+        const vaccinationBlock: Record<string, unknown> = {
+          vaccineName: activityData.data.vaccine_name,
+          vetName: activityData.data.vet_name,
+          nextDueDate: activityData.data.next_due_date,
+          batchNumber: activityData.data.batch_number,
         };
+
+        const blocks: Record<string, ActivityBlockData> = {
+          vaccination: vaccinationBlock as unknown as ActivityBlockData,
+        };
+
+        if (activityData.data.notes) {
+          blocks.notes = activityData.data.notes;
+        }
+
+        return blocks;
+      }
+
+      case 'CheckUp': {
+        const checkupBlock: Record<string, unknown> = {
+          diagnosis: activityData.data.diagnosis,
+          temperature: activityData.data.temperature,
+          heartRate: activityData.data.heart_rate,
+        };
+
+        const blocks: Record<string, ActivityBlockData> = {
+          checkup: checkupBlock as unknown as ActivityBlockData,
+        };
+
+        if (activityData.data.notes) {
+          blocks.notes = activityData.data.notes;
+        }
+
+        return blocks;
+      }
 
       case 'Custom':
         return activityData.data as Record<string, ActivityBlockData>;

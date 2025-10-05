@@ -15,6 +15,7 @@ export const expenseTemplates: ActivityTemplate[] = [
     label: 'Purchase',
     icon: '💰',
     isQuickLogEnabled: true,
+    isAvailable: false, // ⚠️ Not yet tested
     description: 'Track purchases of food, toys, supplies, and services',
     blocks: [
       {
@@ -109,6 +110,7 @@ export const expenseTemplates: ActivityTemplate[] = [
     label: 'Veterinary Expense',
     icon: '🏥',
     isQuickLogEnabled: false,
+    isAvailable: false, // ⚠️ Not yet tested
     description: 'Track veterinary visits and medical expenses',
     blocks: [
       {
@@ -244,6 +246,7 @@ export const expenseTemplates: ActivityTemplate[] = [
     label: 'Grooming Service',
     icon: '✂️',
     isQuickLogEnabled: true,
+    isAvailable: false, // ⚠️ Not yet tested
     description: 'Track grooming appointments and costs',
     blocks: [
       {

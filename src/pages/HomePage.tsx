@@ -214,19 +214,17 @@ export function HomePage() {
             ))}
           </div>
         </div>
-
-        {/* Floating Add Pet Button - Fixed at Bottom */}
-        <div className="fixed bottom-8 right-8 z-50">
-          <Button
-            size="lg"
-            onClick={handleAddPet}
-            className="h-16 w-16 rounded-full shadow-2xl bg-gradient-to-br from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white transition-all duration-300 hover:scale-110"
-            aria-label="Add New Pet"
-          >
-            <Plus className="w-8 h-8" />
-          </Button>
-        </div>
       </IOSContentLayout>
+
+      {/* Floating Add Pet Button - Consistent with Activities button style */}
+      <Button
+        onClick={handleAddPet}
+        size="lg"
+        className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg bg-orange-600 hover:bg-orange-700 text-white w-14 h-14 p-0 transition-transform hover:scale-105"
+        aria-label="Add New Pet"
+      >
+        <Plus className="w-6 h-6" />
+      </Button>
     </>
   );
 }
