@@ -242,7 +242,7 @@ pub struct ActivityCreateRequest {
     pub category: ActivityCategory,
     pub subcategory: String,
     #[serde(default)]
-    pub activity_data: Option<super::ActivityData>,
+    pub activity_data: Option<serde_json::Value>,
 }
 
 /// Request structure for updating an activity
@@ -251,7 +251,7 @@ pub struct ActivityUpdateRequest {
     pub category: Option<ActivityCategory>,
     pub subcategory: Option<String>,
     #[serde(default)]
-    pub activity_data: Option<super::ActivityData>,
+    pub activity_data: Option<serde_json::Value>,
 }
 
 /// Filters for activity queries

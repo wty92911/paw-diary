@@ -105,8 +105,13 @@ impl super::PetDatabase {
 
         let now = chrono::Utc::now();
 
+        // Convert frontend blocks format to typed ActivityData
+        let typed_activity_data = activity_data
+            .activity_data
+            .map(super::ActivityData::from_legacy_json);
+
         // Serialize ActivityData to JSON string for database storage
-        let activity_data_json = activity_data.activity_data.as_ref().and_then(|data| {
+        let activity_data_json = typed_activity_data.as_ref().and_then(|data| {
             serde_json::to_string(data)
                 .map_err(|e| {
                     log::error!(
@@ -174,8 +179,13 @@ impl super::PetDatabase {
 
         let now = Utc::now();
 
+        // Convert frontend blocks format to typed ActivityData
+        let typed_activity_data = activity_data
+            .activity_data
+            .map(super::ActivityData::from_legacy_json);
+
         // Serialize ActivityData to JSON string for database storage
-        let activity_data_json = activity_data.activity_data.as_ref().and_then(|data| {
+        let activity_data_json = typed_activity_data.as_ref().and_then(|data| {
             serde_json::to_string(data)
                 .map_err(|e| {
                     log::error!(
@@ -253,9 +263,11 @@ impl super::PetDatabase {
             if let Some(subcategory) = activity_data.subcategory {
                 query = query.bind(subcategory);
             }
-            if let Some(data) = activity_data.activity_data {
+            if let Some(json_value) = activity_data.activity_data {
+                // Convert frontend blocks format to typed ActivityData
+                let typed_data = super::ActivityData::from_legacy_json(json_value);
                 let json_str =
-                    serde_json::to_string(&data).map_err(|e| ActivityError::InvalidData {
+                    serde_json::to_string(&typed_data).map_err(|e| ActivityError::InvalidData {
                         message: format!("Failed to serialize activity_data: {e}"),
                     })?;
                 query = query.bind(json_str);
