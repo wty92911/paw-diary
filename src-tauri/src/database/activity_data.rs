@@ -10,6 +10,7 @@ pub enum ActivityData {
     /// Weight measurement activity (Growth category)
     /// Automatically updates Pet.weight_kg when created
     Weight {
+        time: Option<DateTime<Utc>>, // Activity timestamp
         value: f32,
         unit: String,
         measurement_type: String,
@@ -19,6 +20,7 @@ pub enum ActivityData {
     /// Height/Length measurement activity (Growth category)
     /// Can be used for tracking growth in young pets
     Height {
+        time: Option<DateTime<Utc>>, // Activity timestamp
         value: f32,
         unit: String,
         measurement_type: String,
@@ -28,6 +30,8 @@ pub enum ActivityData {
     /// Feeding activity (Diet category)
     /// Used for meal tracking and portion analysis
     Feeding {
+        title: Option<String>,       // Meal description (e.g., "Breakfast", "Dinner")
+        time: Option<DateTime<Utc>>, // Activity timestamp
         portion_type: String,
         amount: f32,
         unit: String,
@@ -38,9 +42,10 @@ pub enum ActivityData {
     /// Water intake activity (Diet category)
     /// Track daily hydration
     WaterIntake {
+        time: Option<DateTime<Utc>>, // Activity timestamp
         amount: f32,
         unit: String,
-        source: Option<String>,
+        source: Option<String>, // Bowl, bottle, or fountain
         notes: Option<String>,
     },
 
@@ -80,7 +85,7 @@ impl ActivityData {
         // Attempt to migrate known patterns from frontend block structure
         if let Some(obj) = value.as_object() {
             // Pattern 1: Weight measurement from MeasurementBlock
-            // Frontend sends: { "weight": { "value": 5.2, "unit": "kg", ... }, "notes": "..." }
+            // Frontend sends: { "weight": { "value": 5.2, "unit": "kg", ... }, "time": "...", "notes": "..." }
             if let Some(weight_block) = obj.get("weight").and_then(|v| v.as_object()) {
                 if let (Some(value), Some(unit)) = (
                     weight_block.get("value").and_then(|v| v.as_f64()),
@@ -94,7 +99,15 @@ impl ActivityData {
 
                     let notes = obj.get("notes").and_then(|v| v.as_str()).map(String::from);
 
+                    // Parse time from frontend (could be Date object serialized as ISO string)
+                    let time = obj
+                        .get("time")
+                        .and_then(|v| v.as_str())
+                        .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
+                        .map(|dt| dt.with_timezone(&Utc));
+
                     return ActivityData::Weight {
+                        time,
                         value: value as f32,
                         unit: unit.to_string(),
                         measurement_type,
@@ -117,7 +130,14 @@ impl ActivityData {
 
                     let notes = obj.get("notes").and_then(|v| v.as_str()).map(String::from);
 
+                    let time = obj
+                        .get("time")
+                        .and_then(|v| v.as_str())
+                        .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
+                        .map(|dt| dt.with_timezone(&Utc));
+
                     return ActivityData::Height {
+                        time,
                         value: value as f32,
                         unit: unit.to_string(),
                         measurement_type,
@@ -127,7 +147,7 @@ impl ActivityData {
             }
 
             // Pattern 3: Feeding from PortionBlock
-            // Frontend sends: { "portion": { "amount": 200, "unit": "g", "portionType": "meal", ... }, "notes": "..." }
+            // Frontend sends: { "title": "Breakfast", "time": "...", "portion": { "amount": 200, "unit": "g", "portionType": "meal", ... }, "notes": "..." }
             if let Some(portion_block) = obj.get("portion").and_then(|v| v.as_object()) {
                 if let (Some(amount), Some(unit), Some(portion_type)) = (
                     portion_block.get("amount").and_then(|v| v.as_f64()),
@@ -141,7 +161,17 @@ impl ActivityData {
 
                     let notes = obj.get("notes").and_then(|v| v.as_str()).map(String::from);
 
+                    let title = obj.get("title").and_then(|v| v.as_str()).map(String::from);
+
+                    let time = obj
+                        .get("time")
+                        .and_then(|v| v.as_str())
+                        .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
+                        .map(|dt| dt.with_timezone(&Utc));
+
                     return ActivityData::Feeding {
+                        title,
+                        time,
                         portion_type: portion_type.to_string(),
                         amount: amount as f32,
                         unit: unit.to_string(),
@@ -170,8 +200,15 @@ impl ActivityData {
                             let source = Some(portion_type.to_string());
                             let notes = obj.get("notes").and_then(|v| v.as_str()).map(String::from);
 
+                            let time = obj
+                                .get("time")
+                                .and_then(|v| v.as_str())
+                                .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
+                                .map(|dt| dt.with_timezone(&Utc));
+
                             // Note: This heuristic might need refinement with subcategory context
                             return ActivityData::WaterIntake {
+                                time,
                                 amount: amount as f32,
                                 unit: unit.to_string(),
                                 source,
@@ -192,6 +229,7 @@ impl ActivityData {
     pub fn to_frontend_blocks(&self) -> serde_json::Value {
         match self {
             ActivityData::Weight {
+                time,
                 value,
                 unit,
                 measurement_type,
@@ -205,6 +243,10 @@ impl ActivityData {
                     }
                 });
 
+                if let Some(time_val) = time {
+                    blocks["time"] = serde_json::json!(time_val.to_rfc3339());
+                }
+
                 if let Some(notes_text) = notes {
                     blocks["notes"] = serde_json::json!(notes_text);
                 }
@@ -213,6 +255,7 @@ impl ActivityData {
             }
 
             ActivityData::Height {
+                time,
                 value,
                 unit,
                 measurement_type,
@@ -226,6 +269,10 @@ impl ActivityData {
                     }
                 });
 
+                if let Some(time_val) = time {
+                    blocks["time"] = serde_json::json!(time_val.to_rfc3339());
+                }
+
                 if let Some(notes_text) = notes {
                     blocks["notes"] = serde_json::json!(notes_text);
                 }
@@ -234,6 +281,8 @@ impl ActivityData {
             }
 
             ActivityData::Feeding {
+                title,
+                time,
                 portion_type,
                 amount,
                 unit,
@@ -254,6 +303,14 @@ impl ActivityData {
                     "portion": portion
                 });
 
+                if let Some(title_text) = title {
+                    blocks["title"] = serde_json::json!(title_text);
+                }
+
+                if let Some(time_val) = time {
+                    blocks["time"] = serde_json::json!(time_val.to_rfc3339());
+                }
+
                 if let Some(notes_text) = notes {
                     blocks["notes"] = serde_json::json!(notes_text);
                 }
@@ -262,6 +319,7 @@ impl ActivityData {
             }
 
             ActivityData::WaterIntake {
+                time,
                 amount,
                 unit,
                 source,
@@ -279,6 +337,10 @@ impl ActivityData {
                 let mut blocks = serde_json::json!({
                     "portion": portion
                 });
+
+                if let Some(time_val) = time {
+                    blocks["time"] = serde_json::json!(time_val.to_rfc3339());
+                }
 
                 if let Some(notes_text) = notes {
                     blocks["notes"] = serde_json::json!(notes_text);
@@ -388,6 +450,7 @@ mod tests {
     #[test]
     fn test_weight_serialization() {
         let weight = ActivityData::Weight {
+            time: None,
             value: 5.2,
             unit: "kg".to_string(),
             measurement_type: "weight".to_string(),
@@ -504,6 +567,7 @@ mod tests {
     #[test]
     fn test_extract_weight_kg() {
         let weight = ActivityData::Weight {
+            time: None,
             value: 5000.0,
             unit: "g".to_string(),
             measurement_type: "weight".to_string(),
@@ -516,6 +580,7 @@ mod tests {
     #[test]
     fn test_to_frontend_blocks() {
         let weight = ActivityData::Weight {
+            time: None,
             value: 5.2,
             unit: "kg".to_string(),
             measurement_type: "weight".to_string(),
