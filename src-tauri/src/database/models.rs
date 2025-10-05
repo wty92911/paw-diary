@@ -1,3 +1,4 @@
+use super::activity_data::ActivityDataExt;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

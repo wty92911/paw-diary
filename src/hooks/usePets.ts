@@ -29,40 +29,40 @@ export function usePets(includeArchived = false): UsePetsState & UsePetsActions 
   const activePet = activePetId ? pets.find(pet => pet.id === activePetId) || null : null;
 
   const refetch = useCallback(async () => {
-    console.log('=== REFETCH PETS START ===');
-    console.log('includeArchived:', includeArchived);
+    // console.log('=== REFETCH PETS START ===');
+    // console.log('includeArchived:', includeArchived);
 
     try {
-      console.log('Setting isLoading to true');
+      // console.log('Setting isLoading to true');
       setIsLoading(true);
       setError(null);
 
-      console.log('Calling get_pets command...');
+      // console.log('Calling get_pets command...');
       const fetchedPets = await invoke<Pet[]>('get_pets', { includeArchived });
-      console.log('get_pets result:', fetchedPets);
-      console.log('Number of pets received:', fetchedPets?.length || 0);
+      // console.log('get_pets result:', fetchedPets);
+      // console.log('Number of pets received:', fetchedPets?.length || 0);
 
       setPets(fetchedPets);
-      console.log('Pets state updated successfully');
+      // console.log('Pets state updated successfully');
 
       // Auto-select first pet if no active pet is selected and pets exist
       if (!activePetId && fetchedPets.length > 0) {
         const firstActivePet = fetchedPets.find(pet => !pet.is_archived);
         if (firstActivePet) {
           setActivePetId(firstActivePet.id);
-          console.log('Auto-selected first pet:', firstActivePet.name);
+          // console.log('Auto-selected first pet:', firstActivePet.name);
         }
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch pets';
       console.error('Failed to fetch pets - Error details:', err);
-      console.error('Error type:', typeof err);
-      console.error('Error message:', errorMessage);
+      // console.error('Error type:', typeof err);
+      // console.error('Error message:', errorMessage);
       setError(errorMessage);
     } finally {
-      console.log('Setting isLoading to false');
+      // console.log('Setting isLoading to false');
       setIsLoading(false);
-      console.log('=== REFETCH PETS END ===');
+      // console.log('=== REFETCH PETS END ===');
     }
   }, [includeArchived, activePetId]);
 

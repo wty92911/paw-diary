@@ -1,3 +1,4 @@
+use super::activity_data::ActivityDataExt;
 use super::models::*;
 use crate::errors::ActivityError;
 use anyhow::Result;
@@ -105,10 +106,11 @@ impl super::PetDatabase {
 
         let now = chrono::Utc::now();
 
-        // Convert frontend blocks format to typed ActivityData
-        let typed_activity_data = activity_data
-            .activity_data
-            .map(super::ActivityData::from_legacy_json);
+        // Convert frontend blocks format to ActivityData HashMap
+        let typed_activity_data = activity_data.activity_data.map(|json_value| {
+            use super::activity_data::ActivityDataExt;
+            super::ActivityData::from_legacy_json(json_value)
+        });
 
         // Serialize ActivityData to JSON string for database storage
         let activity_data_json = typed_activity_data.as_ref().and_then(|data| {
@@ -179,10 +181,11 @@ impl super::PetDatabase {
 
         let now = Utc::now();
 
-        // Convert frontend blocks format to typed ActivityData
-        let typed_activity_data = activity_data
-            .activity_data
-            .map(super::ActivityData::from_legacy_json);
+        // Convert frontend blocks format to ActivityData HashMap
+        let typed_activity_data = activity_data.activity_data.map(|json_value| {
+            use super::activity_data::ActivityDataExt;
+            super::ActivityData::from_legacy_json(json_value)
+        });
 
         // Serialize ActivityData to JSON string for database storage
         let activity_data_json = typed_activity_data.as_ref().and_then(|data| {
@@ -264,7 +267,8 @@ impl super::PetDatabase {
                 query = query.bind(subcategory);
             }
             if let Some(json_value) = activity_data.activity_data {
-                // Convert frontend blocks format to typed ActivityData
+                // Convert frontend blocks format to ActivityData HashMap
+                use super::activity_data::ActivityDataExt;
                 let typed_data = super::ActivityData::from_legacy_json(json_value);
                 let json_str =
                     serde_json::to_string(&typed_data).map_err(|e| ActivityError::InvalidData {
@@ -668,14 +672,15 @@ impl super::PetDatabase {
         // Parse activity_data with backward compatibility
         let activity_data_json: Option<String> = row.try_get("activity_data").ok();
         let activity_data = activity_data_json.and_then(|json_str| {
+            use super::activity_data::ActivityDataExt;
             // Parse JSON string to Value first
             serde_json::from_str::<serde_json::Value>(&json_str)
                 .ok()
                 .map(|json_value| {
-                    // Try to parse as typed ActivityData, with legacy migration fallback
+                    // Try to parse as ActivityData HashMap, with legacy migration fallback
                     serde_json::from_value::<super::ActivityData>(json_value.clone())
                         .unwrap_or_else(|_| {
-                            log::debug!("[DB] Migrating legacy activity_data to typed format");
+                            log::debug!("[DB] Migrating legacy activity_data to HashMap format");
                             super::ActivityData::from_legacy_json(json_value)
                         })
                 })
