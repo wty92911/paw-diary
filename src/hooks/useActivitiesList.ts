@@ -30,7 +30,7 @@ export function useActivitiesList(petId: number): ActivitiesListState & Activiti
   const queryClient = useQueryClient();
 
   // Fetch activities using optimized cache keys
-  console.log(`🎯 useActivitiesList called with petId: ${petId}, enabled: ${!!petId}`);
+  // console.log(`🎯 useActivitiesList called with petId: ${petId}, enabled: ${!!petId}`);
 
   const {
     data: activities = [],
@@ -53,14 +53,14 @@ export function useActivitiesList(petId: number): ActivitiesListState & Activiti
     enabled: !!petId,
   });
 
-  console.log(`📋 [useActivitiesList] Query state:`, {
-    petId,
-    isLoading,
-    isError: !!error,
-    dataLength: activities.length,
-    enabled: !!petId,
-    error: error?.message,
-  });
+  // console.log(`📋 [useActivitiesList] Query state:`, {
+  //   petId,
+  //   isLoading,
+  //   isError: !!error,
+  //   dataLength: activities.length,
+  //   enabled: !!petId,
+  //   error: error?.message,
+  // });
 
   // Mutations with optimized cache keys and improved optimistic updates
   const deleteMutation = useMutation({

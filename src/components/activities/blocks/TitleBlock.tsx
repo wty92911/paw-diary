@@ -85,13 +85,8 @@ const TitleBlock: React.FC<BlockProps<TitleBlockConfig>> = ({
               </datalist>
             )}
           </div>
-          
-          {/* Error message */}
-          {fieldState.error && (
-            <p className="text-sm text-destructive" role="alert">
-              {fieldState.error.message}
-            </p>
-          )}
+
+          {/* Error message - Removed: errors shown at form level only */}
         </div>
       )}
     />

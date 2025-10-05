@@ -40,9 +40,9 @@ export const growthTemplates: ActivityTemplate[] = [
           measurementType: 'weight',
           units: ['kg', 'g', 'lbs'],
           defaultUnit: 'kg',
-          min: 0.1,
+          min: 0.001,
           max: 200,
-          precision: 1
+          precision: 3
         }
       },
       {

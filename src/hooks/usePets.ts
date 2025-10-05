@@ -21,7 +21,7 @@ export interface UsePetsActions {
 
 export function usePets(includeArchived = false): UsePetsState & UsePetsActions {
   const [pets, setPets] = useState<Pet[]>([]);
-  const [isLoading, setIsLoading] = useState(false); // Start as false, don't auto-load
+  const [isLoading, setIsLoading] = useState(true); // Start as true to prevent flash of empty state
   const [error, setError] = useState<string | null>(null);
   const [activePetId, setActivePetId] = useState<number | null>(null);
 

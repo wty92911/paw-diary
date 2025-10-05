@@ -215,8 +215,22 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
             // Date objects are valid values
             isEmpty = false;
           } else if (typeof blockValue === 'object') {
-            // Check if object has meaningful content
-            isEmpty = Object.keys(blockValue).length === 0;
+            // Special handling for measurement blocks
+            if ('value' in blockValue && 'unit' in blockValue && 'measurementType' in blockValue) {
+              // MeasurementData: check if value is 0, empty, or invalid
+              const numValue = blockValue.value as number;
+              isEmpty = numValue === undefined || numValue === null || numValue === 0 || isNaN(numValue);
+            }
+            // Special handling for portion blocks
+            else if ('amount' in blockValue && 'unit' in blockValue) {
+              // PortionData: check if amount is 0, empty, or invalid
+              const amount = blockValue.amount as number;
+              isEmpty = amount === undefined || amount === null || amount === 0 || isNaN(amount);
+            }
+            else {
+              // Other objects: check if empty
+              isEmpty = Object.keys(blockValue).length === 0;
+            }
           }
 
           if (isEmpty) {

@@ -228,11 +228,12 @@ export class ActivityDataAdapter {
       case 'Custom':
         return activityData.data as Record<string, ActivityBlockData>;
 
-      default:
+      default: {
         // Exhaustive type check - should never happen
         const _exhaustive: never = activityData;
         console.warn('Unknown ActivityData type:', _exhaustive);
         return {};
+      }
     }
   }
 

@@ -106,8 +106,42 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
     <Controller
       control={control}
       name={fieldName}
-      rules={{ required: required ? `${label} is required` : false }}
-      render={({ field, fieldState: { error } }) => {
+      rules={{
+        required: required ? `${label} is required` : false,
+        validate: (value: unknown) => {
+          const typedValue = value as PortionValue | undefined;
+
+          // Check if value exists
+          if (!typedValue || typeof typedValue !== 'object') {
+            if (required) {
+              return `${label} is required`;
+            }
+            return true;
+          }
+
+          const amount = typedValue.amount;
+
+          // Required field validation
+          if (required) {
+            if (amount === undefined || amount === null || amount === 0) {
+              return `${label} is required and must be greater than 0`;
+            }
+          }
+
+          // Type validation - must be a valid number
+          if (typeof amount !== 'number' || isNaN(amount)) {
+            return 'Please enter a valid number';
+          }
+
+          // Must be greater than 0
+          if (amount <= 0) {
+            return `${label} must be greater than 0`;
+          }
+
+          return true;
+        },
+      }}
+      render={({ field }) => {
         const currentValue: PortionValue | undefined = field.value as unknown as PortionValue | undefined;
         
         // State for brand/product selection - always start closed
@@ -205,13 +239,9 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
             <p className="text-xs text-muted-foreground">
               {config?.hint || 'Enter the portion amount and select appropriate unit'}
             </p>
-            
-            {/* Error message */}
-            {error && (
-              <p className="text-sm text-destructive" role="alert">
-                {error.message}
-              </p>
-            )}
+
+            {/* Error message - Removed: errors shown at form level only */}
+
             <div className="space-y-4">
               {/* Amount and unit input */}
               <div className="flex items-center gap-2">

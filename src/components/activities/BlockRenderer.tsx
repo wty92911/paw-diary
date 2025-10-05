@@ -130,16 +130,16 @@ interface BlockWrapperProps {
   hasError?: boolean;
 }
 
-const BlockWrapper: React.FC<BlockWrapperProps> = ({ 
-  block, 
-  children, 
+const BlockWrapper: React.FC<BlockWrapperProps> = ({
+  block,
+  children,
   showRequired = true,
-  hasError = false 
 }) => {
-  const wrapperClassName = `space-y-2 ${hasError ? 'ring-2 ring-destructive ring-offset-2' : ''}`;
-  
+  // Removed error border styling - errors shown at form level only
+  const wrapperClassName = 'space-y-2';
+
   return (
-    <motion.div 
+    <motion.div
       className={wrapperClassName} 
       data-block-id={block.id} 
       data-block-type={block.type}

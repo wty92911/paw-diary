@@ -38,8 +38,8 @@ export function HomePage() {
   // Filter out archived pets
   const activePets = pets.filter(p => !p.is_archived);
 
-  // Loading state
-  if (isLoading && activePets.length === 0) {
+  // Loading state - show skeleton only during initial load
+  if (isLoading) {
     return (
       <>
         <UniversalHeader
@@ -59,7 +59,7 @@ export function HomePage() {
           enableSafeArea={true}
           className="bg-gradient-to-br from-orange-50 to-yellow-50 min-h-screen"
         >
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 py-8 animate-in fade-in duration-300">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <PetCardSkeleton />
               <PetCardSkeleton />
@@ -93,7 +93,7 @@ export function HomePage() {
           enableSafeArea={true}
           className="bg-gradient-to-br from-orange-50 to-yellow-50 min-h-screen"
         >
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 py-8 animate-in fade-in duration-300">
             <div className="text-center max-w-md mx-auto">
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-600 text-sm mb-4">{error}</p>
@@ -140,7 +140,7 @@ export function HomePage() {
           enableSafeArea={true}
           className="bg-gradient-to-br from-orange-50 to-yellow-50 min-h-screen"
         >
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 py-8 animate-in fade-in duration-300">
             <div className="text-center max-w-md mx-auto">
               {/* Welcome Header */}
               <div className="mb-8">
@@ -207,7 +207,7 @@ export function HomePage() {
         className="bg-gradient-to-br from-orange-50 to-yellow-50 min-h-screen"
       >
         {/* Pet Cards Grid */}
-        <div className="container mx-auto px-4 py-8 pb-32">
+        <div className="container mx-auto px-4 py-8 pb-32 animate-in fade-in duration-300">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {activePets.map(pet => (
               <PetCard key={pet.id} pet={pet} onClick={() => handlePetSelect(pet.id)} />

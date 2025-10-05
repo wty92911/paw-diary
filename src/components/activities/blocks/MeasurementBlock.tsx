@@ -144,8 +144,9 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
   };
 
   const formatValue = (value: number): string => {
+    if (!value && value !== 0) return '';
     if (precision === 0) return Math.round(value).toString();
-    return value.toFixed(precision);
+    return value.toString();
   };
 
   return (
@@ -161,23 +162,49 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
       rules={{
         required: required ? `${label} is required` : false,
         validate: (value: unknown) => {
-          // Use Zod validation
-          const result = measurementBlockSchema.safeParse(value);
           const typedValue = value as MeasurementData | undefined;
-          if (!result.success && (required || (typedValue && typedValue.value > 0))) {
+
+          // Check if value exists and has the expected structure
+          if (!typedValue || typeof typedValue !== 'object' || !('value' in typedValue)) {
+            if (required) {
+              return `${label} is required`;
+            }
+            return true;
+          }
+
+          const numValue = typedValue.value;
+
+          // Required field validation
+          if (required) {
+            if (numValue === undefined || numValue === null || numValue === 0) {
+              return `${label} is required and must be greater than 0`;
+            }
+          }
+
+          // Type validation - must be a valid number
+          if (typeof numValue !== 'number' || isNaN(numValue)) {
+            return 'Please enter a valid number';
+          }
+
+          // Must be greater than 0
+          if (numValue <= 0) {
+            return `${label} must be greater than 0`;
+          }
+
+          // Range validation
+          if (numValue < min) {
+            return `Value must be at least ${min}`;
+          }
+          if (numValue > max) {
+            return `Value must not exceed ${max}`;
+          }
+
+          // Use Zod validation for additional checks
+          const result = measurementBlockSchema.safeParse(value);
+          if (!result.success) {
             return result.error.errors[0]?.message || 'Invalid measurement';
           }
 
-          // Additional validation
-          if (typedValue && typedValue.value !== undefined) {
-            if (typedValue.value < min) {
-              return `Value must be at least ${min}`;
-            }
-            if (typedValue.value > max) {
-              return `Value must not exceed ${max}`;
-            }
-          }
-          
           return true;
         },
       }}
@@ -192,7 +219,18 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
             };
 
         const handleValueChange = (newValue: string) => {
+          // Check if input exceeds precision limit
+          if (newValue && precision > 0) {
+            const parts = newValue.split('.');
+            if (parts[1] && parts[1].length > precision) {
+              // Truncate to precision limit
+              newValue = parts[0] + '.' + parts[1].slice(0, precision);
+            }
+          }
+
+          // Parse to number
           const numericValue = parseFloat(newValue) || 0;
+
           const updatedValue = {
             ...currentValue,
             value: numericValue,
@@ -228,13 +266,8 @@ const MeasurementBlock: React.FC<BlockProps<MeasurementBlockConfig>> = ({
 
         return (
           <div className="space-y-2">
-            {/* Error message */}
-            {fieldState.error && (
-              <p className="text-sm text-destructive" role="alert">
-                {fieldState.error.message}
-              </p>
-            )}
-            
+            {/* Error message - Removed: errors shown at form level only */}
+
             <div className="space-y-3">
               {/* Measurement Type Selector */}
               {showTypeSelector && (

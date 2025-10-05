@@ -1,5 +1,28 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
+
+/// Custom deserializer that accepts both number and string, converts to string
+fn deserialize_number_to_string<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum NumOrString {
+        Num(f64),
+        Str(String),
+    }
+
+    match NumOrString::deserialize(deserializer)? {
+        NumOrString::Num(n) => {
+            // Convert number to string, preserving precision
+            // Remove trailing zeros and unnecessary decimal point
+            let s = n.to_string();
+            Ok(s)
+        }
+        NumOrString::Str(s) => Ok(s),
+    }
+}
 
 /// Individual block data - matches frontend block structure
 /// Each block type (time, notes, portion, measurement, etc.) is stored as a separate value
@@ -38,8 +61,10 @@ pub enum BlockData {
 
     /// Measurement block (weight, height): { value: 5.2, unit: "kg", measurementType: "weight" }
     /// Uniquely identified by "measurementType" field
+    /// Value is stored as string in database but accepts both number and string from frontend
     Measurement {
-        value: f32,
+        #[serde(deserialize_with = "deserialize_number_to_string")]
+        value: String,
         unit: String,
         #[serde(rename = "measurementType")]
         measurement_type: String,
@@ -83,12 +108,15 @@ impl ActivityDataExt for ActivityData {
     fn extract_weight_kg(&self) -> Option<f32> {
         // Extract weight value from measurement block
         if let Some(BlockData::Measurement { value, unit, .. }) = self.get("weight") {
+            // Parse string value to f32
+            let parsed_value = value.parse::<f32>().ok()?;
+
             // Convert to kg if needed
             match unit.to_lowercase().as_str() {
-                "kg" => Some(*value),
-                "g" => Some(*value / 1000.0),
-                "lb" | "lbs" => Some(*value * 0.453592),
-                _ => Some(*value), // Assume kg if unknown
+                "kg" => Some(parsed_value),
+                "g" => Some(parsed_value / 1000.0),
+                "lb" | "lbs" => Some(parsed_value * 0.453592),
+                _ => Some(parsed_value), // Assume kg if unknown
             }
         } else {
             None
@@ -172,7 +200,7 @@ mod tests {
     fn test_weight_activity_deserialization() {
         let json = serde_json::json!({
             "weight": {
-                "value": 5.2,
+                "value": "5.2",
                 "unit": "kg",
                 "measurementType": "weight"
             },
@@ -200,7 +228,7 @@ mod tests {
         // Test gram conversion
         let json = serde_json::json!({
             "weight": {
-                "value": 5200.0,
+                "value": "5200",
                 "unit": "g",
                 "measurementType": "weight"
             }
@@ -214,7 +242,7 @@ mod tests {
         // Test pound conversion
         let json = serde_json::json!({
             "weight": {
-                "value": 11.464,
+                "value": "11.464",
                 "unit": "lb",
                 "measurementType": "weight"
             }
@@ -244,5 +272,53 @@ mod tests {
         // Verify structure is preserved
         assert!(serialized.get("portion").is_some());
         assert!(serialized.get("notes").is_some());
+    }
+
+    #[test]
+    fn test_number_to_string_conversion() {
+        // Frontend sends number value
+        let json = serde_json::json!({
+            "weight": {
+                "value": 1.2,
+                "unit": "kg",
+                "measurementType": "weight"
+            }
+        });
+
+        let activity_data = ActivityData::from_legacy_json(json);
+
+        // Verify it's stored as string internally
+        if let Some(BlockData::Measurement { value, unit, .. }) = activity_data.get("weight") {
+            assert_eq!(value, "1.2");
+            assert_eq!(unit, "kg");
+        } else {
+            panic!("Expected Measurement block");
+        }
+
+        // Verify it serializes back correctly
+        let serialized = activity_data.to_frontend_blocks();
+        let weight_value = serialized.get("weight").unwrap().get("value").unwrap();
+        assert_eq!(weight_value, "1.2");
+    }
+
+    #[test]
+    fn test_string_value_accepted() {
+        // Frontend can also send string value (for compatibility)
+        let json = serde_json::json!({
+            "weight": {
+                "value": "1.234",
+                "unit": "kg",
+                "measurementType": "weight"
+            }
+        });
+
+        let activity_data = ActivityData::from_legacy_json(json);
+
+        // Verify it's preserved as string
+        if let Some(BlockData::Measurement { value, .. }) = activity_data.get("weight") {
+            assert_eq!(value, "1.234");
+        } else {
+            panic!("Expected Measurement block");
+        }
     }
 }
