@@ -3,17 +3,30 @@ use std::collections::HashMap;
 
 /// Individual block data - matches frontend block structure
 /// Each block type (time, notes, portion, measurement, etc.) is stored as a separate value
+///
+/// Deserialization strategy with untagged enum:
+/// - Serde tries variants in order until one succeeds
+/// - Order matters! More specific variants should come first
+/// - Time: requires "date" field (unique identifier)
+/// - Portion: requires "portionType" field (unique identifier)
+/// - Measurement: requires "measurementType" field (unique identifier)
+/// - Text: fallback for simple strings
+/// - Other: fallback for any JSON value
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum BlockData {
     /// Time block: { date: "ISO string", time: "", timezone: "..." }
+    /// Uniquely identified by "date" field
     Time {
         date: String,
+        #[serde(default)]
         time: String,
+        #[serde(default)]
         timezone: String,
     },
 
     /// Portion block: { amount: 0.75, unit: "ml", portionType: "bowl", brand: "..." }
+    /// Uniquely identified by "portionType" field
     Portion {
         amount: f32,
         unit: String,
@@ -24,6 +37,7 @@ pub enum BlockData {
     },
 
     /// Measurement block (weight, height): { value: 5.2, unit: "kg", measurementType: "weight" }
+    /// Uniquely identified by "measurementType" field
     Measurement {
         value: f32,
         unit: String,
@@ -32,9 +46,11 @@ pub enum BlockData {
     },
 
     /// Notes or Title block: simple string
+    /// Matches any string value
     Text(String),
 
     /// Generic value for other block types
+    /// Fallback for any JSON structure
     Other(serde_json::Value),
 }
 
