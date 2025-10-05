@@ -191,22 +191,28 @@ export function ActivitiesListPage() {
             </Alert>
           )}
 
-          {/* Activities Timeline or Empty States */}
-          {activities.length > 0 ? (
-            <ActivityTimeline
-              activities={timelineItems}
-              petId={numericPetId}
-              isLoading={isActivitiesLoading}
-              onActivityEdit={handleActivityEdit}
-              onActivityDelete={handleActivityDelete}
-              className="mb-6"
-            />
+          {/* Activities Timeline or Loading/Empty States */}
+          {isActivitiesLoading ? (
+            <ActivitiesLoadingState />
+          ) : activities.length > 0 ? (
+            <div className="animate-in fade-in duration-300">
+              <ActivityTimeline
+                activities={timelineItems}
+                petId={numericPetId}
+                isLoading={false}
+                onActivityEdit={handleActivityEdit}
+                onActivityDelete={handleActivityDelete}
+                className="mb-6"
+              />
+            </div>
           ) : (
-            <EmptyActivitiesState
-              petName={pet.name}
-              onCreateFirst={handleNewActivity}
-              isLoading={isActivitiesLoading}
-            />
+            <div className="animate-in fade-in duration-300">
+              <EmptyActivitiesState
+                petName={pet.name}
+                onCreateFirst={handleNewActivity}
+                isLoading={false}
+              />
+            </div>
           )}
         </div>
       </main>
@@ -242,26 +248,42 @@ export function ActivitiesListPage() {
 }
 
 /**
+ * Loading state for activities
+ */
+function ActivitiesLoadingState() {
+  return (
+    <div className="space-y-4 animate-in fade-in duration-300">
+      {[...Array(3)].map((_, i) => (
+        <Card key={i} className="overflow-hidden">
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-gray-200 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                </div>
+              </div>
+              <div className="h-3 bg-gray-200 rounded w-5/6" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+/**
  * Empty state when pet has no activities
  */
 function EmptyActivitiesState({
   petName,
   onCreateFirst,
-  isLoading,
 }: {
   petName: string;
   onCreateFirst: () => void;
   isLoading: boolean;
 }) {
-  if (isLoading) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4" />
-        <p className="text-gray-500">Loading activities...</p>
-      </div>
-    );
-  }
-
   return (
     <Card className="border-dashed border-2 border-orange-200 bg-orange-50/50">
       <CardContent className="text-center py-12">
