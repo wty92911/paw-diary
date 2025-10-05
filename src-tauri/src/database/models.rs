@@ -121,6 +121,39 @@ pub struct Activity {
     pub updated_at: DateTime<Utc>,
 }
 
+/// Response structure for Activity with frontend-compatible blocks
+/// Automatically converts ActivityData to frontend block format
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActivityResponse {
+    pub id: i64,
+    pub pet_id: i64,
+    pub category: ActivityCategory,
+    pub subcategory: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub activity_data: Option<serde_json::Value>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+impl From<Activity> for ActivityResponse {
+    fn from(activity: Activity) -> Self {
+        let activity_data = activity
+            .activity_data
+            .as_ref()
+            .map(|data| data.to_frontend_blocks());
+
+        ActivityResponse {
+            id: activity.id,
+            pet_id: activity.pet_id,
+            category: activity.category,
+            subcategory: activity.subcategory,
+            activity_data,
+            created_at: activity.created_at,
+            updated_at: activity.updated_at,
+        }
+    }
+}
+
 /// Activity category enum
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum ActivityCategory {
