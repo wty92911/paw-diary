@@ -1,20 +1,22 @@
 use super::AppState;
-use crate::database::{Activity, ActivityCreateRequest, ActivityUpdateRequest};
+use crate::database::{ActivityCreateRequest, ActivityResponse, ActivityUpdateRequest};
 use crate::errors::ActivityError;
 use tauri::State;
 
-/// Create a new activity
+/// Create a new activity with automatic pet profile updates
 #[tauri::command]
 pub async fn create_activity(
     state: State<'_, AppState>,
     activity_data: ActivityCreateRequest,
-) -> Result<Activity, ActivityError> {
+) -> Result<ActivityResponse, ActivityError> {
     log::info!("[CREATE_ACTIVITY] Starting activity creation");
     log::debug!("[CREATE_ACTIVITY] Request params: {{\"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"activity_data\": {}}}",
         activity_data.pet_id,
         activity_data.category,
         activity_data.subcategory,
-        activity_data.activity_data.as_ref().map(|v| v.to_string()).unwrap_or("null".to_string())
+        activity_data.activity_data.as_ref()
+            .and_then(|v| serde_json::to_string(v).ok())
+            .unwrap_or("null".to_string())
     );
 
     // Verify pet exists
@@ -30,17 +32,22 @@ pub async fn create_activity(
         ));
     }
 
-    match state.database.create_activity(activity_data).await {
+    // Create activity with automatic pet profile updates
+    match state
+        .database
+        .create_activity_with_side_effects(activity_data)
+        .await
+    {
         Ok(activity) => {
             log::info!(
                 "[CREATE_ACTIVITY] Success: created activity_id={} for pet_id={}",
                 activity.id,
                 activity.pet_id
             );
-            log::debug!("[CREATE_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"created_at\": \"{}\"}}", 
+            log::debug!("[CREATE_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"created_at\": \"{}\"}}",
                 activity.id, activity.pet_id, activity.category, activity.subcategory, activity.created_at
             );
-            Ok(activity)
+            Ok(ActivityResponse::from(activity))
         }
         Err(e) => {
             log::error!("[CREATE_ACTIVITY] Database error: {e}");
@@ -55,13 +62,15 @@ pub async fn update_activity(
     state: State<'_, AppState>,
     activity_id: i64,
     updates: ActivityUpdateRequest,
-) -> Result<Activity, ActivityError> {
+) -> Result<ActivityResponse, ActivityError> {
     log::info!("[UPDATE_ACTIVITY] Starting activity update (legacy API)");
     log::debug!("[UPDATE_ACTIVITY] Request params: {{\"activity_id\": {}, \"updates\": {{\"category\": {:?}, \"subcategory\": {:?}, \"activity_data\": {}}}}}",
         activity_id,
         updates.category,
         updates.subcategory,
-        updates.activity_data.as_ref().map(|v| v.to_string()).unwrap_or("null".to_string())
+        updates.activity_data.as_ref()
+            .and_then(|v| serde_json::to_string(v).ok())
+            .unwrap_or("null".to_string())
     );
 
     if activity_id <= 0 {
@@ -99,10 +108,10 @@ pub async fn update_activity(
                 activity_id,
                 updated_activity.pet_id
             );
-            log::debug!("[UPDATE_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"updated_at\": \"{}\"}}", 
+            log::debug!("[UPDATE_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"updated_at\": \"{}\"}}",
                 updated_activity.id, updated_activity.pet_id, updated_activity.category, updated_activity.subcategory, updated_activity.updated_at
             );
-            Ok(updated_activity)
+            Ok(ActivityResponse::from(updated_activity))
         }
         Err(e) => {
             log::error!("[UPDATE_ACTIVITY] Database error: {e}");
@@ -116,7 +125,7 @@ pub async fn update_activity(
 pub async fn get_activity(
     state: State<'_, AppState>,
     activity_id: i64,
-) -> Result<Activity, ActivityError> {
+) -> Result<ActivityResponse, ActivityError> {
     log::info!("[GET_ACTIVITY] Starting activity retrieval (legacy API)");
     log::debug!("[GET_ACTIVITY] Request params: {{\"activity_id\": {activity_id}}}");
 
@@ -135,11 +144,14 @@ pub async fn get_activity(
                 activity.id,
                 activity.pet_id
             );
-            log::debug!("[GET_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"created_at\": \"{}\", \"activity_data_size\": {}}}", 
+            log::debug!("[GET_ACTIVITY] Response: {{\"id\": {}, \"pet_id\": {}, \"category\": \"{}\", \"subcategory\": \"{}\", \"created_at\": \"{}\", \"activity_data_size\": {}}}",
                 activity.id, activity.pet_id, activity.category, activity.subcategory, activity.created_at,
-                activity.activity_data.as_ref().map(|v| v.to_string().len()).unwrap_or(0)
+                activity.activity_data.as_ref()
+                    .and_then(|v| serde_json::to_string(v).ok())
+                    .map(|s| s.len())
+                    .unwrap_or(0)
             );
-            Ok(activity)
+            Ok(ActivityResponse::from(activity))
         }
         Err(e) => {
             log::error!("[GET_ACTIVITY] Database error: activity_id={activity_id}, error={e}");
@@ -153,7 +165,7 @@ pub async fn get_activity(
 pub async fn get_activities_for_pet(
     state: State<'_, AppState>,
     pet_id: i64,
-) -> Result<Vec<Activity>, ActivityError> {
+) -> Result<Vec<ActivityResponse>, ActivityError> {
     log::info!("[GET_ACTIVITIES_FOR_PET] Starting activities retrieval for pet");
     log::debug!("[GET_ACTIVITIES_FOR_PET] Request params: {{\"pet_id\": {pet_id}}}");
 
@@ -193,7 +205,11 @@ pub async fn get_activities_for_pet(
                 result.activities.len(),
                 result.activities.iter().take(5).map(|a| a.id).collect::<Vec<_>>()
             );
-            Ok(result.activities)
+            Ok(result
+                .activities
+                .into_iter()
+                .map(ActivityResponse::from)
+                .collect())
         }
         Err(e) => {
             log::error!("[GET_ACTIVITIES_FOR_PET] Database error: pet_id={pet_id}, error={e}");

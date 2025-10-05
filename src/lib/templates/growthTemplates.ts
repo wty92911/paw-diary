@@ -16,6 +16,7 @@ export const growthTemplates: ActivityTemplate[] = [
     label: 'Weight Check',
     icon: '⚖️',
     isQuickLogEnabled: true,
+    isAvailable: true, // ✅ Tested and implemented
     description: 'Record weight measurements for growth tracking',
     blocks: [
       {
@@ -40,9 +41,9 @@ export const growthTemplates: ActivityTemplate[] = [
           measurementType: 'weight',
           units: ['kg', 'g', 'lbs'],
           defaultUnit: 'kg',
-          min: 0.1,
+          min: 0.001,
           max: 200,
-          precision: 1
+          precision: 3
         }
       },
       {
@@ -77,6 +78,7 @@ export const growthTemplates: ActivityTemplate[] = [
     label: 'Height/Length Check',
     icon: '📏',
     isQuickLogEnabled: true,
+    isAvailable: false, // ⚠️ Not yet tested
     description: 'Measure height, length, or body dimensions',
     blocks: [
       {
@@ -137,6 +139,7 @@ export const growthTemplates: ActivityTemplate[] = [
     label: 'Development Milestone',
     icon: '🎯',
     isQuickLogEnabled: false,
+    isAvailable: false, // ⚠️ Not yet tested
     description: 'Track developmental milestones and growth stages',
     blocks: [
       {

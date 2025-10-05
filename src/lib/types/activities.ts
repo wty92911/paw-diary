@@ -84,6 +84,8 @@ export interface ActivityTemplate {
   blocks: ActivityBlockDef[];
   isQuickLogEnabled: boolean;
   description?: string;
+  /** Whether the template is available for use (tested and implemented) */
+  isAvailable?: boolean;
 }
 
 // Activity interaction modes

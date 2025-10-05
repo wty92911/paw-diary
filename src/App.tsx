@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { invoke } from '@tauri-apps/api/core';
 import { Loader2 } from 'lucide-react';
 import { useAppState } from './hooks/useAppState';
@@ -104,30 +104,46 @@ function App() {
     <ToastProvider>
       <HeaderProvider>
         <BrowserRouter>
-          <Routes>
-            {/* Home route - pet selection page */}
-            <Route path="/" element={<HomePage />} />
-            
-            {/* Add pet route - pet creation page */}
-            <Route path="/pets/new" element={<AddPetPage />} />
-            
-            {/* Pet profile route - pet details with activities */}
-            <Route path="/pets/:petId" element={<PetProfilePage />} />
-            
-            {/* Edit pet route - edit pet information */}
-            <Route path="/pets/:petId/edit" element={<EditPetPage />} />
-            
-            {/* Pet activity routes - dedicated activity pages */}
-            <Route path="/pets/:petId/activities" element={<ActivitiesListPage />} />
-            <Route path="/pets/:petId/activities/new" element={<ActivityEditorPage />} />
-            <Route path="/pets/:petId/activities/:activityId/edit" element={<ActivityEditorPage />} />
-            
-            {/* Fallback route - redirect unknown paths to home */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <AnimatedRoutes />
         </BrowserRouter>
       </HeaderProvider>
     </ToastProvider>
+  );
+}
+
+/**
+ * AnimatedRoutes - Wrapper component for routes with page transition animations
+ */
+function AnimatedRoutes() {
+  const location = useLocation();
+
+  return (
+    <div
+      key={location.pathname}
+      className="animate-in fade-in duration-200"
+    >
+      <Routes location={location}>
+        {/* Home route - pet selection page */}
+        <Route path="/" element={<HomePage />} />
+
+        {/* Add pet route - pet creation page */}
+        <Route path="/pets/new" element={<AddPetPage />} />
+
+        {/* Pet profile route - pet details with activities */}
+        <Route path="/pets/:petId" element={<PetProfilePage />} />
+
+        {/* Edit pet route - edit pet information */}
+        <Route path="/pets/:petId/edit" element={<EditPetPage />} />
+
+        {/* Pet activity routes - dedicated activity pages */}
+        <Route path="/pets/:petId/activities" element={<ActivitiesListPage />} />
+        <Route path="/pets/:petId/activities/new" element={<ActivityEditorPage />} />
+        <Route path="/pets/:petId/activities/:activityId/edit" element={<ActivityEditorPage />} />
+
+        {/* Fallback route - redirect unknown paths to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
   );
 }
 

@@ -81,3 +81,10 @@ repos:
         language: system
         files: \.(ts|tsx)$
         pass_filenames: false
+      - id: yarn-lint
+        name: yarn lint
+        description: format the project
+        entry: bash -c 'yarn format'
+        language: system
+        files: \.(ts|tsx)$
+        pass_filenames: false

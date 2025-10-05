@@ -170,10 +170,18 @@ function ActivityEditorPageContent({
     const converted: Record<string, ActivityBlockData> = {};
     for (const [key, value] of Object.entries(blocks)) {
       if (value instanceof Date) {
-        // Convert Date object to database format
-        // Use type assertion since time blocks can have various shapes
+        // Convert Date object to database format, preserving local time
+        // Format: YYYY-MM-DDTHH:mm:ss (no Z suffix = local time)
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        const hours = String(value.getHours()).padStart(2, '0');
+        const minutes = String(value.getMinutes()).padStart(2, '0');
+        const seconds = String(value.getSeconds()).padStart(2, '0');
+        const localTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+
         converted[key] = {
-          date: value.toISOString(),
+          date: localTimeString,
           time: '',
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         } as unknown as ActivityBlockData;

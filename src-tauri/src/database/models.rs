@@ -1,3 +1,4 @@
+use super::activity_data::ActivityDataExt;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -115,9 +116,43 @@ pub struct Activity {
     pub pet_id: i64,
     pub category: ActivityCategory,
     pub subcategory: String,
+    #[serde(default)]
+    pub activity_data: Option<super::ActivityData>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Response structure for Activity with frontend-compatible blocks
+/// Automatically converts ActivityData to frontend block format
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActivityResponse {
+    pub id: i64,
+    pub pet_id: i64,
+    pub category: ActivityCategory,
+    pub subcategory: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub activity_data: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+impl From<Activity> for ActivityResponse {
+    fn from(activity: Activity) -> Self {
+        let activity_data = activity
+            .activity_data
+            .as_ref()
+            .map(|data| data.to_frontend_blocks());
+
+        ActivityResponse {
+            id: activity.id,
+            pet_id: activity.pet_id,
+            category: activity.category,
+            subcategory: activity.subcategory,
+            activity_data,
+            created_at: activity.created_at,
+            updated_at: activity.updated_at,
+        }
+    }
 }
 
 /// Activity category enum
@@ -207,6 +242,7 @@ pub struct ActivityCreateRequest {
     pub pet_id: i64,
     pub category: ActivityCategory,
     pub subcategory: String,
+    #[serde(default)]
     pub activity_data: Option<serde_json::Value>,
 }
 
@@ -215,6 +251,7 @@ pub struct ActivityCreateRequest {
 pub struct ActivityUpdateRequest {
     pub category: Option<ActivityCategory>,
     pub subcategory: Option<String>,
+    #[serde(default)]
     pub activity_data: Option<serde_json::Value>,
 }
 

@@ -61,6 +61,7 @@ export function useActivity(activityId: number) {
     queryKey: activityKeys.detail(activityId),
     queryFn: async () => {
       const result = await invoke('get_activity', { activityId });
+      console.log(`useActivity get activity by id, response:`, result);
       return result as Activity;
     },
     staleTime: 30000,

@@ -28,36 +28,58 @@ const TimeBlock: React.FC<BlockProps<TimeBlockConfig>> = ({
     defaultToNow = true,
   } = config;
 
-  // Helper function to format date for input
+  // Helper function to format date for input (保持本地时间)
   const formatDateForInput = (date: Date): string => {
     if (!showDate && !showTime) return '';
-    
+
+    const pad = (n: number) => n.toString().padStart(2, '0');
+
     if (showDate && showTime) {
-      return date.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm format
+      // YYYY-MM-DDTHH:mm format (本地时间)
+      const year = date.getFullYear();
+      const month = pad(date.getMonth() + 1);
+      const day = pad(date.getDate());
+      const hours = pad(date.getHours());
+      const minutes = pad(date.getMinutes());
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
     } else if (showDate) {
-      return date.toISOString().slice(0, 10); // YYYY-MM-DD format
+      // YYYY-MM-DD format (本地时间)
+      const year = date.getFullYear();
+      const month = pad(date.getMonth() + 1);
+      const day = pad(date.getDate());
+      return `${year}-${month}-${day}`;
     } else if (showTime) {
-      return date.toTimeString().slice(0, 5); // HH:mm format
+      // HH:mm format (本地时间)
+      const hours = pad(date.getHours());
+      const minutes = pad(date.getMinutes());
+      return `${hours}:${minutes}`;
     }
-    
+
     return '';
   };
 
-  // Helper function to parse input value back to Date
+  // Helper function to parse input value back to Date (保持本地时间)
   const parseInputToDate = (value: string): Date => {
     if (!value) return new Date();
-    
+
     if (showDate && showTime) {
-      return new Date(value);
+      // 解析 YYYY-MM-DDTHH:mm 格式 (作为本地时间)
+      const [datePart, timePart] = value.split('T');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hours, minutes] = timePart.split(':').map(Number);
+      return new Date(year, month - 1, day, hours, minutes, 0, 0);
     } else if (showDate) {
-      return new Date(value + 'T00:00:00');
+      // 解析 YYYY-MM-DD 格式 (作为本地时间)
+      const [year, month, day] = value.split('-').map(Number);
+      return new Date(year, month - 1, day, 0, 0, 0, 0);
     } else if (showTime) {
+      // 解析 HH:mm 格式 (作为本地时间)
       const today = new Date();
       const [hours, minutes] = value.split(':').map(Number);
       today.setHours(hours, minutes, 0, 0);
       return today;
     }
-    
+
     return new Date();
   };
 

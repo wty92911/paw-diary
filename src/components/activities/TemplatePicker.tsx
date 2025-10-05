@@ -281,17 +281,24 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({ template, isSelected, onSelect, compact = false }: TemplateCardProps) {
+  const isAvailable = template.isAvailable !== false; // Default to available if not specified
+
   const handleSelect = () => {
+    if (!isAvailable) return; // Prevent selection of unavailable templates
     onSelect(template);
   };
 
   return (
     <Card
       className={cn(
-        'cursor-pointer transition-all hover:shadow-md border-2',
-        isSelected
+        'transition-all border-2',
+        isAvailable
+          ? 'cursor-pointer hover:shadow-md'
+          : 'cursor-not-allowed opacity-60',
+        isSelected && isAvailable
           ? 'border-orange-300 bg-orange-50 shadow-sm'
-          : 'border-gray-200 hover:border-orange-200',
+          : 'border-gray-200',
+        isAvailable && !isSelected && 'hover:border-orange-200',
         compact ? 'p-2' : 'p-3'
       )}
       onClick={handleSelect}
@@ -299,34 +306,45 @@ function TemplateCard({ template, isSelected, onSelect, compact = false }: Templ
       <CardContent className={cn('p-0', compact ? 'space-y-1' : 'space-y-2')}>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <span className={cn('text-lg', compact && 'text-base')}>
+            <span className={cn('text-lg', compact && 'text-base', !isAvailable && 'grayscale')}>
               {template.icon}
             </span>
             <div className="flex-1 min-w-0">
-              <h4 className={cn(
-                'font-medium text-gray-900 truncate',
-                compact ? 'text-sm' : 'text-base'
-              )}>
-                {template.label}
-              </h4>
+              <div className="flex items-center gap-2">
+                <h4 className={cn(
+                  'font-medium truncate',
+                  compact ? 'text-sm' : 'text-base',
+                  isAvailable ? 'text-gray-900' : 'text-gray-500'
+                )}>
+                  {template.label}
+                </h4>
+                {!isAvailable && (
+                  <Badge variant="secondary" className="text-xs shrink-0">
+                    Coming Soon
+                  </Badge>
+                )}
+              </div>
               {!compact && template.description && (
-                <p className="text-xs text-gray-600 line-clamp-2 mt-1">
+                <p className={cn(
+                  'text-xs line-clamp-2 mt-1',
+                  isAvailable ? 'text-gray-600' : 'text-gray-400'
+                )}>
                   {template.description}
                 </p>
               )}
             </div>
           </div>
-          
+
           {/* Popular indicator could be added based on usage stats */}
         </div>
 
         {!compact && (
           <div className="flex items-center justify-between">
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className={cn('text-xs', !isAvailable && 'opacity-50')}>
               {template.category}
             </Badge>
-            
-            <span className="text-xs text-gray-500">
+
+            <span className={cn('text-xs', isAvailable ? 'text-gray-500' : 'text-gray-400')}>
               {template.blocks.length} field{template.blocks.length !== 1 ? 's' : ''}
             </span>
           </div>
@@ -350,6 +368,9 @@ function CompactTemplatePicker({
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
 
   const handleTemplateSelect = (template: ActivityTemplate) => {
+    const isAvailable = template.isAvailable !== false;
+    if (!isAvailable) return; // Prevent selection of unavailable templates
+
     onTemplateSelect?.(template);
     setIsOpen(false);
   };
@@ -379,26 +400,42 @@ function CompactTemplatePicker({
             <CardContent className="p-0">
               <ScrollArea className="h-64">
                 <div className="p-2 space-y-1">
-                  {templates.map((template) => (
-                    <div
-                      key={template.id}
-                      onClick={() => handleTemplateSelect(template)}
-                      className={cn(
-                        'flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-100',
-                        selectedTemplateId === template.id && 'bg-orange-100'
-                      )}
-                    >
-                      <span className="text-sm">{template.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">
-                          {template.label}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {template.category}
+                  {templates.map((template) => {
+                    const isAvailable = template.isAvailable !== false;
+                    return (
+                      <div
+                        key={template.id}
+                        onClick={() => handleTemplateSelect(template)}
+                        className={cn(
+                          'flex items-center gap-2 p-2 rounded',
+                          isAvailable
+                            ? 'cursor-pointer hover:bg-gray-100'
+                            : 'cursor-not-allowed opacity-60',
+                          selectedTemplateId === template.id && isAvailable && 'bg-orange-100'
+                        )}
+                      >
+                        <span className={cn('text-sm', !isAvailable && 'grayscale')}>
+                          {template.icon}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className={cn(
+                              'text-sm font-medium truncate',
+                              isAvailable ? 'text-gray-900' : 'text-gray-500'
+                            )}>
+                              {template.label}
+                            </div>
+                            {!isAvailable && (
+                              <span className="text-xs text-gray-400 shrink-0">Coming Soon</span>
+                            )}
+                          </div>
+                          <div className={cn('text-xs', isAvailable ? 'text-gray-500' : 'text-gray-400')}>
+                            {template.category}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </CardContent>
