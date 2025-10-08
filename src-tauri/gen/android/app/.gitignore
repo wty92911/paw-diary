@@ -1,0 +1,6 @@
+/src/main/java/com/wty92911/paw_diary/generated
+/src/main/jniLibs/**/*.so
+/src/main/assets/tauri.conf.json
+/tauri.build.gradle.kts
+/proguard-tauri.pro
+/tauri.properties

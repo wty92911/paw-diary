@@ -356,7 +356,7 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
               <Input
                 id="weight_kg"
                 type="number"
-                step="0.1"
+                step="0.01"
                 min="0"
                 max="200"
                 {...register('weight_kg', { valueAsNumber: true })}

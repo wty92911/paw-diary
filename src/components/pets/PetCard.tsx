@@ -63,11 +63,11 @@ export function PetCard({ pet, onClick, className }: PetCardProps) {
         <div className="flex flex-col items-center text-center">
           {/* Circular Photo */}
           <div className="relative mb-3">
-            <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-orange-50 to-yellow-50 ring-2 ring-orange-200/50 shadow-md">
+            <div className="w-28 h-28 rounded-full overflow-hidden bg-gradient-to-br from-orange-50 to-yellow-50 ring-2 ring-orange-200/50 shadow-md">
               {isLoading ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="animate-pulse">
-                    <SpeciesIcon className="w-10 h-10 text-orange-300" strokeWidth={1.5} />
+                    <SpeciesIcon className="w-14 h-14 text-orange-300" strokeWidth={1.5} />
                   </div>
                 </div>
               ) : pet.photo_path && photoUrl ? (
@@ -78,14 +78,14 @@ export function PetCard({ pet, onClick, className }: PetCardProps) {
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <SpeciesIcon className="w-10 h-10 text-orange-300" strokeWidth={1.5} />
+                  <SpeciesIcon className="w-14 h-14 text-orange-300" strokeWidth={1.5} />
                 </div>
               )}
             </div>
 
             {/* Species Badge - Small Icon on Bottom Right */}
-            <div className="absolute -bottom-0.5 -right-0.5 p-1 bg-white rounded-full shadow-md ring-1 ring-orange-100">
-              <SpeciesIcon className="w-3 h-3 text-orange-600" strokeWidth={2.5} />
+            <div className="absolute -bottom-0.5 -right-0.5 p-1.5 bg-white rounded-full shadow-md ring-1 ring-orange-100">
+              <SpeciesIcon className="w-4 h-4 text-orange-600" strokeWidth={2.5} />
             </div>
           </div>
 
@@ -125,7 +125,7 @@ export function PetCardSkeleton({ className }: { className?: string }) {
       <CardContent className="p-4">
         <div className="flex flex-col items-center text-center">
           {/* Circular Photo Skeleton */}
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse mb-3" />
+          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse mb-3" />
 
           {/* Info Skeleton */}
           <div className="w-full space-y-2">

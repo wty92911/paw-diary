@@ -10,7 +10,13 @@ import {
 } from '../lib/types/activities';
 import { RouteValidator, RouteBuilder } from '../lib/types/routing';
 import { PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
-import { UniversalHeader, HeaderVariant, BackActionType } from '../components/header';
+import {
+  UniversalHeader,
+  HeaderVariant,
+  BackActionType,
+  DEFAULT_HEADER_CONFIG,
+  IOSContentLayout,
+} from '../components/header';
 import ActivityEditorCore from '../components/activities/ActivityEditorCore';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -245,10 +251,11 @@ function ActivityEditorPageContent({
   const headerSubtitle = pet.name;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
+    <>
       {/* Activity Editor Header */}
       <UniversalHeader
         configuration={{
+          ...DEFAULT_HEADER_CONFIG,
           variant: HeaderVariant.FORM,
           title: headerTitle,
           subtitle: headerSubtitle,
@@ -258,35 +265,40 @@ function ActivityEditorPageContent({
             handler: handleCancel,
             label: 'Cancel',
           },
-          sticky: true,
         }}
       />
 
-      {/* Activity Editor Error State */}
-      {isEditMode && activityError && (
-        <div className="max-w-4xl mx-auto px-4 pt-24">
-          <Alert className="mb-4 border-red-200 bg-red-50">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Failed to load activity. Please refresh the page or try again later.
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
+      <IOSContentLayout
+        enableHeaderPadding={true}
+        enableSafeArea={true}
+        className="bg-gradient-to-br from-orange-50 to-yellow-50 min-h-screen"
+      >
+        {/* Activity Editor Error State */}
+        {isEditMode && activityError && (
+          <div className="max-w-4xl mx-auto px-4">
+            <Alert className="mb-4 border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Failed to load activity. Please refresh the page or try again later.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
-      {/* Direct Activity Editor - No wrapper cards */}
-      <main className="max-w-4xl mx-auto px-4 pb-6 pt-24">
-        <ActivityEditorCore
-          mode={mode}
-          templateId={templateId}
-          activityId={numericActivityId}
-          petId={numericPetId}
-          onSave={handleSave}
-          initialData={initialData}
-          className=""
-        />
-      </main>
-    </div>
+        {/* Direct Activity Editor - No wrapper cards */}
+        <main className="max-w-4xl mx-auto px-4 pb-6">
+          <ActivityEditorCore
+            mode={mode}
+            templateId={templateId}
+            activityId={numericActivityId}
+            petId={numericPetId}
+            onSave={handleSave}
+            initialData={initialData}
+            className=""
+          />
+        </main>
+      </IOSContentLayout>
+    </>
   );
 }
 

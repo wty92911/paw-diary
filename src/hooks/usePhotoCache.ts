@@ -85,7 +85,14 @@ export function usePhotoCache(): UsePhotoCacheReturn {
 
     // Create loading promise
     const loadingPromise = new Promise<void>(resolve => {
-      const photoUrl = `photos://localhost/${photoPath}`;
+      // Platform-specific URL scheme:
+      // - macOS, iOS, Linux: photos://localhost/filename.jpg
+      // - Windows, Android: http://photos.localhost/filename.jpg
+      const isWindowsOrAndroid =
+        navigator.userAgent.includes('Windows') || navigator.userAgent.includes('Android');
+      const photoUrl = isWindowsOrAndroid
+        ? `http://photos.localhost/${photoPath}`
+        : `photos://localhost/${photoPath}`;
 
       // Preload image to validate it loads successfully
       const img = new Image();

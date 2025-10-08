@@ -9,7 +9,13 @@ import { usePets } from '../hooks/usePets';
 import { RouteValidator, RouteBuilder } from '../lib/types/routing';
 import { convertActivitiesToTimelineItems } from '../lib/utils/activityUtils';
 import { PetContextHeaderSkeleton } from '../components/pets/PetContextHeader';
-import { UniversalHeader, HeaderVariant, BackActionType } from '../components/header';
+import {
+  UniversalHeader,
+  HeaderVariant,
+  BackActionType,
+  DEFAULT_HEADER_CONFIG,
+  IOSContentLayout,
+} from '../components/header';
 import ActivityTimeline from '../components/activities/ActivityTimeline';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -162,10 +168,11 @@ export function ActivitiesListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
+    <>
       {/* Activities List Header */}
       <UniversalHeader
         configuration={{
+          ...DEFAULT_HEADER_CONFIG,
           variant: HeaderVariant.FORM,
           title: 'Activities',
           subtitle: pet.name,
@@ -175,47 +182,52 @@ export function ActivitiesListPage() {
             handler: () => navigate(RouteBuilder.petProfile(numericPetId)),
             label: 'Back',
           },
-          sticky: true,
         }}
       />
 
-      <main className="container mx-auto px-4 py-6 pb-20 pt-24">
-        <div className="max-w-5xl mx-auto">
-          {/* Activities Error State */}
-          {activitiesError && (
-            <Alert className="mb-6 border-red-200 bg-red-50">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Failed to load activities. Please refresh the page or try again later.
-              </AlertDescription>
-            </Alert>
-          )}
+      <IOSContentLayout
+        enableHeaderPadding={true}
+        enableSafeArea={true}
+        className="bg-gradient-to-br from-orange-50 to-yellow-50 min-h-screen"
+      >
+        <main className="container mx-auto px-4 py-6 pb-20">
+          <div className="max-w-5xl mx-auto">
+            {/* Activities Error State */}
+            {activitiesError && (
+              <Alert className="mb-6 border-red-200 bg-red-50">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Failed to load activities. Please refresh the page or try again later.
+                </AlertDescription>
+              </Alert>
+            )}
 
-          {/* Activities Timeline or Loading/Empty States */}
-          {isActivitiesLoading ? (
-            <ActivitiesLoadingState />
-          ) : activities.length > 0 ? (
-            <div className="animate-in fade-in duration-300">
-              <ActivityTimeline
-                activities={timelineItems}
-                petId={numericPetId}
-                isLoading={false}
-                onActivityEdit={handleActivityEdit}
-                onActivityDelete={handleActivityDelete}
-                className="mb-6"
-              />
-            </div>
-          ) : (
-            <div className="animate-in fade-in duration-300">
-              <EmptyActivitiesState
-                petName={pet.name}
-                onCreateFirst={handleNewActivity}
-                isLoading={false}
-              />
-            </div>
-          )}
-        </div>
-      </main>
+            {/* Activities Timeline or Loading/Empty States */}
+            {isActivitiesLoading ? (
+              <ActivitiesLoadingState />
+            ) : activities.length > 0 ? (
+              <div className="animate-in fade-in duration-300">
+                <ActivityTimeline
+                  activities={timelineItems}
+                  petId={numericPetId}
+                  isLoading={false}
+                  onActivityEdit={handleActivityEdit}
+                  onActivityDelete={handleActivityDelete}
+                  className="mb-6"
+                />
+              </div>
+            ) : (
+              <div className="animate-in fade-in duration-300">
+                <EmptyActivitiesState
+                  petName={pet.name}
+                  onCreateFirst={handleNewActivity}
+                  isLoading={false}
+                />
+              </div>
+            )}
+          </div>
+        </main>
+      </IOSContentLayout>
 
       {/* Floating Action Button */}
       <FloatingActionButton onClick={handleNewActivity} />
@@ -243,7 +255,7 @@ export function ActivitiesListPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 
