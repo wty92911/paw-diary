@@ -165,7 +165,7 @@ const BlockWrapper: React.FC<BlockWrapperProps> = ({
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               {block.label}
               {showRequired && block.required && (
-                <motion.span 
+                <motion.span
                   className="text-destructive ml-1"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -175,15 +175,6 @@ const BlockWrapper: React.FC<BlockWrapperProps> = ({
                 </motion.span>
               )}
             </label>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2, delay: 0.2 }}
-            >
-              <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-                {block.type}
-              </Badge>
-            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
