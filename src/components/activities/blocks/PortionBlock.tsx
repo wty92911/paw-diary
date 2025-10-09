@@ -165,6 +165,16 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
           }
         }, [currentValue, field, defaultUnit]);
 
+        // Track input state separately for better UX
+        const [inputValue, setInputValue] = React.useState<string>('');
+
+        // Sync input value with field value
+        React.useEffect(() => {
+          if (currentValue?.amount !== undefined) {
+            setInputValue(currentValue.amount.toString());
+          }
+        }, [currentValue?.amount]);
+
         // Handle amount change
         const handleAmountChange = React.useCallback((newAmount: number) => {
           const updatedValue: PortionValue = {
@@ -264,8 +274,36 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
               type="number"
               step={config?.step || 0.25}
               min={0}
-              value={displayAmount}
-              onChange={(e) => handleAmountChange(parseFloat(e.target.value) || 0)}
+              value={inputValue}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setInputValue(newValue); // Update input state immediately for responsive UX
+
+                // Parse and update form value
+                if (newValue === '' || newValue === '-') {
+                  // Allow empty/negative sign temporarily - don't update form yet
+                  return;
+                }
+
+                const parsed = parseFloat(newValue);
+                if (!isNaN(parsed)) {
+                  handleAmountChange(parsed);
+                }
+              }}
+              onBlur={(e) => {
+                // On blur, ensure we have a valid value
+                const finalValue = e.target.value;
+                if (finalValue === '' || finalValue === '-') {
+                  handleAmountChange(0);
+                  setInputValue('0');
+                } else {
+                  const parsed = parseFloat(finalValue);
+                  if (isNaN(parsed)) {
+                    handleAmountChange(0);
+                    setInputValue('0');
+                  }
+                }
+              }}
               className="text-center text-lg font-medium"
               placeholder="0"
               aria-label="Portion amount"
