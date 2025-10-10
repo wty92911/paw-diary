@@ -4,7 +4,6 @@ import { useActivity, useCreateActivity, useUpdateActivity } from '../hooks/useA
 import { usePets } from '../hooks/usePets';
 import {
   type ActivityFormData,
-  type ActivityMode,
   type ActivityCategory,
   type ActivityBlockData,
 } from '../lib/types/activities';
@@ -26,14 +25,14 @@ import { Alert, AlertDescription } from '../components/ui/alert';
  * ActivityEditorPage - Full-screen activity creation and editing page
  *
  * Routes:
- * - /pets/:petId/activities/new?mode=quick|guided|advanced&template=xxx
+ * - /pets/:petId/activities/new?template=xxx
  * - /pets/:petId/activities/:activityId/edit
  *
  * Features:
  * - Pet context header with back navigation
  * - Full-screen activity editor without modal wrapper
  * - Support for create and edit modes
- * - Query parameter support for editor mode and template
+ * - Query parameter support for template selection
  * - Error handling for invalid pet IDs or activities
  * - Loading states with skeleton UI
  * - Optimistic updates and proper navigation
@@ -84,9 +83,7 @@ function ActivityEditorPageContent({
   const isEditMode = !!activityId;
   const numericActivityId = activityId ? parseInt(activityId, 10) : undefined;
 
-  // Parse query parameters with proper defaults
-  // Both create and edit modes start with 'quick' mode to hide fields by default
-  const mode = (searchParams.get('mode') as ActivityMode) || 'quick';
+  // Parse query parameters
   const templateId = searchParams.get('template') || undefined;
 
   // Fetch pet data
@@ -288,7 +285,6 @@ function ActivityEditorPageContent({
         {/* Direct Activity Editor - No wrapper cards */}
         <main className="max-w-4xl mx-auto px-4 pb-6">
           <ActivityEditorCore
-            mode={mode}
             templateId={templateId}
             activityId={numericActivityId}
             petId={numericPetId}

@@ -1,9 +1,8 @@
-import { 
-  type ActivityTemplate, 
-  ActivityCategory, 
+import {
+  type ActivityTemplate,
+  ActivityCategory,
   type ActivityBlockType,
-  DEFAULT_PORTION_CONFIG,
-  DEFAULT_ATTACHMENT_CONFIG
+  DEFAULT_PORTION_CONFIG
 } from '../types/activities';
 
 // Diet category templates
@@ -15,7 +14,6 @@ export const dietTemplates: ActivityTemplate[] = [
     subcategory: 'Feeding',
     label: 'Feeding',
     icon: '🍽️',
-    isQuickLogEnabled: true,
     isAvailable: true, // ✅ Tested and implemented
     description: 'Record feeding sessions with food type, portion, and timing',
     blocks: [
@@ -66,19 +64,8 @@ export const dietTemplates: ActivityTemplate[] = [
         label: 'Food Notes',
         required: false,
         config: {
-          placeholder: 'Food brand, flavor, appetite level...',
+          placeholder: 'Food flavor, appetite level...',
           maxLength: 500
-        }
-      },
-      {
-        id: 'attachment',
-        type: 'attachment' as ActivityBlockType,
-        label: 'Photos',
-        required: false,
-        config: {
-          ...DEFAULT_ATTACHMENT_CONFIG,
-          maxFiles: 3,
-          showOCR: false
         }
       }
     ]
@@ -91,7 +78,6 @@ export const dietTemplates: ActivityTemplate[] = [
     subcategory: 'Water',
     label: 'Water Intake',
     icon: '💧',
-    isQuickLogEnabled: true,
     isAvailable: true, // ✅ Tested and implemented
     description: 'Track daily water consumption',
     blocks: [
@@ -139,7 +125,6 @@ export const dietTemplates: ActivityTemplate[] = [
     subcategory: 'Treat',
     label: 'Treats & Rewards',
     icon: '🦴',
-    isQuickLogEnabled: true,
     isAvailable: false, // ⚠️ Not yet tested
     description: 'Log treats, rewards, and special snacks',
     blocks: [

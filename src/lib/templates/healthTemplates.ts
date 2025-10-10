@@ -14,7 +14,6 @@ export const healthTemplates: ActivityTemplate[] = [
     subcategory: 'Checkup',
     label: 'Health Checkup',
     icon: '🏥',
-    isQuickLogEnabled: false,
     isAvailable: false, // ⚠️ Not yet tested
     description: 'Comprehensive health examination record',
     blocks: [
@@ -123,7 +122,6 @@ export const healthTemplates: ActivityTemplate[] = [
     subcategory: 'Medication',
     label: 'Medication Administration',
     icon: '💊',
-    isQuickLogEnabled: true,
     isAvailable: false, // ⚠️ Not yet tested
     description: 'Track medication doses and schedules',
     blocks: [
@@ -193,7 +191,6 @@ export const healthTemplates: ActivityTemplate[] = [
     subcategory: 'Symptom',
     label: 'Symptom Tracking',
     icon: '🌡️',
-    isQuickLogEnabled: true,
     isAvailable: false, // ⚠️ Not yet tested
     description: 'Log symptoms and health concerns',
     blocks: [

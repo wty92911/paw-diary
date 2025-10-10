@@ -132,7 +132,7 @@ export function ActivitiesListPage() {
 
   // Event handlers
   const handleNewActivity = () => {
-    navigate(RouteBuilder.newActivity(numericPetId, { mode: 'quick' }));
+    navigate(RouteBuilder.newActivity(numericPetId));
   };
 
   const handleActivityEdit = (activityId: number) => {

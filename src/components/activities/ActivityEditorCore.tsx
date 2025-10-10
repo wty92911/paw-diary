@@ -3,7 +3,6 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
 import { Alert, AlertDescription } from '../ui/alert';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { type ActivityBlockData } from '../../lib/types/activities';
@@ -15,12 +14,11 @@ import {
   DialogTrigger,
 } from '../ui/dialog';
 import { ChevronDown, Activity, AlertCircle } from 'lucide-react';
-import { 
-  type ActivityEditorProps, 
-  type ActivityFormData, 
-  type ActivityTemplate, 
-  type ActivityMode,
-  ActivityCategory 
+import {
+  type ActivityEditorProps,
+  type ActivityFormData,
+  type ActivityTemplate,
+  ActivityCategory
 } from '../../lib/types/activities';
 import { activityFormValidationSchema } from '../../lib/validation/activityBlocks';
 import { templateRegistry } from '../../lib/activityTemplates';
@@ -44,7 +42,6 @@ export interface ActivityEditorCoreProps extends Omit<ActivityEditorProps, 'onCa
  * - Enhanced navigation handling
  */
 const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
-  mode,
   templateId,
   activityId,
   petId,
@@ -53,15 +50,14 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
   className,
 }) => {
   // Initialize template from templateId (if provided) or initialData
-  const initialTemplate = templateId 
+  const initialTemplate = templateId
     ? templateRegistry.getTemplate(templateId)
     : (initialData && initialData.category && initialData.subcategory
       ? templateRegistry.getTemplateByCategory(initialData.category, initialData.subcategory)
       : templateRegistry.getTemplatesByCategory(ActivityCategory.Diet)[0]); // fallback
-  
+
   // State management
   const [selectedTemplate, setSelectedTemplate] = React.useState<ActivityTemplate | undefined>(initialTemplate);
-  const [currentMode, setCurrentMode] = React.useState<ActivityMode>(mode);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = React.useState(false);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
@@ -300,9 +296,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
 
 
 
-  // Mode switching handlers
-  const switchToGuided = () => setCurrentMode('guided');
-
   // Handle template selection
   const handleTemplateSelect = (template: ActivityTemplate | null) => {
     setSelectedTemplate(template as ActivityTemplate);
@@ -395,8 +388,8 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
     );
   };
 
-  // Render mode-specific interface
-  const renderModeInterface = () => {
+  // Render activity blocks
+  const renderBlocks = () => {
     if (!selectedTemplate) {
       return (
         <Alert>
@@ -407,58 +400,16 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
       );
     }
 
-    // Determine which blocks to render based on mode
-    let blocksToRender;
-    switch (currentMode) {
-      case 'quick':
-        // Quick mode: Only required blocks or first 2 blocks
-        blocksToRender = selectedTemplate.blocks
-          .filter(block => block.required)
-        if (blocksToRender.length === 0) {
-          // Fallback to first 2 blocks if no required blocks
-          blocksToRender = selectedTemplate.blocks.slice(0, 2);
-        }
-        break;
-      case 'guided':
-        // Guided mode: All template blocks
-        blocksToRender = selectedTemplate.blocks;
-        break;
-      case 'advanced':
-        // Advanced mode: All blocks with extended features
-        blocksToRender = selectedTemplate.blocks;
-        break;
-      default:
-        blocksToRender = selectedTemplate.blocks;
-    }
-
     return (
       <div className="space-y-6">
-        {/* Dynamic blocks based on template and mode */}
+        {/* Dynamic blocks based on template */}
         <MultiBlockRenderer
-          blocks={blocksToRender}
+          blocks={selectedTemplate.blocks}
           control={control}
           errors={errors}
           watch={watch}
           setValue={setValue}
         />
-
-        {/* Mode expansion options for quick mode */}
-        {currentMode === 'quick' && selectedTemplate.blocks.length > 2 && (
-          <Card className="border-dashed">
-            <CardContent className="pt-4">
-              <div className="text-center space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Need more details? This template has {selectedTemplate.blocks.length} total fields.
-                </p>
-                <div className="flex gap-2 justify-center">
-                  <Button variant="outline" size="sm" onClick={switchToGuided}>
-                    Show All Fields
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     );
   };
@@ -477,7 +428,6 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
         trigger={trigger}
         template={selectedTemplate}
         petId={petId}
-        mode={currentMode}
         isSubmitting={isSubmitting}
         isDirty={isDirty}
         isValid={isValid}
@@ -492,7 +442,7 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
             {/* Template Picker Trigger for new activities */}
             {renderTemplatePickerTrigger()}
             
-            {renderModeInterface()}
+            {renderBlocks()}
             
             {/* Draft status removed */}
 
@@ -532,22 +482,8 @@ const ActivityEditorCore: React.FC<ActivityEditorCoreProps> = ({
 
             {/* Action buttons */}
             <div className="relative pt-6 border-t border-gray-200">
-              {/* Left side - Quick Mode button (absolute positioning) */}
-              {currentMode !== 'quick' && (
-                <div className="absolute left-0 top-6">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCurrentMode('quick')}
-                  >
-                    Quick Mode
-                  </Button>
-                </div>
-              )}
-
-              {/* Center - Save button with conditional offset */}
-              <div className={`flex justify-center ${currentMode !== 'quick' ? 'pl-20' : ''}`}>
+              {/* Center - Save button */}
+              <div className="flex justify-center">
                 <Button 
                   type="submit" 
                   disabled={isSaveDisabled}

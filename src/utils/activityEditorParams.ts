@@ -1,16 +1,14 @@
-import { type ActivityMode } from '../lib/types/activities';
 import { RouteValidator, type ActivityEditorQueryParams } from '../lib/types/routing';
 
 /**
  * Activity Editor Query Parameter Utilities
  *
  * Provides utilities for parsing, validating, and managing query parameters
- * for the activity editor pages. Handles different editor modes and templates
- * with proper validation and defaults.
+ * for the activity editor pages. Handles template selection and validation.
  *
  * Features:
- * - Parse and validate mode and template parameters from URLSearchParams
- * - URL state synchronization with editor mode switching
+ * - Parse and validate template parameters from URLSearchParams
+ * - URL state synchronization with template changes
  * - Parameter validation with fallback defaults
  * - Type-safe parameter handling with runtime validation
  */
@@ -19,21 +17,13 @@ import { RouteValidator, type ActivityEditorQueryParams } from '../lib/types/rou
  * Default values for activity editor parameters
  */
 export const ACTIVITY_EDITOR_DEFAULTS = {
-  mode: 'guided' as ActivityMode,
   template: undefined,
 } as const;
-
-/**
- * Valid activity editor modes
- */
-export const VALID_ACTIVITY_MODES: readonly ActivityMode[] = ['quick', 'guided', 'advanced'];
 
 /**
  * Configuration for activity editor parameter parsing
  */
 export interface ActivityEditorParamsConfig {
-  /** Default mode when none specified or invalid */
-  defaultMode?: ActivityMode;
   /** Whether to validate template IDs (default: true) */
   validateTemplateId?: boolean;
   /** Whether to allow unknown parameters (default: false) */
@@ -44,8 +34,6 @@ export interface ActivityEditorParamsConfig {
  * Result of parsing activity editor parameters
  */
 export interface ParsedActivityEditorParams {
-  /** Validated activity mode with fallback to default */
-  mode: ActivityMode;
   /** Validated template ID or undefined */
   template?: string;
   /** Whether any parameters were invalid and defaults were used */
@@ -64,7 +52,7 @@ export interface ParsedActivityEditorParams {
  * @example
  * ```typescript
  * const [searchParams] = useSearchParams();
- * const { mode, template, warnings } = parseActivityEditorParams(searchParams);
+ * const { template, warnings } = parseActivityEditorParams(searchParams);
  *
  * if (warnings.length > 0) {
  *   console.warn('Parameter validation warnings:', warnings);
@@ -75,25 +63,10 @@ export function parseActivityEditorParams(
   searchParams: URLSearchParams,
   config: ActivityEditorParamsConfig = {},
 ): ParsedActivityEditorParams {
-  const {
-    defaultMode = ACTIVITY_EDITOR_DEFAULTS.mode,
-    validateTemplateId = true,
-    allowUnknownParams = false,
-  } = config;
+  const { validateTemplateId = true, allowUnknownParams = false } = config;
 
   const warnings: string[] = [];
-  let mode: ActivityMode = defaultMode;
   let template: string | undefined = undefined;
-
-  // Parse and validate mode parameter
-  const modeParam = searchParams.get('mode');
-  if (modeParam) {
-    if (isValidActivityMode(modeParam)) {
-      mode = modeParam;
-    } else {
-      warnings.push(`Invalid mode '${modeParam}'. Using default '${defaultMode}'.`);
-    }
-  }
 
   // Parse and validate template parameter
   const templateParam = searchParams.get('template');
@@ -111,7 +84,7 @@ export function parseActivityEditorParams(
 
   // Check for unknown parameters if not allowed
   if (!allowUnknownParams) {
-    const knownParams = new Set(['mode', 'template']);
+    const knownParams = new Set(['template']);
     for (const [key] of searchParams) {
       if (!knownParams.has(key)) {
         warnings.push(`Unknown parameter '${key}' will be ignored.`);
@@ -120,21 +93,10 @@ export function parseActivityEditorParams(
   }
 
   return {
-    mode,
     template,
     hasWarnings: warnings.length > 0,
     warnings,
   };
-}
-
-/**
- * Type guard to check if a string is a valid ActivityMode
- *
- * @param value - String to check
- * @returns True if the value is a valid ActivityMode
- */
-export function isValidActivityMode(value: string): value is ActivityMode {
-  return VALID_ACTIVITY_MODES.includes(value as ActivityMode);
 }
 
 /**
@@ -146,7 +108,6 @@ export function isValidActivityMode(value: string): value is ActivityMode {
  *
  * @example
  * ```typescript
- * const params = buildActivityEditorParams({ mode: 'quick', template: 'feeding' });
  * navigate(`/pets/1/activities/new?${params.toString()}`);
  * ```
  */
@@ -157,15 +118,6 @@ export function buildActivityEditorParams(
   const { validateTemplateId = true } = config;
 
   const searchParams = new URLSearchParams();
-
-  // Add mode parameter if provided and valid
-  if (params.mode) {
-    if (isValidActivityMode(params.mode)) {
-      searchParams.set('mode', params.mode);
-    } else {
-      console.warn(`Invalid mode '${params.mode}' ignored when building URL parameters.`);
-    }
-  }
 
   // Add template parameter if provided
   if (params.template) {
@@ -183,37 +135,6 @@ export function buildActivityEditorParams(
   }
 
   return searchParams;
-}
-
-/**
- * Updates URLSearchParams with new activity editor mode while preserving other parameters
- *
- * @param currentParams - Current URLSearchParams
- * @param newMode - New activity mode to set
- * @returns Updated URLSearchParams
- *
- * @example
- * ```typescript
- * const [searchParams, setSearchParams] = useSearchParams();
- *
- * const handleModeSwitch = (mode: ActivityMode) => {
- *   const updatedParams = updateActivityMode(searchParams, mode);
- *   setSearchParams(updatedParams);
- * };
- * ```
- */
-export function updateActivityMode(
-  currentParams: URLSearchParams,
-  newMode: ActivityMode,
-): URLSearchParams {
-  if (!isValidActivityMode(newMode)) {
-    console.warn(`Invalid mode '${newMode}' ignored in updateActivityMode.`);
-    return new URLSearchParams(currentParams);
-  }
-
-  const updatedParams = new URLSearchParams(currentParams);
-  updatedParams.set('mode', newMode);
-  return updatedParams;
 }
 
 /**
@@ -262,7 +183,7 @@ export function updateActivityTemplate(
 
 /**
  * Synchronizes URL parameters with current editor state
- * Used for keeping URL in sync when mode or template changes programmatically
+ * Used for keeping URL in sync when template changes programmatically
  *
  * @param currentParams - Current URLSearchParams
  * @param editorState - Current editor state to sync
@@ -271,16 +192,14 @@ export function updateActivityTemplate(
  * @example
  * ```typescript
  * const [searchParams, setSearchParams] = useSearchParams();
- * const [currentMode, setCurrentMode] = useState<ActivityMode>('guided');
  * const [selectedTemplate, setSelectedTemplate] = useState<string>('feeding');
  *
  * useEffect(() => {
  *   const syncedParams = syncActivityEditorParams(searchParams, {
- *     mode: currentMode,
  *     template: selectedTemplate
  *   });
  *   setSearchParams(syncedParams, { replace: true });
- * }, [currentMode, selectedTemplate]);
+ * }, [selectedTemplate]);
  * ```
  */
 export function syncActivityEditorParams(
@@ -288,11 +207,6 @@ export function syncActivityEditorParams(
   editorState: Partial<ActivityEditorQueryParams>,
 ): URLSearchParams {
   let updatedParams = new URLSearchParams(currentParams);
-
-  // Update mode if provided
-  if (editorState.mode) {
-    updatedParams = updateActivityMode(updatedParams, editorState.mode);
-  }
 
   // Update template if provided (or remove if null/undefined)
   if (editorState.template !== undefined) {
@@ -314,12 +228,10 @@ export function syncActivityEditorParams(
  * @example
  * ```typescript
  * // For new activity
- * const newActivityUrl = createActivityEditorUrl(1, { mode: 'quick', template: 'feeding' });
- * // -> "/pets/1/activities/new?mode=quick&template=feeding"
+ * // -> "/pets/1/activities/new?template=feeding"
  *
  * // For editing existing activity
- * const editActivityUrl = createActivityEditorUrl(1, { mode: 'advanced' }, true, 123);
- * // -> "/pets/1/activities/123/edit?mode=advanced"
+ * // -> "/pets/1/activities/123/edit"
  * ```
  */
 export function createActivityEditorUrl(
@@ -375,7 +287,6 @@ export function extractActivityEditorRouteParams(
 ): {
   petId: number;
   activityId?: number;
-  mode: ActivityMode;
   template?: string;
   isEditMode: boolean;
   hasWarnings: boolean;
@@ -411,7 +322,6 @@ export function extractActivityEditorRouteParams(
   return {
     petId,
     activityId,
-    mode: queryResult.mode,
     template: queryResult.template,
     isEditMode: !!activityId,
     hasWarnings: warnings.length > 0,

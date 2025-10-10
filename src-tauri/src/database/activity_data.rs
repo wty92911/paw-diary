@@ -57,6 +57,7 @@ pub enum BlockData {
         portion_type: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         brand: Option<String>,
+        product: Option<String>,
     },
 
     /// Measurement block (weight, height): { value: 5.2, unit: "kg", measurementType: "weight" }
@@ -158,7 +159,8 @@ mod tests {
                 "amount": 0.75,
                 "unit": "ml",
                 "portionType": "bowl",
-                "brand": "Purina Pro Plan"
+                "brand": "Purina Pro Plan",
+                "product": "Normal"
             },
             "notes": "Ate well"
         });
@@ -177,12 +179,14 @@ mod tests {
             unit,
             portion_type,
             brand,
+            product,
         }) = activity_data.get("portion")
         {
             assert_eq!(*amount, 0.75);
             assert_eq!(unit, "ml");
             assert_eq!(portion_type, "bowl");
             assert_eq!(brand.as_ref().unwrap(), "Purina Pro Plan");
+            assert_eq!(product.as_ref().unwrap(), "Normal");
         } else {
             panic!("Expected Portion block");
         }
