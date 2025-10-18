@@ -49,11 +49,24 @@ impl PhotoService {
         let unique_filename = format!("{}.{}", Uuid::new_v4(), file_extension);
         let target_path = self.storage_dir.join(&unique_filename);
 
-        // Load and validate image
-        let img = ImageReader::open(source_path)
-            .map_err(|e| PetError::photo_processing(format!("Failed to open image: {e}")))?
-            .decode()
-            .map_err(|e| PetError::photo_processing(format!("Failed to decode image: {e}")))?;
+        // Load and validate image with EXIF orientation correction
+        let mut reader = ImageReader::open(source_path)
+            .map_err(|e| PetError::photo_processing(format!("Failed to open image: {e}")))?;
+
+        // Try to read EXIF orientation and apply it automatically
+        let img = if let Some(format) = reader.format() {
+            reader.set_format(format);
+            reader
+                .decode()
+                .map_err(|e| PetError::photo_processing(format!("Failed to decode image: {e}")))?
+        } else {
+            reader
+                .decode()
+                .map_err(|e| PetError::photo_processing(format!("Failed to decode image: {e}")))?
+        };
+
+        // Apply EXIF orientation if present (this handles camera rotation metadata)
+        let img = self.apply_exif_orientation(source_path, img)?;
 
         // Resize to 512x512 while maintaining aspect ratio
         let resized_img = self.resize_image_with_aspect_ratio(img, 512, 512);
@@ -254,6 +267,55 @@ impl PhotoService {
             total_size,
             storage_dir: self.storage_dir.to_string_lossy().to_string(),
         })
+    }
+
+    /// Apply EXIF orientation correction to an image
+    fn apply_exif_orientation(
+        &self,
+        source_path: &Path,
+        img: image::DynamicImage,
+    ) -> Result<image::DynamicImage, PetError> {
+        use std::io::BufReader;
+
+        // Try to read EXIF data
+        let file = match fs::File::open(source_path) {
+            Ok(f) => f,
+            Err(_) => return Ok(img), // If can't open file, return original image
+        };
+
+        let mut reader = BufReader::new(file);
+        let exif_reader = match exif::Reader::new().read_from_container(&mut reader) {
+            Ok(r) => r,
+            Err(_) => return Ok(img), // No EXIF data, return original image
+        };
+
+        // Get orientation tag
+        let orientation = match exif_reader.get_field(exif::Tag::Orientation, exif::In::PRIMARY) {
+            Some(field) => {
+                match field.value.get_uint(0) {
+                    Some(v) => v,
+                    None => return Ok(img), // Can't read orientation, return original
+                }
+            }
+            None => return Ok(img), // No orientation tag, return original
+        };
+
+        // Apply transformation based on EXIF orientation value
+        // Reference: http://sylvana.net/jpegcrop/exif_orientation.html
+        let corrected = match orientation {
+            1 => img,                     // Normal
+            2 => img.fliph(),             // Flip horizontal
+            3 => img.rotate180(),         // Rotate 180
+            4 => img.flipv(),             // Flip vertical
+            5 => img.rotate90().fliph(),  // Rotate 90 CW and flip horizontal
+            6 => img.rotate90(),          // Rotate 90 CW
+            7 => img.rotate270().fliph(), // Rotate 270 CW and flip horizontal
+            8 => img.rotate270(),         // Rotate 270 CW
+            _ => img,                     // Unknown orientation, return original
+        };
+
+        log::info!("Applied EXIF orientation correction: {orientation}");
+        Ok(corrected)
     }
 
     /// Resize image while maintaining aspect ratio, centering on canvas

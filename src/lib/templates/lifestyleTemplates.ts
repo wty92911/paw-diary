@@ -15,7 +15,6 @@ export const lifestyleTemplates: ActivityTemplate[] = [
     subcategory: 'Walk',
     label: 'Walk/Exercise',
     icon: '🚶',
-    isQuickLogEnabled: true,
     isAvailable: false, // ⚠️ Not yet tested
     description: 'Record walks, exercises, and physical activities',
     blocks: [
@@ -122,7 +121,6 @@ export const lifestyleTemplates: ActivityTemplate[] = [
     subcategory: 'Play',
     label: 'Play Session',
     icon: '🎾',
-    isQuickLogEnabled: true,
     isAvailable: false, // ⚠️ Not yet tested
     description: 'Track play sessions and interactive activities',
     blocks: [
@@ -226,7 +224,6 @@ export const lifestyleTemplates: ActivityTemplate[] = [
     subcategory: 'Training',
     label: 'Training Session',
     icon: '🎓',
-    isQuickLogEnabled: false,
     isAvailable: false, // ⚠️ Not yet tested
     description: 'Log training sessions and skill development',
     blocks: [
@@ -347,7 +344,7 @@ export const lifestyleTemplates: ActivityTemplate[] = [
     subcategory: 'Sleep',
     label: 'Sleep Pattern',
     icon: '😴',
-    isQuickLogEnabled: true,
+    isAvailable: false,
     description: 'Track sleep patterns and rest quality',
     blocks: [
       {

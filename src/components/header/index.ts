@@ -8,6 +8,9 @@
 // Core Types and Interfaces
 export * from './types';
 
+// Constants
+export * from './constants';
+
 // Main Components
 export { UniversalHeader } from './UniversalHeader';
 export { HeaderProvider, useHeaderContext, useHeaderConfiguration, useHeaderTheme } from './HeaderProvider';

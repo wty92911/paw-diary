@@ -22,12 +22,11 @@ export interface FormContextValue {
   setValue: UseFormSetValue<ActivityFormData>;
   getValues: UseFormGetValues<ActivityFormData>;
   trigger: UseFormTrigger<ActivityFormData>;
-  
+
   // Activity-specific state
   template?: ActivityTemplate;
   petId?: number;
-  mode: 'quick' | 'guided' | 'advanced';
-  
+
   // Form state
   isSubmitting: boolean;
   isDirty: boolean;
@@ -63,7 +62,6 @@ export interface FormProviderProps {
   trigger: UseFormTrigger<ActivityFormData>;
   template?: ActivityTemplate;
   petId?: number;
-  mode: 'quick' | 'guided' | 'advanced';
   isSubmitting: boolean;
   isDirty: boolean;
   isValid: boolean;
@@ -83,7 +81,6 @@ export const FormProvider: React.FC<FormProviderProps> = ({
   trigger,
   template,
   petId,
-  mode,
   isSubmitting,
   isDirty,
   isValid,
@@ -157,12 +154,11 @@ export const FormProvider: React.FC<FormProviderProps> = ({
     setValue,
     getValues,
     trigger,
-    
+
     // Activity-specific state
     template,
     petId,
-    mode,
-    
+
     // Form state
     isSubmitting,
     isDirty,
@@ -251,7 +247,7 @@ export const useBlockState = (blockId: string) => {
 
 // Hook for template-aware form state
 export const useTemplateContext = () => {
-  const { template, mode, petId } = useFormContext();
+  const { template, petId } = useFormContext();
   
   const getBlockConfig = React.useCallback((blockType: string) => {
     if (!template) return undefined;
@@ -275,7 +271,6 @@ export const useTemplateContext = () => {
   
   return {
     template,
-    mode,
     petId,
     getBlockConfig,
     isBlockRequired,

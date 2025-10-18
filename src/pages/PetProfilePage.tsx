@@ -8,7 +8,13 @@ import { PetProfileHeader } from '../components/pets/PetProfileHeader';
 import { ActivityPreviewSection } from '../components/activities/ActivityPreviewSection';
 import { Button } from '../components/ui/button';
 import { convertActivitiesToTimelineItems } from '../lib/utils/activityUtils';
-import { UniversalHeader, HeaderVariant, BackActionType } from '../components/header';
+import {
+  UniversalHeader,
+  HeaderVariant,
+  BackActionType,
+  DEFAULT_HEADER_CONFIG,
+  IOSContentLayout,
+} from '../components/header';
 
 /**
  * PetProfilePage - Comprehensive pet profile
@@ -108,10 +114,11 @@ export function PetProfilePage() {
 
   // Main profile page
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
+    <>
       {/* Universal Header */}
       <UniversalHeader
         configuration={{
+          ...DEFAULT_HEADER_CONFIG,
           variant: HeaderVariant.FORM,
           title: 'Pet Profile',
           subtitle: currentPet.name,
@@ -121,53 +128,58 @@ export function PetProfilePage() {
             handler: navigateToHome,
             label: 'Back',
           },
-          sticky: true,
         }}
       />
 
-      {/* Main content */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
-        <div className="space-y-6">
-          {/* Pet Profile Section - Full Width */}
-          <PetProfileHeader
-            pet={currentPet}
-            onEdit={() => navigate(`/pets/${currentPet.id}/edit`)}
-            size="full"
-            className="shadow-lg"
-          />
-
-          {/* Recent Activities Section */}
-          <div className="space-y-4">
-            <ActivityPreviewSection
-              activities={recentActivities}
-              petId={currentPet.id}
-              isLoading={isActivitiesLoading}
-              error={activitiesErrorMessage || undefined}
-              maxActivities={3}
+      <IOSContentLayout
+        enableHeaderPadding={true}
+        enableSafeArea={true}
+        className="bg-gradient-to-br from-orange-50 to-yellow-50 min-h-screen"
+      >
+        {/* Main content */}
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          <div className="space-y-6">
+            {/* Pet Profile Section - Full Width */}
+            <PetProfileHeader
+              pet={currentPet}
+              onEdit={() => navigate(`/pets/${currentPet.id}/edit`)}
+              size="full"
               className="shadow-lg"
-              emptyStateMessage={`Start tracking ${currentPet.name}'s activities`}
-              showHeader={true}
-              showViewAllButton={false}
             />
 
-            {/* View All Activities Button - Below Recent Activities */}
-            {activities.length > 0 && (
-              <div className="flex justify-center">
-                <Button
-                  onClick={() => navigate(`/pets/${currentPet.id}/activities`)}
-                  variant="outline"
-                  size="lg"
-                  className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400 min-w-[240px]"
-                >
-                  <Activity className="w-4 h-4 mr-2" />
-                  View All Activities
-                </Button>
-              </div>
-            )}
+            {/* Recent Activities Section */}
+            <div className="space-y-4">
+              <ActivityPreviewSection
+                activities={recentActivities}
+                petId={currentPet.id}
+                isLoading={isActivitiesLoading}
+                error={activitiesErrorMessage || undefined}
+                maxActivities={3}
+                className="shadow-lg"
+                emptyStateMessage={`Start tracking ${currentPet.name}'s activities`}
+                showHeader={true}
+                showViewAllButton={false}
+              />
+
+              {/* View All Activities Button - Below Recent Activities */}
+              {activities.length > 0 && (
+                <div className="flex justify-center">
+                  <Button
+                    onClick={() => navigate(`/pets/${currentPet.id}/activities`)}
+                    variant="outline"
+                    size="lg"
+                    className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400 min-w-[240px]"
+                  >
+                    <Activity className="w-4 h-4 mr-2" />
+                    View All Activities
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </IOSContentLayout>
+    </>
   );
 }
 

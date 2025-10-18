@@ -6,9 +6,8 @@ import { Button } from '../components/ui/button';
 import {
   UniversalHeader,
   HeaderVariant,
-  ColorScheme,
-  ElevationLevel,
   IOSContentLayout,
+  DEFAULT_HEADER_CONFIG,
 } from '../components/header';
 
 /**
@@ -44,14 +43,10 @@ export function HomePage() {
       <>
         <UniversalHeader
           configuration={{
+            ...DEFAULT_HEADER_CONFIG,
             variant: HeaderVariant.APP,
             title: 'Paw Diary',
             showBackButton: false,
-            sticky: true,
-            theme: {
-              colorScheme: ColorScheme.LIGHT,
-              elevation: ElevationLevel.BLUR,
-            },
           }}
         />
         <IOSContentLayout
@@ -78,14 +73,10 @@ export function HomePage() {
       <>
         <UniversalHeader
           configuration={{
+            ...DEFAULT_HEADER_CONFIG,
             variant: HeaderVariant.APP,
             title: 'Paw Diary',
             showBackButton: false,
-            sticky: true,
-            theme: {
-              colorScheme: ColorScheme.LIGHT,
-              elevation: ElevationLevel.BLUR,
-            },
           }}
         />
         <IOSContentLayout
@@ -125,14 +116,10 @@ export function HomePage() {
       <>
         <UniversalHeader
           configuration={{
+            ...DEFAULT_HEADER_CONFIG,
             variant: HeaderVariant.APP,
             title: 'Paw Diary',
             showBackButton: false,
-            sticky: true,
-            theme: {
-              colorScheme: ColorScheme.LIGHT,
-              elevation: ElevationLevel.BLUR,
-            },
           }}
         />
         <IOSContentLayout
@@ -180,23 +167,10 @@ export function HomePage() {
       {/* iOS-Style Universal Header */}
       <UniversalHeader
         configuration={{
+          ...DEFAULT_HEADER_CONFIG,
           variant: HeaderVariant.APP,
           title: 'Paw Diary',
           showBackButton: false,
-          sticky: true,
-          scrollBehavior: 'auto',
-          contentPadding: false,
-          theme: {
-            colorScheme: ColorScheme.LIGHT,
-            elevation: ElevationLevel.BLUR,
-            iosBehavior: {
-              enableBlur: true,
-              autoHide: false,
-              stickyBehavior: 'fixed',
-              safeAreaInsets: true,
-              scrollThreshold: 100,
-            },
-          },
         }}
       />
 
@@ -206,8 +180,8 @@ export function HomePage() {
         enableSafeArea={true}
         className="bg-gradient-to-br from-orange-50 to-yellow-50 min-h-screen"
       >
-        {/* Pet Cards Grid */}
-        <div className="container mx-auto px-4 py-8 pb-32 animate-in fade-in duration-300">
+        {/* Pet Cards Grid with controlled scrollable height */}
+        <div className="container mx-auto px-4 py-8 pb-32 animate-in fade-in duration-300 min-h-[calc(100vh+200px)]">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {activePets.map(pet => (
               <PetCard key={pet.id} pet={pet} onClick={() => handlePetSelect(pet.id)} />

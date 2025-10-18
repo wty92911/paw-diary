@@ -82,14 +82,10 @@ export interface ActivityTemplate {
   label: string;
   icon: string;
   blocks: ActivityBlockDef[];
-  isQuickLogEnabled: boolean;
   description?: string;
   /** Whether the template is available for use (tested and implemented) */
   isAvailable?: boolean;
 }
-
-// Activity interaction modes
-export type ActivityMode = 'quick' | 'guided' | 'advanced';
 
 // Block data union type - all possible block values
 export type ActivityBlockData =
@@ -426,7 +422,6 @@ export interface SubcategoryOption {
 
 // Activity editor component props
 export interface ActivityEditorProps {
-  mode: ActivityMode;
   templateId?: string;
   activityId?: number; // For editing existing
   petId: number;
@@ -686,22 +681,19 @@ export interface PetActivityRouteParams {
  * @example
  * ```typescript
  * // URL examples:
- * // /pets/123/activities/new?template=feeding&mode=quick
- * // /pets/123/activities/new?mode=guided
- * // /pets/123/activities/456/edit?mode=advanced
- * 
+ * // /pets/123/activities/new?template=feeding
+ * // /pets/123/activities/new
+ * // /pets/123/activities/456/edit
+ *
  * const searchParams = new URLSearchParams(location.search);
  * const queryParams: ActivityEditorQueryParams = {
- *   template: searchParams.get('template') || undefined,
- *   mode: searchParams.get('mode') as ActivityMode || 'guided'
+ *   template: searchParams.get('template') || undefined
  * };
  * ```
  */
 export interface ActivityEditorQueryParams {
   /** Template ID to pre-populate editor with specific activity template */
   template?: string;
-  /** Editor interaction mode - determines UI complexity and guidance level */
-  mode?: ActivityMode;
 }
 
 /**
@@ -886,8 +878,6 @@ export interface ActivityEditorPageProps {
   petId: string;
   /** Activity ID for editing existing activity (undefined for new activity) */
   activityId?: string;
-  /** Editor interaction mode from query parameters */
-  mode?: ActivityMode;
   /** Template ID from query parameters for pre-populating editor */
   templateId?: string;
 }
@@ -1038,7 +1028,7 @@ export interface ActivityNavigationHelpers {
   /** Navigate to new activity editor with optional query parameters */
   toNewActivity: (petId: string, params?: ActivityEditorQueryParams) => void;
   /** Navigate to edit existing activity with optional query parameters */
-  toEditActivity: (petId: string, activityId: string, params?: Pick<ActivityEditorQueryParams, 'mode'>) => void;
+  toEditActivity: (petId: string, activityId: string, params?: ActivityEditorQueryParams) => void;
   /** Navigate back to pet profile page */
   toPetProfile: (petId: string) => void;
   /** Navigate to home page */

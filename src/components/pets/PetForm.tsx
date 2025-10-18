@@ -256,7 +256,10 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
                 id="birth_date"
                 type="date"
                 {...register('birth_date')}
-                className={cn(errors.birth_date && 'border-red-500')}
+                className={cn(
+                  'max-w-full [&::-webkit-date-and-time-value]:text-left',
+                  errors.birth_date && 'border-red-500',
+                )}
               />
               {errors.birth_date && (
                 <p className="text-sm text-red-600">{errors.birth_date.message}</p>
@@ -356,7 +359,7 @@ export function PetForm({ pet, open, onOpenChange, onSubmit, isSubmitting = fals
               <Input
                 id="weight_kg"
                 type="number"
-                step="0.1"
+                step="0.01"
                 min="0"
                 max="200"
                 {...register('weight_kg', { valueAsNumber: true })}

@@ -1,9 +1,8 @@
 import { z } from 'zod';
-import { type ActivityMode } from './activities';
 
 /**
  * Routing Types for Activity Pages
- * 
+ *
  * Provides type-safe routing interfaces and validation utilities
  * for the new pet-contextual activity page system.
  */
@@ -17,7 +16,6 @@ export interface PetActivityRouteParams {
 // Query parameter interfaces for activity editor configuration
 export interface ActivityEditorQueryParams {
   template?: string;
-  mode?: ActivityMode;
 }
 
 // Combined route parameters for complete type safety
@@ -33,7 +31,6 @@ export const PetActivityRouteParamsSchema = z.object({
 
 export const ActivityEditorQueryParamsSchema = z.object({
   template: z.string().optional(),
-  mode: z.enum(['quick', 'guided', 'advanced']).optional(),
 });
 
 // Route validation utilities
@@ -107,14 +104,11 @@ export class RouteBuilder {
    */
   static newActivity(petId: number, options?: ActivityEditorQueryParams): string {
     const baseUrl = `/pets/${petId}/activities/new`;
-    if (!options || (!options.mode && !options.template)) {
+    if (!options?.template) {
       return baseUrl;
     }
 
     const params = new URLSearchParams();
-    if (options.mode) {
-      params.set('mode', options.mode);
-    }
     if (options.template) {
       params.set('template', options.template);
     }
@@ -159,9 +153,7 @@ export class BreadcrumbBuilder {
   /**
    * Builds breadcrumbs for new activity page
    */
-  static forNewActivity(_petName: string, petId: number, mode?: ActivityMode): BreadcrumbItem[] {
-    const modeLabel = mode ? ` (${mode.charAt(0).toUpperCase() + mode.slice(1)})` : '';
-    
+  static forNewActivity(_petName: string, petId: number): BreadcrumbItem[] {
     return [
       {
         label: 'Profile',
@@ -174,7 +166,7 @@ export class BreadcrumbBuilder {
         active: false,
       },
       {
-        label: `New Activity${modeLabel}`,
+        label: 'New Activity',
         active: true,
       },
     ];

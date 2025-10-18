@@ -24,6 +24,7 @@
 
 /* Begin PBXFileReference section */
 		03DA665267C36615C1EF9169 /* paw-diary_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "paw-diary_iOS.entitlements"; sourceTree = "<group>"; };
+		0DA3E55164EB1B3930A247F0 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
 		1213CA383C5DCB57519944A9 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		1DF96C75B1F7A70E4F86F0FB /* paw-diary.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "paw-diary.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1FDF0D065BCBED1D32EA7C62 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
@@ -56,6 +57,7 @@
 		C67B0DD87859ED23E9D8F7F0 /* logger.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = logger.rs; sourceTree = "<group>"; };
 		C6C837EDD7B398D182205545 /* main.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = main.rs; sourceTree = "<group>"; };
 		C6FDCBDB6333AB97DE37A512 /* mod.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = mod.rs; sourceTree = "<group>"; };
+		DD402D01F02D0E4D6260442F /* activity_data.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = activity_data.rs; sourceTree = "<group>"; };
 		DF7E03093B6EBB55B310A120 /* photos.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = photos.rs; sourceTree = "<group>"; };
 		E43765B2B0433F291C70A76A /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
 		E833457C4172B3B3401A6E63 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
@@ -88,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				A9B905BB268AFA72D3454B98 /* debug */,
+				AA3BB492D577B728903170D7 /* release */,
 			);
 			path = arm64;
 			sourceTree = "<group>";
@@ -191,6 +194,14 @@
 			path = debug;
 			sourceTree = "<group>";
 		};
+		AA3BB492D577B728903170D7 /* release */ = {
+			isa = PBXGroup;
+			children = (
+				0DA3E55164EB1B3930A247F0 /* libapp.a */,
+			);
+			path = release;
+			sourceTree = "<group>";
+		};
 		ACB48684E114B67B51F51316 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -219,6 +230,7 @@
 			isa = PBXGroup;
 			children = (
 				74D8BE11F4EC50FEA59C2C98 /* activities.rs */,
+				DD402D01F02D0E4D6260442F /* activity_data.rs */,
 				33971AAA7BC323BDD5DB4E27 /* fts.rs */,
 				F4B5E09D0DA7599AFE033570 /* mod.rs */,
 				94CE45944BDB283A1C4BD88A /* models.rs */,

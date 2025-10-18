@@ -4,21 +4,20 @@
 
 import React from 'react';
 import { Controller } from 'react-hook-form';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '../../ui/input';
 import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Plus, Minus, Package } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { type BlockProps } from '../../../lib/types/activities';
-import { useBrandSuggestions } from '../../../hooks/useBrandMemory';
+import { EditableSelect } from '../../ui/editable-select';
+import { useBrandProductMemory } from '../../../hooks/useBrandProductMemory';
 
 // Portion value interface
 interface PortionValue {
   amount: number;
   unit: string;
-  brand?: string; // Optional brand/product name
-  product?: string; // Specific product name
+  brand?: string; // Single brand name
+  product?: string; // Single product name
   notes?: string; // Additional portion notes
 }
 
@@ -98,7 +97,6 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
   const fieldName = name;
   const {
     defaultUnit = 'cup',
-    petId,
     category = 'food', // Default to 'food' if not specified
   } = config;
 
@@ -143,17 +141,9 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
       }}
       render={({ field }) => {
         const currentValue: PortionValue | undefined = field.value as unknown as PortionValue | undefined;
-        
-        // State for brand/product selection - always start closed
-        const [showBrandSelectorState, setShowBrandSelectorState] = React.useState(false);
-        const [customBrand, setCustomBrand] = React.useState('');
-        const [customProduct, setCustomProduct] = React.useState('');
-        
-        // Brand memory integration
-        const { suggestions: brandSuggestions, recordUsage } = useBrandSuggestions(
-          petId || 0, 
-          category // Use configurable category (food, treats, medication, grooming, toys)
-        );
+
+        // Brand/Product memory management
+        const { brands, products, addBrand, removeBrand, addProduct, removeProduct } = useBrandProductMemory(category);
 
         // Initialize default value
         React.useEffect(() => {
@@ -164,6 +154,16 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
             });
           }
         }, [currentValue, field, defaultUnit]);
+
+        // Track input state separately for better UX
+        const [inputValue, setInputValue] = React.useState<string>('');
+
+        // Sync input value with field value
+        React.useEffect(() => {
+          if (currentValue?.amount !== undefined) {
+            setInputValue(currentValue.amount.toString());
+          }
+        }, [currentValue?.amount]);
 
         // Handle amount change
         const handleAmountChange = React.useCallback((newAmount: number) => {
@@ -185,29 +185,29 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
           field.onChange(updatedValue);
         }, [currentValue, field]);
 
-        // Handle brand/product selection
-        const handleBrandSelect = React.useCallback((brand: string, product: string) => {
+        // Handle brand change
+        const handleBrandChange = React.useCallback((brand: string) => {
           const updatedValue: PortionValue = {
             ...currentValue,
             amount: currentValue?.amount || 0,
             unit: currentValue?.unit || defaultUnit,
-            brand,
-            product,
+            brand: brand || undefined,
+            product: currentValue?.product,
           };
           field.onChange(updatedValue);
-          setShowBrandSelectorState(false);
-          // Record usage for learning
-          recordUsage(brand, product);
-        }, [currentValue, field, defaultUnit, recordUsage]);
+        }, [currentValue, field, defaultUnit]);
 
-        // Handle custom brand/product
-        const handleCustomBrandSubmit = React.useCallback(() => {
-          if (customBrand.trim()) {
-            handleBrandSelect(customBrand.trim(), customProduct.trim() || 'Custom Product');
-            setCustomBrand('');
-            setCustomProduct('');
-          }
-        }, [customBrand, customProduct, handleBrandSelect]);
+        // Handle product change
+        const handleProductChange = React.useCallback((product: string) => {
+          const updatedValue: PortionValue = {
+            ...currentValue,
+            amount: currentValue?.amount || 0,
+            unit: currentValue?.unit || defaultUnit,
+            brand: currentValue?.brand,
+            product: product || undefined,
+          };
+          field.onChange(updatedValue);
+        }, [currentValue, field, defaultUnit]);
 
         // Quick increment/decrement
         const incrementAmount = () => {
@@ -264,8 +264,36 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
               type="number"
               step={config?.step || 0.25}
               min={0}
-              value={displayAmount}
-              onChange={(e) => handleAmountChange(parseFloat(e.target.value) || 0)}
+              value={inputValue}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setInputValue(newValue); // Update input state immediately for responsive UX
+
+                // Parse and update form value
+                if (newValue === '' || newValue === '-') {
+                  // Allow empty/negative sign temporarily - don't update form yet
+                  return;
+                }
+
+                const parsed = parseFloat(newValue);
+                if (!isNaN(parsed)) {
+                  handleAmountChange(parsed);
+                }
+              }}
+              onBlur={(e) => {
+                // On blur, ensure we have a valid value
+                const finalValue = e.target.value;
+                if (finalValue === '' || finalValue === '-') {
+                  handleAmountChange(0);
+                  setInputValue('0');
+                } else {
+                  const parsed = parseFloat(finalValue);
+                  if (isNaN(parsed)) {
+                    handleAmountChange(0);
+                    setInputValue('0');
+                  }
+                }
+              }}
               className="text-center text-lg font-medium"
               placeholder="0"
               aria-label="Portion amount"
@@ -307,159 +335,33 @@ const PortionBlock: React.FC<BlockProps<PortionBlockConfig>> = ({
         </div>
 
 
-        {/* Brand/Product section */}
-        <div className="space-y-3 border-t pt-3 relative">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Brand & Product</label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowBrandSelectorState(!showBrandSelectorState)}
-              className="text-xs"
-            >
-              <Package className="w-3 h-3 mr-1" />
-              {currentValue?.brand ? 'Change' : 'Add Brand'}
-            </Button>
+        {/* Brand/Product section - parallel dropdowns */}
+        <div className="space-y-3 border-t pt-3">
+          <label className="text-sm font-medium">Brand & Product</label>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Brand selector */}
+            <EditableSelect
+              value={currentValue?.brand || ''}
+              onValueChange={handleBrandChange}
+              options={brands}
+              onAddOption={addBrand}
+              onRemoveOption={removeBrand}
+              placeholder="Select or enter a new brand..."
+              className="flex-1"
+            />
+
+            {/* Product selector */}
+            <EditableSelect
+              value={currentValue?.product || ''}
+              onValueChange={handleProductChange}
+              options={products}
+              onAddOption={addProduct}
+              onRemoveOption={removeProduct}
+              placeholder="Select or enter a new product..."
+              className="flex-1"
+            />
           </div>
-
-          {/* Current brand/product display */}
-          {currentValue?.brand && (
-            <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
-              <Package className="w-4 h-4 text-muted-foreground" />
-              <div className="flex-1 text-sm">
-                <div className="font-medium">{currentValue.brand}</div>
-                {currentValue.product && (
-                  <div className="text-muted-foreground">{currentValue.product}</div>
-                )}
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const updatedValue = { ...currentValue };
-                  delete updatedValue.brand;
-                  delete updatedValue.product;
-                  field.onChange(updatedValue);
-                }}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                Remove
-              </Button>
-            </div>
-          )}
-
-          {/* Brand selector with absolute positioning to avoid layout impact */}
-          <AnimatePresence>
-            {showBrandSelectorState && (
-              <>
-                {/* Backdrop */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.1 }}
-                  className="fixed inset-0 bg-black/10 z-40"
-                  onClick={() => setShowBrandSelectorState(false)}
-                />
-                
-                {/* Brand selector modal */}
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ 
-                    duration: 0.2,
-                    ease: [0.23, 1, 0.320, 1] // easeOutQuart
-                  }}
-                  className="absolute top-full left-0 right-0 mt-2 z-50 shadow-lg"
-                  style={{ transformOrigin: 'top' }}
-                >
-                  <div className="space-y-3 p-4 border rounded-md bg-background border-border shadow-md max-h-80 overflow-y-auto">
-                    <div className="text-sm font-medium">Recent Brands</div>
-                    
-                    {/* Brand memory suggestions */}
-                    {brandSuggestions.length > 0 && (
-                      <div className="space-y-2">
-                        {brandSuggestions.slice(0, 5).map((suggestion) => (
-                          <Button
-                            key={suggestion.id}
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleBrandSelect(suggestion.brand, suggestion.product || 'Generic Product')}
-                            className={`w-full justify-start text-left transition-colors ${
-                              suggestion.isFrequent ? 'border-blue-300 bg-blue-50 hover:bg-blue-100' : ''
-                            } ${
-                              suggestion.isRecent ? 'border-green-300 bg-green-50 hover:bg-green-100' : ''
-                            }`}
-                            title={`Used ${suggestion.usageCount} times, last used ${suggestion.lastUsed.toLocaleDateString()}`}
-                          >
-                            <div className="flex-1">
-                              <div className="flex items-center gap-1">
-                                <div className="font-medium text-sm">{suggestion.brand}</div>
-                                {suggestion.isFrequent && <span className="text-blue-600 text-xs">★</span>}
-                                {suggestion.isRecent && <span className="text-green-600 text-xs">●</span>}
-                              </div>
-                              <div className="text-xs text-muted-foreground">{suggestion.product || 'Generic Product'}</div>
-                            </div>
-                            <Badge variant="secondary" className="text-xs">
-                              {Math.floor((Date.now() - suggestion.lastUsed.getTime()) / (24 * 60 * 60 * 1000))}d ago
-                            </Badge>
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Custom brand input */}
-                    <div className="space-y-2 border-t pt-2">
-                      <div className="text-sm font-medium">Add New Brand</div>
-                      <div className="space-y-2">
-                        <Input
-                          type="text"
-                          placeholder="Brand name (e.g., Hill's Science Diet)"
-                          value={customBrand}
-                          onChange={(e) => setCustomBrand(e.target.value)}
-                          className="text-sm"
-                        />
-                        <Input
-                          type="text"
-                          placeholder="Product name (optional)"
-                          value={customProduct}
-                          onChange={(e) => setCustomProduct(e.target.value)}
-                          className="text-sm"
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={handleCustomBrandSubmit}
-                            disabled={!customBrand.trim()}
-                            className="flex-1"
-                          >
-                            Add Brand
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setShowBrandSelectorState(false);
-                              setCustomBrand('');
-                              setCustomProduct('');
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* Quick preset amounts if configured */}

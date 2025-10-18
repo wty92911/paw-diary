@@ -14,7 +14,6 @@ export const expenseTemplates: ActivityTemplate[] = [
     subcategory: 'Purchase',
     label: 'Purchase',
     icon: '💰',
-    isQuickLogEnabled: true,
     isAvailable: false, // ⚠️ Not yet tested
     description: 'Track purchases of food, toys, supplies, and services',
     blocks: [
@@ -109,7 +108,6 @@ export const expenseTemplates: ActivityTemplate[] = [
     subcategory: 'Veterinary',
     label: 'Veterinary Expense',
     icon: '🏥',
-    isQuickLogEnabled: false,
     isAvailable: false, // ⚠️ Not yet tested
     description: 'Track veterinary visits and medical expenses',
     blocks: [
@@ -245,7 +243,6 @@ export const expenseTemplates: ActivityTemplate[] = [
     subcategory: 'Grooming',
     label: 'Grooming Service',
     icon: '✂️',
-    isQuickLogEnabled: true,
     isAvailable: false, // ⚠️ Not yet tested
     description: 'Track grooming appointments and costs',
     blocks: [
@@ -362,7 +359,7 @@ export const expenseTemplates: ActivityTemplate[] = [
     subcategory: 'Insurance',
     label: 'Pet Insurance',
     icon: '🛡️',
-    isQuickLogEnabled: true,
+    isAvailable: false,
     description: 'Track insurance payments and claims',
     blocks: [
       {
