@@ -7,6 +7,7 @@ import { PetProfilePhoto } from './PetProfilePhoto';
 import { cn, calculateAge } from '../../lib/utils';
 import { convertActivitiesToTimelineItems } from '../../lib/utils/activityUtils';
 import { ActivityPreviewSection } from '../activities/ActivityPreviewSection';
+import { WeightTrendChart } from '../weight/WeightTrendChart';
 import { Edit, Heart, Calendar } from 'lucide-react';
 
 interface PetProfileProps {
@@ -133,6 +134,13 @@ export function PetProfile({
             </CardContent>
           </Card>
         )}
+
+        {/* Weight Trend Chart */}
+        <WeightTrendChart
+          petId={pet.id}
+          petBirthDate={pet.birth_date}
+          className=""
+        />
 
         {/* Recent Activities Preview */}
         <ActivityPreviewSection
