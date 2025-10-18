@@ -22,6 +22,8 @@ export function WeightTrendChart({
   petBirthDate,
   className = '',
 }: WeightTrendChartProps) {
+  console.log('[WeightTrendChart] Component mounted for pet:', petId);
+
   // Load user preference from localStorage or default to kg
   const [displayUnit, setDisplayUnit] = useState<WeightUnit>(() => {
     const saved = localStorage.getItem('preferredWeightUnit');
@@ -34,6 +36,15 @@ export function WeightTrendChart({
   const { dataPoints, stats, isLoading, error, isEmpty } = useWeightData(petId, {
     range: timeRange,
     displayUnit,
+  });
+
+  // Debug logging
+  console.log('[WeightTrendChart] Render:', {
+    petId,
+    dataPoints: dataPoints.length,
+    isLoading,
+    error,
+    isEmpty,
   });
 
   // Persist unit preference

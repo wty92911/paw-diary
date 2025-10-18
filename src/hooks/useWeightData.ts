@@ -181,10 +181,20 @@ export function useWeightData(petId: number, options?: WeightDataOptions): UseWe
   const { activities = [], isLoading, error: errorMessage } = useActivitiesList(petId);
 
   const result = useMemo(() => {
+    // Debug logging
+    console.log('[useWeightData] Processing activities:', {
+      petId,
+      totalActivities: activities.length,
+      range,
+      displayUnit,
+    });
+
     // Filter for Growth category activities with weight data
     const weightActivities = activities.filter(
       a => a.category === 'Growth' && hasWeightData(a.activity_data),
     );
+
+    console.log('[useWeightData] Filtered weight activities:', weightActivities.length);
 
     // Transform to data points
     const dataPoints: WeightDataPoint[] = weightActivities

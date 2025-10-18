@@ -6,6 +6,7 @@ import { useRouterNavigation } from '../hooks/usePetProfileNavigation';
 import { useActivitiesList } from '../hooks/useActivitiesList';
 import { PetProfileHeader } from '../components/pets/PetProfileHeader';
 import { ActivityPreviewSection } from '../components/activities/ActivityPreviewSection';
+import { WeightTrendChart } from '../components/weight/WeightTrendChart';
 import { Button } from '../components/ui/button';
 import { convertActivitiesToTimelineItems } from '../lib/utils/activityUtils';
 import {
@@ -144,6 +145,13 @@ export function PetProfilePage() {
               pet={currentPet}
               onEdit={() => navigate(`/pets/${currentPet.id}/edit`)}
               size="full"
+              className="shadow-lg"
+            />
+
+            {/* Weight Trend Chart */}
+            <WeightTrendChart
+              petId={currentPet.id}
+              petBirthDate={currentPet.birth_date}
               className="shadow-lg"
             />
 
