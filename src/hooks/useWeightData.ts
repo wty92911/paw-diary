@@ -72,16 +72,32 @@ function extractWeightData(
   // Try weight block first
   if (activityData.weight && typeof activityData.weight === 'object') {
     const weightBlock = activityData.weight as any;
-    if (typeof weightBlock.value === 'number' && weightBlock.unit) {
-      return { value: weightBlock.value, unit: weightBlock.unit };
+    // Value can be string or number, convert to number
+    const value =
+      typeof weightBlock.value === 'number'
+        ? weightBlock.value
+        : typeof weightBlock.value === 'string'
+          ? parseFloat(weightBlock.value)
+          : NaN;
+
+    if (!isNaN(value) && weightBlock.unit) {
+      return { value, unit: weightBlock.unit };
     }
   }
 
   // Try measurement block
   if (activityData.measurement && typeof activityData.measurement === 'object') {
     const measurementBlock = activityData.measurement as any;
-    if (typeof measurementBlock.value === 'number' && measurementBlock.unit) {
-      return { value: measurementBlock.value, unit: measurementBlock.unit };
+    // Value can be string or number, convert to number
+    const value =
+      typeof measurementBlock.value === 'number'
+        ? measurementBlock.value
+        : typeof measurementBlock.value === 'string'
+          ? parseFloat(measurementBlock.value)
+          : NaN;
+
+    if (!isNaN(value) && measurementBlock.unit) {
+      return { value, unit: measurementBlock.unit };
     }
   }
 
@@ -196,11 +212,29 @@ export function useWeightData(petId: number, options?: WeightDataOptions): UseWe
 
     console.log('[useWeightData] Filtered weight activities:', weightActivities.length);
 
+    // Log first activity structure for debugging
+    if (weightActivities.length > 0) {
+      console.log('[useWeightData] Sample activity data:', {
+        id: weightActivities[0].id,
+        category: weightActivities[0].category,
+        activity_data: weightActivities[0].activity_data,
+      });
+    }
+
     // Transform to data points
     const dataPoints: WeightDataPoint[] = weightActivities
       .map((activity): WeightDataPoint | null => {
         const weightData = extractWeightData(activity.activity_data);
-        if (!weightData) return null;
+        console.log(
+          '[useWeightData] Extracted weight data for activity',
+          activity.id,
+          ':',
+          weightData,
+        );
+        if (!weightData) {
+          console.warn('[useWeightData] No weight data found for activity', activity.id);
+          return null;
+        }
 
         const originalUnit = normalizeWeightUnit(weightData.unit);
         if (!originalUnit) {
@@ -235,8 +269,12 @@ export function useWeightData(petId: number, options?: WeightDataOptions): UseWe
       .filter((point): point is WeightDataPoint => point !== null)
       .sort((a, b) => a.date.getTime() - b.date.getTime()); // Sort by date ascending
 
+    console.log('[useWeightData] Data points after transformation:', dataPoints.length, dataPoints);
+
     // Apply time range filter
     const filteredPoints = filterByDateRange(dataPoints, range);
+
+    console.log('[useWeightData] Data points after time range filter:', filteredPoints.length);
 
     // Calculate statistics
     const stats = calculateWeightStats(filteredPoints);
